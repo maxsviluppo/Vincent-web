@@ -13,12 +13,7 @@ export function ChoiceBlocks({ onSelect }: ChoiceBlocksProps) {
   return (
     <section className="px-4 sm:px-8 mb-10 font-['Montserrat',sans-serif]">
       {/* Intestazione Sezione */}
-      <motion.div
-        initial={{ opacity: 0, y: 15 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        className="mb-5 flex items-center justify-between"
-      >
+      <div className="mb-5 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-1.5 h-5 bg-neutral-900 rounded-full" />
           <h2 className="text-lg sm:text-xl font-light text-neutral-950 uppercase tracking-[0.22em]">
@@ -28,7 +23,7 @@ export function ChoiceBlocks({ onSelect }: ChoiceBlocksProps) {
         <span className="text-[11px] font-medium uppercase tracking-[0.2em] text-neutral-400 hidden sm:inline">
           Esplora la selezione
         </span>
-      </motion.div>
+      </div>
 
       {/* 
         GEOMETRIA A INCASTRO SOTTILE & COMPATTA:
@@ -40,12 +35,7 @@ export function ChoiceBlocks({ onSelect }: ChoiceBlocksProps) {
       <div className="grid grid-cols-1 md:grid-cols-12 md:grid-rows-2 gap-3.5 md:h-[390px]">
         
         {/* 1. GRANDE A TUTTA ALTEZZA (A SINISTRA) */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.98 }}
-          whileInView={{ opacity: 1, scale: 1 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.45, ease: [0.21, 1.02, 0.73, 1] }}
-          onClick={() => onSelect('Giubbini')}
+        <div onClick={() => onSelect('Giubbini')}
           className="md:col-span-4 md:row-span-2 h-[260px] md:h-full rounded-2xl p-5 sm:p-6 flex flex-col justify-between overflow-hidden relative group cursor-pointer shadow-sm hover:shadow-lg transition-all duration-300 bg-neutral-900"
         >
           <img
@@ -73,15 +63,10 @@ export function ChoiceBlocks({ onSelect }: ChoiceBlocksProps) {
               GIUBBINI
             </h3>
           </div>
-        </motion.div>
+        </div>
 
         {/* 2. ALTO A DESTRA 1 (CAMICE - METÀ ALTEZZA) */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.98 }}
-          whileInView={{ opacity: 1, scale: 1 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.45, delay: 0.06, ease: [0.21, 1.02, 0.73, 1] }}
-          onClick={() => onSelect('Camice')}
+        <div onClick={() => onSelect('Camice')}
           className="md:col-span-4 md:row-span-1 h-[140px] md:h-full rounded-2xl p-4 sm:p-5 flex flex-col justify-between overflow-hidden relative group cursor-pointer shadow-sm hover:shadow-lg transition-all duration-300 bg-neutral-900"
         >
           <img
@@ -106,15 +91,10 @@ export function ChoiceBlocks({ onSelect }: ChoiceBlocksProps) {
               CAMICE
             </h3>
           </div>
-        </motion.div>
+        </div>
 
         {/* 3. ALTO A DESTRA 2 (FELPE & SHIRT - METÀ ALTEZZA) */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.98 }}
-          whileInView={{ opacity: 1, scale: 1 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.45, delay: 0.12, ease: [0.21, 1.02, 0.73, 1] }}
-          onClick={() => onSelect('Felpe')}
+        <div onClick={() => onSelect('Felpe')}
           className="md:col-span-4 md:row-span-1 h-[140px] md:h-full rounded-2xl p-4 sm:p-5 flex flex-col justify-between overflow-hidden relative group cursor-pointer shadow-sm hover:shadow-lg transition-all duration-300 bg-neutral-900"
         >
           <img
@@ -153,15 +133,10 @@ export function ChoiceBlocks({ onSelect }: ChoiceBlocksProps) {
               FELPE & SHIRT
             </h3>
           </div>
-        </motion.div>
+        </div>
 
         {/* 4. BASSO A DESTRA (LUNGA DI METÀ ALTEZZA SOTTO I DUE BOX - SCARPE & PANTALONI) */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.98 }}
-          whileInView={{ opacity: 1, scale: 1 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.45, delay: 0.18, ease: [0.21, 1.02, 0.73, 1] }}
-          onClick={() => onSelect('Scarpe')}
+        <div onClick={() => onSelect('Scarpe')}
           className="md:col-span-8 md:row-span-1 h-[150px] md:h-full rounded-2xl p-4 sm:p-5 flex flex-col justify-between overflow-hidden relative group cursor-pointer shadow-sm hover:shadow-lg transition-all duration-300 bg-neutral-900"
         >
           {/* Foto scarpe funzionante verificata */}
@@ -208,7 +183,7 @@ export function ChoiceBlocks({ onSelect }: ChoiceBlocksProps) {
               SCARPE, JEANS & PANTALONI
             </h3>
           </div>
-        </motion.div>
+        </div>
 
       </div>
     </section>

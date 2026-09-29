@@ -30,18 +30,9 @@ export function ProductCard({
   const imageSrc = (product.image && product.image.trim().length > 10) ? product.image : FALLBACK_IMG;
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 15 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: '-40px' }}
-      transition={{
-        duration: 0.4,
-        delay: Math.min(index * 0.03, 0.3),
-        ease: [0.21, 1.02, 0.73, 1],
-      }}
-      whileHover={{ y: -4, transition: { duration: 0.2 } }}
+    <div
       onClick={onClick}
-      className="bg-white rounded-2xl border border-neutral-200/80 overflow-hidden flex flex-col h-full hover:shadow-xl transition-all duration-300 relative group cursor-pointer font-['Montserrat',sans-serif]"
+      className="bg-white rounded-2xl border border-neutral-200/80 overflow-hidden flex flex-col h-full hover:-translate-y-1 hover:shadow-xl transition-all duration-300 relative group cursor-pointer font-['Montserrat',sans-serif]"
     >
       {/* Immagine con dimensione uniforme identica per tutti i prodotti */}
       <div className="relative w-full aspect-[3/4] overflow-hidden bg-neutral-100 flex-shrink-0">
@@ -115,6 +106,6 @@ export function ProductCard({
           </button>
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 }
