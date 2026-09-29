@@ -1,0 +1,110 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,200;0,300;0,400;0,500;0,600;0,700;0,800;1,300;1,400&display=swap');
+@import "tailwindcss";
+@source "../original-src/**/*.{ts,tsx}";
+
+@theme {
+  --font-sans: "Montserrat", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  
+  --color-brand-dark: #111111;
+  --color-brand-blue: #18181b;
+  --color-brand-yellow: #111111;
+  --color-brand-orange: #27272a;
+  --color-accent: #111111;
+  
+  --breakpoint-xs: 480px;
+  --breakpoint-sm: 640px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
+  --breakpoint-2xl: 1536px;
+}
+
+@layer base {
+  body {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 300;
+    letter-spacing: 0.02em;
+    @apply bg-[#fafafa] text-neutral-900 antialiased;
+    -webkit-tap-highlight-color: transparent;
+    overflow-anchor: none;
+  }
+
+  /* Impedisce scatti, tremolii o salti dello scroll del browser con header sticky dinamico */
+  header, header * {
+    overflow-anchor: none !important;
+  }
+}
+
+/* Regola Universale: tutti i pulsanti scuri (frontend, modali e backend) hanno testo BIANCO */
+button[class*="bg-brand-yellow"],
+button[class*="bg-brand-dark"],
+button[class*="bg-brand-blue"],
+button[class*="bg-neutral-900"],
+button[class*="bg-neutral-950"],
+button[class*="bg-black"],
+a[class*="bg-brand-yellow"],
+a[class*="bg-brand-dark"],
+a[class*="bg-brand-blue"],
+.bg-brand-yellow,
+.bg-brand-dark,
+.bg-brand-blue,
+.bg-brand-orange {
+  color: #ffffff !important;
+}
+
+button[class*="bg-brand-yellow"] *,
+button[class*="bg-brand-dark"] *,
+button[class*="bg-brand-blue"] *,
+button[class*="bg-neutral-900"] *,
+button[class*="bg-neutral-950"] *,
+button[class*="bg-black"] *,
+a[class*="bg-brand-yellow"] *,
+a[class*="bg-brand-dark"] *,
+a[class*="bg-brand-blue"] * {
+  color: #ffffff !important;
+}
+
+/* Scrollbar di lusso per Desktop (finestra e box modale dettaglio) */
+@media (min-width: 768px) {
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.22);
+    border-radius: 9999px;
+    transition: background 0.2s ease;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.45);
+  }
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 0, 0, 0.22) transparent;
+  }
+}
+
+/* Su mobile: nessuna barra scroll visibile su tutti gli elementi (touch puro) */
+@media (max-width: 767px) {
+  * {
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+  }
+  *::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+  }
+}
+
+/* Utilità no-scrollbar */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
