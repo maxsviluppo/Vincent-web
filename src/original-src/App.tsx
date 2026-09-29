@@ -479,6 +479,34 @@ const ProductSheet = ({ product, onClose, onAddToCart, isDesktop, reviews = [], 
   const [activePdf, setActivePdf] = useState<{ url: string; title: string } | null>(null);
 
   const carouselRef = useRef<HTMLDivElement>(null);
+  // Gestione swipe verso il basso dalla cornice per chiudere
+  const [corniceTouchStartY, setCorniceTouchStartY] = useState<number | null>(null);
+  const [corniceDragOffset, setCorniceDragOffset] = useState<number>(0);
+
+  const handleCorniceTouchStart = (e: React.TouchEvent) => {
+    setCorniceTouchStartY(e.touches[0].clientY);
+  };
+
+  const handleCorniceTouchMove = (e: React.TouchEvent) => {
+    if (corniceTouchStartY === null) return;
+    const diff = e.touches[0].clientY - corniceTouchStartY;
+    if (diff > 0) {
+      setCorniceDragOffset(diff);
+      if (diff > 50) {
+        setCorniceTouchStartY(null);
+        setCorniceDragOffset(0);
+        onClose();
+      }
+    }
+  };
+
+  const handleCorniceTouchEnd = () => {
+    if (corniceDragOffset > 30) {
+      onClose();
+    }
+    setCorniceTouchStartY(null);
+    setCorniceDragOffset(0);
+  };
 
   const approvedReviews = reviews.filter(rev => rev.productId === product.id && rev.status === 'approved');
   const avgRating = approvedReviews.length > 0
@@ -552,13 +580,27 @@ const ProductSheet = ({ product, onClose, onAddToCart, isDesktop, reviews = [], 
       />
       {/* Box modale perfettamente centrato sia su desktop che su mobile */}
       <div 
+        style={{
+          transform: corniceDragOffset > 0 ? `translateY(${corniceDragOffset}px)` : undefined,
+          transition: corniceDragOffset === 0 ? 'transform 0.25s ease-out' : 'none'
+        }}
         className="fixed inset-x-0 bottom-0 md:inset-0 md:m-auto z-[100] bg-white rounded-t-[28px] md:rounded-[36px] shadow-2xl flex flex-col h-[90vh] md:h-[85vh] w-full md:w-[90vw] md:max-w-5xl lg:max-w-6xl overflow-hidden transition-all duration-300 ease-out"
       >
         {/* Maniglia trascinamento per mobile */}
         <div 
+          onTouchStart={handleCorniceTouchStart}
+          onTouchMove={handleCorniceTouchMove}
+          onTouchEnd={handleCorniceTouchEnd}
           onClick={onClose}
-          className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto my-3 flex-shrink-0 cursor-pointer hover:bg-gray-400 transition-colors md:hidden" 
-        />
+          className="w-full pt-3 pb-2.5 flex-shrink-0 cursor-grab active:cursor-grabbing flex flex-col items-center justify-center touch-none select-none hover:bg-neutral-50 transition-colors"
+          title="Trascina verso il basso per chiudere"
+          aria-label="Chiudi finestra dettaglio"
+        >
+          <div className="w-14 h-1.5 bg-neutral-300 hover:bg-neutral-400 rounded-full transition-colors shadow-sm" />
+          <span className="text-[9px] uppercase tracking-widest text-neutral-400 mt-1 font-light">
+            Trascina verso il basso per chiudere
+          </span>
+        </div>
 
         {/* Pulsante chiusura rimosso per design minimale */}
         

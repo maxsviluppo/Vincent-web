@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion } from 'motion/react';
-import { Heart } from 'lucide-react';
+import { Heart, ShoppingCart } from 'lucide-react';
 import { Product } from '@/lib/types';
 
 interface ProductCardProps {
@@ -107,9 +107,11 @@ export function ProductCard({
               e.stopPropagation();
               onAddToCart(product);
             }}
-            className="bg-neutral-950 hover:bg-black text-white px-3.5 py-1.5 rounded-lg text-[10px] font-medium uppercase tracking-[0.14em] shadow-sm active:scale-95 transition-all"
+            className="w-8 h-8 rounded-full bg-neutral-950 hover:bg-black text-white flex items-center justify-center shadow-sm active:scale-90 transition-all cursor-pointer group/btn"
+            aria-label="Aggiungi al carrello"
+            title="Aggiungi al carrello"
           >
-            Acquista
+            <ShoppingCart className="w-3.5 h-3.5 stroke-[1.5] group-hover/btn:scale-110 transition-transform text-white" />
           </button>
         </div>
       </div>

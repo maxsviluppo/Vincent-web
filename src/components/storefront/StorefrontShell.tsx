@@ -123,7 +123,7 @@ export function StorefrontShell({ children }: { children?: React.ReactNode }) {
             drag="y"
             dragConstraints={{ top: -200, bottom: 120 }}
             dragElastic={0.12}
-            style={{ top: '630px' }}
+            style={{ top: '610px' }}
             className="fixed right-4 z-50 md:hidden touch-none"
           >
             <motion.button

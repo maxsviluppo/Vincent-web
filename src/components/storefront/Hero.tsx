@@ -177,9 +177,9 @@ export function Hero({ slides }: HeroProps) {
         <ChevronRight className="w-6 h-6 stroke-[2]" />
       </button>
 
-      {/* 4. Indicatori / Dots a pillola in basso a destra */}
-      <div className="absolute bottom-5 right-5 sm:right-10 z-30 flex items-center gap-2 bg-black/50 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-white/15">
-        <span className="text-[10px] font-mono text-white/95 mr-1 tracking-wider">
+      {/* 4. Indicatori / Dots a pillola in basso a destra (solo pallini su mobile, numerazione su desktop) */}
+      <div className="absolute bottom-5 right-5 sm:right-10 z-30 flex items-center gap-1.5 sm:gap-2 bg-black/50 backdrop-blur-md px-2.5 sm:px-3.5 py-1.5 rounded-full border border-white/15">
+        <span className="hidden md:inline text-[10px] font-mono text-white/95 mr-1 tracking-wider">
           0{heroIndex + 1} / 0{activeSlides.length}
         </span>
         {activeSlides.map((_, idx) => (
@@ -188,7 +188,7 @@ export function Hero({ slides }: HeroProps) {
             type="button"
             onClick={(e) => { e.stopPropagation(); setHeroIndex(idx); }}
             className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer ${
-              idx === heroIndex ? 'bg-white w-6' : 'bg-white/40 hover:bg-white/70 w-1.5'
+              idx === heroIndex ? 'bg-white w-5 sm:w-6' : 'bg-white/40 hover:bg-white/70 w-1.5'
             }`}
             aria-label={`Slide ${idx + 1}`}
           />
