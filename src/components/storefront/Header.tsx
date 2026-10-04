@@ -11,6 +11,7 @@ import {
   X
 } from 'lucide-react';
 import { useApp } from '@/context/AppProvider';
+import { TopBarStrip } from '@/components/storefront/TopBarStrip';
 
 interface HeaderProps {
   onCategorySelect: (cat: string, sub?: string) => void;
@@ -96,7 +97,7 @@ export function Header({ onCategorySelect }: HeaderProps) {
       {/* 1. Top Bar: Minimal Luxury Bar (Altezza ridotta ed ultra-sottile) */}
       <div 
         style={{
-          height: isTopBarHiddenMobile ? '0px' : (isMobile ? '24px' : '26px'),
+          height: isTopBarHiddenMobile ? '0px' : '40px',
           opacity: isTopBarHiddenMobile ? 0 : 1,
           overflow: 'hidden',
           borderBottomWidth: isTopBarHiddenMobile ? '0px' : '1px',
@@ -105,15 +106,8 @@ export function Header({ onCategorySelect }: HeaderProps) {
         }}
         className="bg-neutral-950 text-white relative border-neutral-800"
       >
-        <div className="h-[24px] md:h-[26px] px-4 sm:px-8 flex items-center justify-between text-[9px] sm:text-[9.5px] font-normal tracking-[0.22em] uppercase w-full text-neutral-300">
-          <div className="flex items-center gap-2 truncate">
-            <span className="hidden sm:inline text-neutral-400 font-light">VINCENT STORE</span>
-            <span className="hidden sm:inline text-neutral-700">|</span>
-            <span className="text-neutral-200 font-light truncate">{pageSettings.topBarLeftText || "Spedizione Express Gratuita su tutti gli ordini"}</span>
-          </div>
-          <div className="flex items-center gap-4 flex-shrink-0">
-            <span className="hover:text-white transition-colors cursor-pointer font-light">{pageSettings.topBarRightText || "Boutique & Concierge"}</span>
-          </div>
+        <div className="h-10 w-full">
+          <TopBarStrip pageSettings={pageSettings} />
         </div>
       </div>
 

@@ -26,7 +26,7 @@ export function ProductPageClient({ productId }: Props) {
   }, [productId, products, setSelectedProduct]);
 
   // The actual rendering of the product details is handled by 
-  // the legacy BespointApp layer or a modern ProductDetail component.
+  // the legacy Vincent storefront layer or a modern ProductDetail component.
   // For now, we return null because StorefrontShell manages the visibility.
   return null;
 }

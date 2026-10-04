@@ -18,7 +18,10 @@ import { PRODUCTS, DEFAULT_COMPANY_SETTINGS, DEFAULT_PAGE_SETTINGS, slugify } fr
 function getLS<T>(key: string, fallback: T): T {
   if (typeof window === 'undefined') return fallback;
   try {
-    const raw = localStorage.getItem(key);
+    let raw = localStorage.getItem(key);
+    if (raw === null && key.startsWith('vincent_')) {
+      raw = localStorage.getItem(key.replace(/^vincent_/, 'bespoint_'));
+    }
     return raw ? (JSON.parse(raw) as T) : fallback;
   } catch {
     return fallback;
@@ -32,6 +35,20 @@ function setLS(key: string, value: unknown) {
   } catch {
     console.warn('[Vincent Store] localStorage write failed for key:', key);
   }
+}
+
+function mergeHomeSlidesWithDefaults(savedSlides: any[] | undefined): any[] {
+  const slides = [...(savedSlides?.length ? savedSlides : DEFAULT_PAGE_SETTINGS.homeSlides)];
+  for (const position of ['home_middle', 'home_bottom'] as const) {
+    if (!slides.some((s) => s.position === position && s.url)) {
+      DEFAULT_PAGE_SETTINGS.homeSlides
+        .filter((s) => s.position === position)
+        .forEach((template) => {
+          slides.push({ ...template, id: `${template.id}-${Date.now()}` });
+        });
+    }
+  }
+  return slides;
 }
 
 // ─── Context Shape ─────────────────────────────────────────────────────────────
@@ -147,15 +164,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   // — auth —
   const [currentUser, setCurrentUser] = useState<any>(() =>
-    getLS('bespoint_current_user', null)
+    getLS('vincent_current_user', null)
   );
-  useEffect(() => setLS('bespoint_current_user', currentUser), [currentUser]);
+  useEffect(() => setLS('vincent_current_user', currentUser), [currentUser]);
 
   const [authStep, setAuthStep] = useState<AppContextValue['authStep']>('email');
 
   const logout = useCallback(() => {
     setCurrentUser(null);
-    setLS('bespoint_current_user', null);
+    setLS('vincent_current_user', null);
   }, []);
 
   // — cart —
@@ -216,19 +233,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [favorites, setFavorites] = useState<string[]>(() => {
     if (typeof window === 'undefined') return [];
     try {
-      const savedUser = localStorage.getItem('bespoint_current_user');
+      const savedUser =
+        localStorage.getItem('vincent_current_user') ??
+        localStorage.getItem('bespoint_current_user');
       if (savedUser) {
         const u = JSON.parse(savedUser);
         const userFavs = localStorage.getItem(`vincent_favs_${u.id || u.email}`);
         if (userFavs) return JSON.parse(userFavs);
       }
     } catch {}
-    return getLS('vincent_favorites_global', getLS('bespoint_favorites', []));
+    return getLS('vincent_favorites_global', getLS('vincent_favorites', []));
   });
 
   useEffect(() => {
     setLS('vincent_favorites_global', favorites);
-    setLS('bespoint_favorites', favorites);
+    setLS('vincent_favorites', favorites);
     if (currentUser) {
       setLS(`vincent_favs_${currentUser.id || currentUser.email}`, favorites);
     }
@@ -304,9 +323,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   // — orders —
   const [orders, setOrders] = useState<Order[]>(() =>
-    getLS('bespoint_orders', [])
+    getLS('vincent_orders', [])
   );
-  useEffect(() => setLS('bespoint_orders', orders), [orders]);
+  useEffect(() => setLS('vincent_orders', orders), [orders]);
 
   // — reviews —
   const [productReviews, setProductReviews] = useState<Review[]>(() =>
@@ -316,9 +335,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   // — return requests —
   const [returnRequests, setReturnRequests] = useState<any[]>(() =>
-    getLS('bespoint_returns', [])
+    getLS('vincent_returns', [])
   );
-  useEffect(() => setLS('bespoint_returns', returnRequests), [returnRequests]);
+  useEffect(() => setLS('vincent_returns', returnRequests), [returnRequests]);
 
   // — settings —
   const [companySettings, setCompanySettings] = useState(() =>
@@ -327,13 +346,33 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => setLS('vincent_companySettings_v3', companySettings), [companySettings]);
 
   const [pageSettings, setPageSettings] = useState(() => {
-    const saved = getLS('vincent_pageSettings_v5', null);
+    const saved = getLS<any>('vincent_pageSettings_v5', null);
     if (!saved || !saved.homeSlides || saved.homeSlides.length === 0 || saved.homeSlides.some((s: any) => !s.url || s.url.includes('picsum'))) {
       return { ...DEFAULT_PAGE_SETTINGS, isHeroEnabled: true };
     }
-    return saved;
+    return {
+      ...DEFAULT_PAGE_SETTINGS,
+      ...saved,
+      homeSlides: mergeHomeSlidesWithDefaults(saved.homeSlides),
+      isHeroEnabled: saved.isHeroEnabled ?? true,
+      isMiddleSlidesEnabled: saved.isMiddleSlidesEnabled ?? true,
+      isBottomSlidesEnabled: saved.isBottomSlidesEnabled ?? true,
+      topBarMode: saved.topBarMode ?? DEFAULT_PAGE_SETTINGS.topBarMode,
+      topBarMarqueeSpeed: saved.topBarMarqueeSpeed ?? DEFAULT_PAGE_SETTINGS.topBarMarqueeSpeed,
+    };
   });
   useEffect(() => setLS('vincent_pageSettings_v5', pageSettings), [pageSettings]);
+
+  useEffect(() => {
+    setPageSettings((prev) => {
+      const merged = mergeHomeSlidesWithDefaults(prev.homeSlides);
+      const prevLen = prev.homeSlides?.length ?? 0;
+      if (merged.length === prevLen && merged.every((s, i) => s.id === prev.homeSlides?.[i]?.id)) {
+        return prev;
+      }
+      return { ...prev, homeSlides: merged };
+    });
+  }, []);
 
   const [paymentSettings, setPaymentSettings] = useState(() =>
     getLS('paymentSettings', {})

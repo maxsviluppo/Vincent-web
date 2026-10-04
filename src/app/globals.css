@@ -10,6 +10,11 @@
   --color-brand-yellow: #111111;
   --color-brand-orange: #27272a;
   --color-accent: #111111;
+  --color-mustard: #C4A035;
+  --color-mustard-dark: #9A7B1A;
+  --color-canary: #ffea00;
+  --color-canary-hover: #fff566;
+  --color-canary-border: #c9b800;
   
   --breakpoint-xs: 480px;
   --breakpoint-sm: 640px;
@@ -64,6 +69,87 @@ a[class*="bg-brand-blue"] * {
   color: #ffffff !important;
 }
 
+/* ─── Admin Panel: palette Bespoint (storefront fashion invariato) ─── */
+.admin-panel-root {
+  --color-brand-dark: #0a0a0a;
+  --color-brand-blue: #131921;
+  --color-brand-yellow: #ffd814;
+  --color-brand-orange: #f7ca00;
+  --color-accent: #ffd814;
+}
+
+/* Giallo admin = testo scuro (come Bespoint), non bianco del storefront */
+.admin-panel-root button[class*="bg-brand-yellow"]:not([class*="text-white"]),
+.admin-panel-root a[class*="bg-brand-yellow"]:not([class*="text-white"]),
+.admin-panel-root .bg-brand-yellow.text-brand-dark,
+.admin-panel-root [class*="bg-brand-yellow"][class*="text-brand-dark"] {
+  color: #0a0a0a !important;
+}
+.admin-panel-root button[class*="bg-brand-yellow"]:not([class*="text-white"]) *,
+.admin-panel-root a[class*="bg-brand-yellow"]:not([class*="text-white"]) *,
+.admin-panel-root [class*="bg-brand-yellow"][class*="text-brand-dark"] * {
+  color: #0a0a0a !important;
+}
+
+.admin-panel-root button[class*="bg-brand-yellow"][class*="text-white"],
+.admin-panel-root button[class*="bg-brand-yellow"][class*="text-white"] * {
+  color: #ffffff !important;
+}
+
+/* Pulsanti scuri / colorati admin: testo bianco leggibile */
+.admin-panel-root button[class*="bg-brand-dark"],
+.admin-panel-root button[class*="bg-brand-blue"],
+.admin-panel-root button[class*="bg-neutral-900"],
+.admin-panel-root button[class*="bg-neutral-950"],
+.admin-panel-root button[class*="bg-black"],
+.admin-panel-root button[class*="bg-indigo-"],
+.admin-panel-root button[class*="bg-blue-6"],
+.admin-panel-root button[class*="bg-red-5"],
+.admin-panel-root button[class*="bg-green-6"],
+.admin-panel-root button[class*="bg-orange-5"],
+.admin-panel-root button[class*="bg-amber-6"],
+.admin-panel-root a[class*="bg-brand-dark"],
+.admin-panel-root a[class*="bg-brand-blue"] {
+  color: #ffffff !important;
+}
+.admin-panel-root button[class*="bg-brand-dark"] *,
+.admin-panel-root button[class*="bg-brand-blue"] *,
+.admin-panel-root button[class*="bg-neutral-950"] *,
+.admin-panel-root button[class*="bg-indigo-"] *,
+.admin-panel-root button[class*="bg-blue-6"] *,
+.admin-panel-root button[class*="bg-red-5"] *,
+.admin-panel-root button[class*="bg-green-6"] *,
+.admin-panel-root button[class*="bg-orange-5"] * {
+  color: #ffffff !important;
+}
+
+/* Accenti testo giallo / arancio in admin */
+.admin-panel-root .text-brand-yellow {
+  color: #ffd814 !important;
+}
+.admin-panel-root .text-brand-orange {
+  color: #f7ca00 !important;
+}
+.admin-panel-root .border-brand-yellow {
+  border-color: #ffd814 !important;
+}
+.admin-panel-root .bg-brand-yellow\/10 {
+  background-color: rgb(255 216 20 / 0.1) !important;
+}
+.admin-panel-root .bg-brand-yellow\/20 {
+  background-color: rgb(255 216 20 / 0.2) !important;
+}
+.admin-panel-root .bg-brand-yellow\/30 {
+  background-color: rgb(255 216 20 / 0.3) !important;
+}
+.admin-panel-root .ring-brand-yellow,
+.admin-panel-root .focus\:ring-brand-yellow:focus {
+  --tw-ring-color: #ffd814 !important;
+}
+.admin-panel-root .focus\:border-brand-yellow:focus {
+  border-color: #ffd814 !important;
+}
+
 /* Scrollbar di lusso per Desktop (finestra e box modale dettaglio) */
 @media (min-width: 768px) {
   ::-webkit-scrollbar {
@@ -107,4 +193,488 @@ a[class*="bg-brand-blue"] * {
 .no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+@keyframes marquee-topbar {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.marquee-topbar {
+  position: relative;
+}
+.marquee-topbar-track {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  flex-shrink: 0;
+  width: max-content;
+  animation: marquee-topbar linear infinite;
+  will-change: transform;
+}
+.marquee-topbar-track > span {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.bg-admin-mustard {
+  background-color: var(--color-mustard);
+}
+.text-on-mustard {
+  color: #111111;
+}
+
+/* Giallo canarino — admin categorie (icone sempre scure, mai ereditare bianco globale) */
+.admin-categories-panel .btn-canary {
+  background-color: var(--color-canary);
+  color: #0a0a0a !important;
+  border: 1px solid var(--color-canary-border);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.06);
+}
+.admin-categories-panel .btn-canary:hover:not(:disabled) {
+  background-color: var(--color-canary-hover);
+}
+.admin-categories-panel .btn-canary:disabled {
+  background-color: #e5e5e5;
+  border-color: #d4d4d4;
+  color: #737373 !important;
+  opacity: 1;
+}
+.admin-categories-panel .btn-canary:disabled svg {
+  color: #737373 !important;
+}
+.admin-categories-panel .btn-canary svg {
+  color: #0a0a0a !important;
+  stroke: currentColor;
+}
+
+/* Modifica — viola/indaco (mai giallo) */
+.admin-categories-panel .btn-cat-edit {
+  background-color: #4f46e5;
+  color: #ffffff !important;
+  border: 1px solid #4338ca;
+}
+.admin-categories-panel .btn-cat-edit svg {
+  color: #ffffff !important;
+}
+.admin-categories-panel .btn-cat-edit:hover {
+  background-color: #4338ca;
+}
+
+/* Aggiungi — blu, distinto da Modifica (canarino) */
+.admin-categories-panel .btn-cat-add {
+  background-color: #0284c7;
+  color: #ffffff !important;
+  border: 1px solid #0369a1;
+}
+.admin-categories-panel .btn-cat-add svg {
+  color: #ffffff !important;
+}
+.admin-categories-panel .btn-cat-add:hover {
+  background-color: #0369a1;
+}
+
+.admin-categories-panel .category-card {
+  border: 2px solid #d4d4d4;
+  border-radius: 1.25rem;
+  background: #ffffff;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+}
+.admin-categories-panel .category-order-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.admin-categories-panel .btn-cat-order {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.admin-categories-panel .category-card-header {
+  background: linear-gradient(180deg, #fafafa 0%, #ffffff 100%);
+  border-bottom: 1px solid #eeeeee;
+}
+.admin-categories-panel .category-card-index {
+  background: #0a0a0a;
+  color: #ffea00;
+  font-size: 10px;
+  font-weight: 800;
+  min-width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.admin-categories-panel .category-action-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  margin-top: 0.5rem;
+  background: #f5f5f5;
+  border: 1px dashed #d4d4d4;
+  border-radius: 0.75rem;
+}
+.admin-categories-panel .category-action-bar .cat-action-label {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.admin-categories-panel .subcategory-panel {
+  background: #f1f5f9;
+  border-top: 2px solid #e2e8f0;
+  padding: 1rem;
+}
+.admin-categories-panel .subcategory-panel-title {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #475569;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #cbd5e1;
+}
+.admin-categories-panel .subcategory-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+.admin-categories-panel .subcategory-item {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 1rem;
+  padding: 0.75rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+.admin-categories-panel .subcategory-item-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.625rem;
+}
+.admin-categories-panel .subcategory-item-name {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #171717;
+  flex: 1;
+  min-width: 0;
+  word-break: break-word;
+}
+.admin-categories-panel .subcategory-item-meta {
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: #64748b;
+  background: #f1f5f9;
+  padding: 0.25rem 0.5rem;
+  border-radius: 9999px;
+}
+.admin-categories-panel .subcategory-item-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  padding-top: 0.625rem;
+  border-top: 1px dashed #e2e8f0;
+}
+.admin-categories-panel .categories-card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+.admin-categories-panel .category-card-top {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  width: 100%;
+}
+.admin-categories-panel .category-title-block h3 {
+  font-size: 1rem;
+  line-height: 1.25;
+}
+
+.admin-categories-panel .btn-cat-delete {
+  background-color: #fecaca;
+  color: #991b1b !important;
+  border: 1px solid #f87171;
+}
+.admin-categories-panel .btn-cat-delete svg {
+  color: #991b1b !important;
+}
+.admin-categories-panel .btn-cat-delete:hover {
+  background-color: #ef4444;
+  border-color: #dc2626;
+  color: #ffffff !important;
+}
+.admin-categories-panel .btn-cat-delete:hover svg {
+  color: #ffffff !important;
+}
+
+.admin-categories-panel .btn-cat-confirm {
+  background-color: #22c55e;
+  color: #ffffff !important;
+  border: 1px solid #16a34a;
+}
+.admin-categories-panel .btn-cat-confirm svg {
+  color: #ffffff !important;
+}
+
+.admin-categories-panel .btn-cat-cancel {
+  background-color: #f5f5f5;
+  color: #525252 !important;
+  border: 1px solid #e5e5e5;
+}
+.admin-categories-panel .btn-cat-cancel svg {
+  color: #525252 !important;
+}
+
+/* Admin panel — solo mobile (desktop invariato) */
+@media (max-width: 767px) {
+  .admin-mobile-content {
+    -webkit-overflow-scrolling: touch;
+  }
+  .admin-mobile-content .space-y-10 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 1.75rem;
+  }
+  .admin-mobile-content .rounded-\[3\.5rem\],
+  .admin-mobile-content .rounded-\[3rem\] {
+    border-radius: 1.25rem;
+  }
+  .admin-mobile-content .p-10 {
+    padding: 1.25rem;
+  }
+  .admin-mobile-content .p-8 {
+    padding: 1rem;
+  }
+  .admin-mobile-content .text-\[34px\] {
+    font-size: 1.75rem;
+    line-height: 1.1;
+  }
+  .admin-mobile-content table {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .admin-mobile-content .overflow-x-auto {
+    max-width: 100%;
+  }
+
+  .admin-products-panel .flex.flex-wrap.items-center.gap-4 {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .admin-products-panel .flex.flex-wrap.items-center.gap-4 > div {
+    width: 100%;
+  }
+
+  .admin-categories-panel .categories-header-actions {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    gap: 0.625rem;
+  }
+  .admin-categories-panel .categories-header-actions > button,
+  .admin-categories-panel .categories-header-actions > div {
+    width: 100%;
+  }
+  .admin-categories-panel .categories-header-actions .btn-canary {
+    min-height: 3rem;
+    padding: 0.875rem 1rem;
+    font-size: 11px;
+  }
+  .admin-categories-panel .category-card {
+    border-left-width: 5px;
+    border-left-color: var(--color-canary);
+    border-radius: 1rem;
+  }
+  .admin-categories-panel .categories-card-list {
+    gap: 1.5rem;
+  }
+  .admin-categories-panel .category-card-header {
+    padding: 1rem !important;
+    gap: 1rem !important;
+  }
+  .admin-categories-panel .category-card-top {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  .admin-categories-panel .category-card-index {
+    min-width: 2rem;
+    height: 2rem;
+    font-size: 12px;
+  }
+  .admin-categories-panel .category-order-row {
+    flex-direction: row;
+    width: 100%;
+    justify-content: flex-start;
+  }
+  .admin-categories-panel .btn-cat-order {
+    flex: 1;
+    min-height: 2.75rem;
+    border-radius: 0.75rem;
+  }
+  .admin-categories-panel .category-title-block h3 {
+    font-size: 1.0625rem;
+  }
+  .admin-categories-panel .category-action-bar {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.625rem;
+    padding: 1rem;
+    margin-top: 0;
+  }
+  .admin-categories-panel .category-action-bar > button {
+    width: 100%;
+    min-height: 3rem;
+    padding: 0.75rem 1rem;
+    justify-content: center;
+    margin-left: 0 !important;
+  }
+  .admin-categories-panel .category-action-bar .btn-cat-delete {
+    grid-column: 1 / -1;
+  }
+  .admin-categories-panel .category-action-bar > div,
+  .admin-categories-panel .category-action-bar .category-add-inline {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+  .admin-categories-panel .category-action-bar .cat-action-label {
+    font-size: 11px;
+  }
+  .admin-categories-panel .category-action-bar .btn-cat-edit svg,
+  .admin-categories-panel .category-action-bar .btn-cat-add svg,
+  .admin-categories-panel .category-action-bar .btn-cat-delete svg {
+    width: 1.125rem;
+    height: 1.125rem;
+  }
+  .admin-categories-panel .category-add-inline {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.625rem;
+  }
+  .admin-categories-panel .category-add-inline input {
+    width: 100% !important;
+    min-height: 3rem;
+    font-size: 1rem;
+    padding: 0.75rem 1rem;
+  }
+  .admin-categories-panel .category-add-inline .btn-cat-confirm,
+  .admin-categories-panel .category-add-inline .btn-cat-cancel {
+    min-height: 2.75rem;
+    flex: 1;
+    padding: 0.75rem;
+  }
+  .admin-categories-panel .category-add-inline {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  .admin-categories-panel .category-add-inline input {
+    flex: 1 1 100%;
+  }
+  .admin-categories-panel .subcategory-panel {
+    padding: 1rem;
+  }
+  .admin-categories-panel .subcategory-item-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .admin-categories-panel .subcategory-item-toolbar .category-order-row {
+    width: 100%;
+  }
+  .admin-categories-panel .subcategory-item-toolbar .btn-cat-edit,
+  .admin-categories-panel .subcategory-item-toolbar .btn-cat-delete {
+    width: 100%;
+    min-height: 2.75rem;
+    justify-content: center;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1rem;
+    border-radius: 0.75rem;
+  }
+  .admin-categories-panel .subcategory-item-toolbar .btn-cat-confirm,
+  .admin-categories-panel .subcategory-item-toolbar .btn-cat-cancel {
+    min-height: 2.5rem;
+    min-width: 2.75rem;
+    padding: 0.5rem 0.75rem;
+  }
+  .admin-categories-panel .subcategory-edit-row {
+    flex-direction: column;
+    align-items: stretch !important;
+    width: 100%;
+    gap: 0.5rem;
+  }
+  .admin-categories-panel .subcategory-edit-row input {
+    width: 100% !important;
+    min-height: 2.75rem;
+    font-size: 1rem;
+  }
+  .admin-categories-panel .ai-suggest-actions {
+    flex-direction: column;
+    width: 100%;
+    gap: 0.625rem;
+  }
+  .admin-categories-panel .ai-suggest-actions button {
+    width: 100%;
+    min-height: 3rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .admin-categories-panel .category-card-top {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+  .admin-categories-panel .category-order-row {
+    flex-direction: column;
+    width: auto;
+  }
+  .admin-categories-panel .category-action-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .admin-categories-panel .subcategory-item-toolbar {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .admin-categories-panel .subcategory-item-toolbar .btn-cat-edit,
+  .admin-categories-panel .subcategory-item-toolbar .btn-cat-delete {
+    width: auto;
+    min-height: 0;
+  }
+}
+
+
+/* ========================================================
+   DROPDOWN & SELECT: Correzione universale contrasto testo
+   Impedisce che il testo delle option o select appaia bianco su bianco
+   ======================================================== */
+select {
+  color: #111111 !important;
+  background-color: #ffffff !important;
+}
+
+select option,
+select optgroup {
+  color: #111111 !important;
+  background-color: #ffffff !important;
+  font-weight: 600 !important;
+}
+
+.admin-panel-root select,
+.admin-panel-root select option,
+.admin-panel-root select optgroup,
+div[class*="admin"] select,
+div[class*="admin"] select option {
+  color: #111111 !important;
+  background-color: #ffffff !important;
 }

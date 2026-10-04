@@ -547,7 +547,21 @@ export const DEFAULT_PAGE_SETTINGS = {
       title: 'LUSSO SENZA COMPROMESSI', 
       alt: "Dettagli ricercati e finiture artigianali per un guardaroba distintivo.", 
       position: 'home_top' 
-    }
+    },
+    {
+      id: 'slide-mid-1',
+      url: 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=1920&q=85',
+      title: 'CAPISPALLA & SARTORIA',
+      alt: 'Slide middle — collezione capispalla.',
+      position: 'home_middle',
+    },
+    {
+      id: 'slide-bot-1',
+      url: 'https://images.unsplash.com/photo-1490114538077-0a7f8cb49891?auto=format&fit=crop&w=1920&q=85',
+      title: 'CAMICIE & DETTAGLI',
+      alt: 'Slide bottom — camicie e accessori.',
+      position: 'home_bottom',
+    },
   ],
   categoryBanners: {},
   categorySeo: {},

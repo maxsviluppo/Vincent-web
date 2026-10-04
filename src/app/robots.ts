@@ -9,7 +9,7 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ['/admin', '/admin/*', '/api/*'],
       },
     ],
-    sitemap: 'https://www.bespoint.it/sitemap.xml',
-    host: 'https://www.bespoint.it',
+    sitemap: 'https://www.vincentstore.it/sitemap.xml',
+    host: 'https://www.vincentstore.it',
   };
 }

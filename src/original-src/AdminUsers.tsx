@@ -87,7 +87,7 @@ const MOCK_USERS: Customer[] = [
 export const AdminUsers = ({ onViewOrder, orders = [] }: { onViewOrder?: (orderId: string) => void, orders?: any[] }) => {
     const [users, setUsers] = useState<Customer[]>(() => {
         if (typeof window === 'undefined') return MOCK_USERS;
-        const stored = localStorage.getItem('bespoint_users');
+        const stored = localStorage.getItem('vincent_users');
         if (!stored) return MOCK_USERS;
         try {
             const parsed = JSON.parse(stored);

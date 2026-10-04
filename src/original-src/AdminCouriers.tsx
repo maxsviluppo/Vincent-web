@@ -682,7 +682,7 @@ export const AdminCouriers = () => {
                       <input 
                         type="text" 
                         readOnly
-                        value={`https://api.bespoint.it/v1/webhooks/shipping/${isEditingApi}`}
+                        value={`https://api.vincentstore.it/v1/webhooks/shipping/${isEditingApi}`}
                         className="w-full pl-14 pr-12 py-4 bg-white border-2 border-brand-yellow/20 rounded-2xl text-[11px] font-bold text-brand-dark/50"
                       />
                     </div>

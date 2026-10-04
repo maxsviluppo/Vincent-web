@@ -1253,12 +1253,12 @@ const CheckoutSheet = ({
     }
     
     setCurrentUser(updatedUser);
-    localStorage.setItem('bespoint_current_user', JSON.stringify(updatedUser));
+    localStorage.setItem('vincent_current_user', JSON.stringify(updatedUser));
     
     try {
-      const users = JSON.parse(localStorage.getItem('bespoint_users') || '[]');
+      const users = JSON.parse(localStorage.getItem('vincent_users') || '[]');
       const updatedUsers = users.map((u: any) => u.email === updatedUser.email ? updatedUser : u);
-      localStorage.setItem('bespoint_users', JSON.stringify(updatedUsers));
+      localStorage.setItem('vincent_users', JSON.stringify(updatedUsers));
     } catch (e) {
       console.error("Error saving users to mock db:", e);
     }
@@ -1269,7 +1269,7 @@ const CheckoutSheet = ({
         id: orderId,
         date: new Date().toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: 'numeric' }),
         customer: shippingForm.name || currentUser?.name || "Cliente Registrato",
-        email: shippingForm.email || currentUser?.email || "guest@bespoint.it",
+        email: shippingForm.email || currentUser?.email || "guest@vincentstore.it",
         phone: shippingForm.phone,
         channel: 'website',
         total: total,
@@ -2451,6 +2451,12 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
     isSideMenuOpen, setIsSideMenuOpen
   } = useApp();
 
+  useEffect(() => {
+    if (hideStorefront) {
+      setIsAdminOpen(true);
+    }
+  }, [hideStorefront, setIsAdminOpen]);
+
   // --- Sincronizzazione URL -> Stato ---
   useEffect(() => {
     const path = location.pathname;
@@ -2608,7 +2614,7 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
   };
 
   useEffect(() => {
-    localStorage.setItem('bespoint_returns', JSON.stringify(returnRequests));
+    localStorage.setItem('vincent_returns', JSON.stringify(returnRequests));
   }, [returnRequests]);
   const [profileSearchQuery, setProfileSearchQuery] = useState('');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -2635,6 +2641,8 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
   const [editingSubcategory, setEditingSubcategory] = useState<{ category: string; subcategory: string } | null>(null);
   const [editSubcategoryValue, setEditSubcategoryValue] = useState("");
   const [aiSuggestions, setAiSuggestions] = useState<{ categories: string[], subcategories: Record<string, string[]> } | null>(null);
+  const [collapsedCategories, setCollapsedCategories] = useState<Record<string, boolean>>({});
+  const [categoryFilterSearch, setCategoryFilterSearch] = useState("");
 
   const adminUniqueBrands = useMemo(() => Array.from(new Set(products.map(p => p.brand).filter(Boolean))).sort() as string[], [products]);
   const [adminConfirmAction, setAdminConfirmAction] = useState<{ active: boolean, title: string, message: string, onConfirm: () => void, color: string } | null>(null);
@@ -2642,7 +2650,7 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
   const hardReset = () => {
     // Clear localStorage
     Object.keys(localStorage).forEach(key => {
-      if (key.startsWith('bespoint_') || key === 'companySettings' || key === 'paymentSettings' || key === 'pageSettings' || key === 'bespoint_users') {
+      if (key.startsWith('vincent_') || key === 'companySettings' || key === 'paymentSettings' || key === 'pageSettings' || key === 'vincent_users') {
         localStorage.removeItem(key);
       }
     });
@@ -2853,6 +2861,40 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
   const middleSlides = useMemo(() => adminMidSlides.filter((s: any) => s.url), [adminMidSlides]);
   const bottomSlides = useMemo(() => adminBotSlides.filter((s: any) => s.url), [adminBotSlides]);
 
+  const adminFilteredProducts = useMemo(() => {
+    return products.filter((p) => {
+      const matchesSearch =
+        adminSearchQuery === '' ||
+        p.name.toLowerCase().includes(adminSearchQuery.toLowerCase()) ||
+        (p.sku && p.sku.toLowerCase().includes(adminSearchQuery.toLowerCase())) ||
+        (p.ean && p.ean.toLowerCase().includes(adminSearchQuery.toLowerCase())) ||
+        `BP-${p.id.padStart(4, '0')}`.toLowerCase().includes(adminSearchQuery.toLowerCase());
+      const matchesCategory = adminCategoryFilter === 'Tutti' || p.category === adminCategoryFilter;
+      const matchesBrand = adminBrandFilter === 'Tutti' || p.brand === adminBrandFilter;
+      let matchesChannel = true;
+      if (adminChannelFilter === 'Web') matchesChannel = (p.stock || 0) > 0;
+      if (adminChannelFilter === 'Amazon') matchesChannel = (p.amazonStock || 0) > 0;
+      const matchesFeatured = !showFeaturedOnly || p.isFeatured;
+      const matchesSpecial = !showSpecialOnly || p.isSpecialPromotion;
+      return (
+        matchesSearch &&
+        matchesCategory &&
+        matchesBrand &&
+        matchesChannel &&
+        matchesFeatured &&
+        matchesSpecial
+      );
+    });
+  }, [
+    products,
+    adminSearchQuery,
+    adminCategoryFilter,
+    adminBrandFilter,
+    adminChannelFilter,
+    showFeaturedOnly,
+    showSpecialOnly,
+  ]);
+
   useEffect(() => {
     if (topSlides.length <= 1) {
       setHeroIndex(0);
@@ -2867,8 +2909,10 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
   useEffect(() => {
     if (isAdminOpen) {
       document.body.style.overflow = 'hidden';
+      setIsMobileAdminMenuOpen(false);
     } else {
       document.body.style.overflow = 'unset';
+      setIsMobileAdminMenuOpen(false);
     }
     return () => {
       document.body.style.overflow = 'unset';
@@ -2911,7 +2955,7 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
   }, [products, selectedCategory, selectedSubcategory, selectedBrand, searchQuery, sortBy, cartTrigger]);
 
   // --- Simulated Backend Auth Methods ---
-  const getUsers = () => JSON.parse(localStorage.getItem('bespoint_users') || '[]');
+  const getUsers = () => JSON.parse(localStorage.getItem('vincent_users') || '[]');
   
   const handleAuthEmailContinue = (e: React.FormEvent) => {
     e.preventDefault();
@@ -2936,7 +2980,7 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
     const existing = users.find((u: any) => u.email === authEmail.toLowerCase() && u.password === authPassword);
     if (existing) {
       setCurrentUser(existing);
-      localStorage.setItem('bespoint_current_user', JSON.stringify(existing));
+      localStorage.setItem('vincent_current_user', JSON.stringify(existing));
       setIsAuthOpen(false);
       setAuthEmail('');
       setAuthPassword('');
@@ -2965,12 +3009,12 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
     
     // Update local state (persisting layout)
     setCurrentUser(updatedUser);
-    localStorage.setItem('bespoint_current_user', JSON.stringify(updatedUser)); // Keep session updated
+    localStorage.setItem('vincent_current_user', JSON.stringify(updatedUser)); // Keep session updated
     
     // Update user in DB simulation
     const users = getUsers();
     const updatedUsers = users.map((u: any) => u.email === updatedUser.email ? updatedUser : u);
-    localStorage.setItem('bespoint_users', JSON.stringify(updatedUsers));
+    localStorage.setItem('vincent_users', JSON.stringify(updatedUsers));
     
     // Switch view back to profile dashboard
     setAuthStep('profile');
@@ -2997,9 +3041,9 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
       addressProvince: authProvince
     };
     users.push(newUser);
-    localStorage.setItem('bespoint_users', JSON.stringify(users));
+    localStorage.setItem('vincent_users', JSON.stringify(users));
     setCurrentUser(newUser);
-    localStorage.setItem('bespoint_current_user', JSON.stringify(newUser));
+    localStorage.setItem('vincent_current_user', JSON.stringify(newUser));
     setIsAuthOpen(false);
     setAuthEmail('');
     setAuthPassword('');
@@ -3020,7 +3064,7 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
     const existing = users.find((u: any) => u.email === mockGoogleEmail);
     if (existing) {
       setCurrentUser(existing);
-      localStorage.setItem('bespoint_current_user', JSON.stringify(existing));
+      localStorage.setItem('vincent_current_user', JSON.stringify(existing));
       setIsAuthOpen(false);
     } else {
       setAuthEmail(mockGoogleEmail);
@@ -3031,7 +3075,7 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
 
   const logout = () => {
     setCurrentUser(null);
-    localStorage.removeItem('bespoint_current_user');
+    localStorage.removeItem('vincent_current_user');
     setAuthStep('email');
   };
 
@@ -3098,18 +3142,18 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
       {!hideStorefront && (
         <>
           {/* Top Bar */}
-          <div className="bg-gradient-to-r from-neutral-900 via-black to-neutral-900 border-b border-gray-800 text-white overflow-hidden relative" style={{ height: '36px' }}>
-            {pageSettings.topBarMode === 'image' && pageSettings.topBarImage ? (
-              <img src={pageSettings.topBarImage} className="w-full h-full object-cover" />
-            ) : pageSettings.topBarMode === 'marquee' ? (
-              <div className="h-full flex items-center">
-                <motion.div
-                  animate={{ x: ["100%", "-100%"] }}
-                  transition={{ duration: pageSettings.topBarMarqueeSpeed || 20, repeat: Infinity, ease: "linear" }}
-                  className="whitespace-nowrap text-[10px] font-black uppercase tracking-[0.2em] px-4"
+          <div className="h-10 bg-gradient-to-r from-neutral-900 via-black to-neutral-900 border-b border-gray-800 text-white overflow-hidden relative">
+            {(pageSettings.topBarMode ?? 'static') === 'image' && pageSettings.topBarImage ? (
+              <img src={pageSettings.topBarImage} alt="Top bar" className="w-full h-full object-cover object-center" />
+            ) : (pageSettings.topBarMode ?? 'static') === 'marquee' ? (
+              <div className="marquee-topbar h-full w-full overflow-hidden">
+                <div
+                  className="marquee-topbar-track h-full items-center text-[10px] font-black uppercase tracking-[0.2em] text-white"
+                  style={{ animationDuration: `${Math.max(8, Number(pageSettings.topBarMarqueeSpeed) || 30)}s` }}
                 >
-                  {pageSettings.topBarMarqueeText || "Consegna rapida in tutta Italia | Resi facili entro 30 giorni | Supporto clienti 24/7"}
-                </motion.div>
+                  <span className="px-8">{pageSettings.topBarMarqueeText || 'Consegna rapida in tutta Italia | Resi facili entro 30 giorni | Supporto clienti 24/7'}</span>
+                  <span className="px-8" aria-hidden="true">{pageSettings.topBarMarqueeText || 'Consegna rapida in tutta Italia | Resi facili entro 30 giorni | Supporto clienti 24/7'}</span>
+                </div>
               </div>
             ) : (
               <div className="px-4 h-full flex items-center justify-between text-[10px] font-black uppercase tracking-widest w-full">
@@ -3261,7 +3305,7 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
               <div className="relative">
                 <input 
                   type="text" 
-                  placeholder="Cerca su Bespoint..."
+                  placeholder="Cerca su Vincent..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full h-11 bg-white rounded-lg pl-4 pr-12 text-base shadow-inner focus:outline-none"
@@ -3275,7 +3319,7 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
 
           <main className="relative z-10">
             {/* Hero Banner (Amazon Style) */}
-            {selectedCategory === "Tutti" ? (
+            {selectedCategory === "Tutti" && pageSettings.isHeroEnabled !== false ? (
               <section 
                 className="relative w-full overflow-hidden mb-8 origin-top h-[460px] sm:h-[550px]"
               >
@@ -3319,7 +3363,7 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                       {topSlides[heroIndex]?.title || "Le scelte migliori per te"}
                     </h2>
                     <p className="text-sm text-white/90 mb-4 font-bold drop-shadow-md">
-                      {topSlides[heroIndex]?.alt || "Risparmia fino al 40% su tutta la tecnologia Bespoint."}
+                      {topSlides[heroIndex]?.alt || "Risparmia fino al 40% su tutta la tecnologia Vincent."}
                     </p>
                   </div>
                 </div>
@@ -3531,7 +3575,9 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                   </div>
                 </section>
 
-                {pageSettings.isMiddleSlidesEnabled && <SlideSection slides={middleSlides} darken={pageSettings.slidesOverlayEnabled} />}
+                {pageSettings.isMiddleSlidesEnabled !== false && middleSlides.length > 0 && (
+                  <SlideSection slides={middleSlides} darken={pageSettings.slidesOverlayEnabled} />
+                )}
               </>
             )}
 
@@ -3718,7 +3764,9 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
               </section>
             )}
 
-            {selectedCategory === "Tutti" && pageSettings.isBottomSlidesEnabled && <SlideSection slides={bottomSlides} darken={pageSettings.slidesOverlayEnabled} />}
+            {selectedCategory === "Tutti" && pageSettings.isBottomSlidesEnabled !== false && bottomSlides.length > 0 && (
+              <SlideSection slides={bottomSlides} darken={pageSettings.slidesOverlayEnabled} />
+            )}
 
             {/* Parallax Floating Banner */}
             {selectedCategory === "Tutti" && (
@@ -3959,40 +4007,41 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                 animate={{ x: 0 }}
                 exit={{ x: "100%" }}
                 transition={{ type: "spring", damping: 30, stiffness: 300, mass: 1 }}
-                className="flex w-full h-full bg-white shadow-2xl relative overflow-hidden"
+                className="admin-panel-root flex flex-col md:flex-row w-full h-full bg-white shadow-2xl relative overflow-hidden"
               >
                 {/* Mobile Admin Header */}
-                <div className="md:hidden absolute top-0 left-0 right-0 h-16 flex items-center justify-between px-6 border-b border-gray-100 bg-white z-[50]">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-brand-blue rounded-lg flex items-center justify-center">
-                      <Shield className="w-5 h-5 text-brand-yellow" />
-                    </div>
-                    <h3 className="font-black text-brand-dark uppercase tracking-tighter text-sm">Admin Panel</h3>
-                  </div>
-                  <button 
+                <div className="md:hidden fixed top-0 left-0 right-0 h-14 flex items-center justify-between px-4 border-b border-gray-100 bg-white z-[60] safe-area-top">
+                  <h3 className="font-black text-brand-dark uppercase tracking-tight text-base">Admin Panel</h3>
+                  <button
+                    type="button"
                     onClick={() => setIsMobileAdminMenuOpen(!isMobileAdminMenuOpen)}
-                    className="p-2 text-brand-dark hover:bg-gray-100 rounded-xl transition-colors"
+                    className="h-11 w-11 flex items-center justify-center text-brand-dark hover:bg-gray-100 rounded-xl transition-colors active:scale-95"
+                    aria-label={isMobileAdminMenuOpen ? 'Chiudi menu admin' : 'Apri menu admin'}
                   >
                     {isMobileAdminMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
                   </button>
                 </div>
 
-                {/* Sidebar */}
-                <motion.div 
-                  initial={{ x: -280 }}
-                  animate={{ x: 0, width: isSidebarCollapsed ? 83 : 256 }}
-                  className={`h-full bg-gray-50 flex flex-col transition-all duration-500 relative z-20 ${isMobileAdminMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}
-                >
+                {isMobileAdminMenuOpen && (
+                  <button
+                    type="button"
+                    className="md:hidden fixed inset-0 top-14 bg-brand-dark/40 z-[50]"
+                    aria-label="Chiudi menu"
+                    onClick={() => setIsMobileAdminMenuOpen(false)}
+                  />
+                )}
 
             {/* Sidebar Menu */}
-            <motion.div 
+            <motion.div
               initial={false}
-              animate={{ 
-                width: window.innerWidth < 768 ? (isMobileAdminMenuOpen ? '100%' : 0) : (isSidebarCollapsed ? 83 : 256),
-                x: window.innerWidth < 768 && !isMobileAdminMenuOpen ? -300 : 0,
-                opacity: window.innerWidth < 768 && !isMobileAdminMenuOpen ? 0 : 1
+              animate={{
+                width: isSidebarCollapsed ? 83 : 256,
               }}
-              className={`bg-gray-50 border-r border-gray-100 flex flex-col relative transition-all duration-300 z-40 h-full overflow-hidden ${window.innerWidth < 768 ? (isMobileAdminMenuOpen ? 'fixed inset-0 pt-20' : 'hidden') : ''}`}
+              transition={{ type: 'spring', stiffness: 400, damping: 35 }}
+              className={`bg-gray-50 border-r border-gray-100 flex flex-col relative z-[55] h-full overflow-hidden flex-shrink-0
+                max-md:fixed max-md:left-0 max-md:top-14 max-md:bottom-0 max-md:!w-[min(100vw,19rem)] max-md:max-h-[calc(100dvh-3.5rem)] max-md:shadow-2xl max-md:transition-transform max-md:duration-300 max-md:ease-out
+                ${isMobileAdminMenuOpen ? 'max-md:translate-x-0' : 'max-md:-translate-x-full max-md:pointer-events-none'}
+                md:relative md:top-auto md:translate-x-0 md:pointer-events-auto md:max-h-none`}
             >
                 <button 
                   onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
@@ -4013,16 +4062,16 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                   )}
                 </div>
 
-                <nav className="space-y-1 flex-1 overflow-y-auto custom-scrollbar">
+                <nav className="space-y-1 flex-1 min-h-0 overflow-y-auto custom-scrollbar max-md:overscroll-contain max-md:pb-2">
                   {[
-                    { tab: 'dashboard', label: 'Panoramica', icon: Home, color: 'bg-brand-dark text-white' },
-                    { tab: 'company', label: 'Azienda', icon: Grid, color: 'bg-neutral-950 text-white font-black' },
-                    { tab: 'slides', label: 'Slide', icon: Play, color: 'bg-neutral-950 text-white' },
-                    { tab: 'link_rapidi', label: 'Link Rapidi', icon: Box, color: 'bg-neutral-950 text-white' },
-                    { tab: 'categories', label: 'Categorie', icon: Compass, color: 'bg-neutral-950 text-white' },
-                    { tab: 'products', label: 'Prodotti', icon: Package, color: 'bg-neutral-950 text-white' },
+                    { tab: 'dashboard', label: 'Panoramica', icon: Home, color: 'bg-brand-yellow text-brand-dark font-black shadow-sm' },
+                    { tab: 'company', label: 'Azienda', icon: Grid, color: 'bg-brand-yellow text-brand-dark font-black' },
+                    { tab: 'slides', label: 'Slide', icon: Play, color: 'bg-brand-yellow text-brand-dark' },
+                    { tab: 'link_rapidi', label: 'Link Rapidi', icon: Box, color: 'bg-brand-yellow text-brand-dark' },
+                    { tab: 'categories', label: 'Categorie', icon: Compass, color: 'bg-brand-yellow text-brand-dark' },
+                    { tab: 'products', label: 'Prodotti', icon: Package, color: 'bg-brand-yellow text-brand-dark' },
                     { tab: 'image_linker', label: 'Bulk Images', icon: ImageIcon, color: 'bg-indigo-500 text-white' },
-                    { tab: 'couriers', label: 'Corrieri', icon: Truck, color: 'bg-neutral-950 text-white' },
+                    { tab: 'couriers', label: 'Corrieri', icon: Truck, color: 'bg-brand-yellow text-brand-dark' },
                     { tab: 'orders', label: 'Ordini', icon: ShoppingBag, color: 'bg-brand-blue text-white font-black' },
                     { tab: 'users', label: 'Archivio Utenti', icon: Users, color: 'bg-blue-600 text-white' },
                     { tab: 'returns', label: 'Gestione Resi', icon: RefreshCw, color: 'bg-red-500 text-white' },
@@ -4039,161 +4088,409 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                           setAdminActiveTab(item.tab as any);
                           setIsMobileAdminMenuOpen(false);
                         }}
-                        className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center' : 'gap-3 px-4'} py-3.5 md:py-2.5 rounded-xl font-bold text-sm transition-all ${adminActiveTab === item.tab ? item.color : 'text-gray-400 hover:bg-gray-100/50'}`}
+                        className={`w-full flex items-center max-md:gap-3 max-md:px-4 ${isSidebarCollapsed ? 'md:justify-center md:px-0 md:gap-0' : 'gap-3 px-4'} py-3.5 md:py-2.5 rounded-xl font-bold text-sm transition-all ${adminActiveTab === item.tab ? item.color : 'text-gray-400 hover:bg-gray-100/50'}`}
                         title={isSidebarCollapsed ? item.label : ''}
                       >
                         <item.icon className="w-5 h-5 flex-shrink-0" />
-                        {!isSidebarCollapsed && <span>{item.label}</span>}
+                        <span className={isSidebarCollapsed ? 'md:hidden' : ''}>{item.label}</span>
                       </button>
                     </div>
                   ))}
                 </nav>
 
-                <button 
-                  onClick={() => setIsAdminOpen(false)}
-                  className={`mt-auto w-full flex items-center ${isSidebarCollapsed ? 'justify-center' : 'justify-center gap-2'} px-4 py-4 md:py-3 rounded-2xl font-bold text-sm text-red-500 hover:bg-red-50 transition-all`}
+                <button
+                  type="button"
+                  onClick={() => { setIsAdminOpen(false); setIsMobileAdminMenuOpen(false); if (hideStorefront) window.location.href = '/'; }}
+                  className={`md:hidden shrink-0 mt-auto m-3 flex items-center justify-center gap-2 px-4 py-4 rounded-2xl font-black text-sm uppercase tracking-wide text-white bg-red-600 hover:bg-red-700 active:scale-[0.98] shadow-md border-2 border-red-700`}
                 >
-                  <X className="w-6 h-6 md:w-5 md:h-5 flex-shrink-0" />
+                  <X className="w-5 h-5 shrink-0" />
+                  <span>Esci da Admin Panel</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setIsAdminOpen(false)}
+                  className={`hidden md:flex mt-auto w-full items-center ${isSidebarCollapsed ? 'justify-center' : 'justify-center gap-2'} px-4 py-3 rounded-2xl font-bold text-sm text-red-500 hover:bg-red-50 transition-all`}
+                >
+                  <X className="w-5 h-5 flex-shrink-0" />
                   {!isSidebarCollapsed && <span>Esci</span>}
                 </button>
             </motion.div>
-          </motion.div>
 
               {/* Content Area */}
-              <div className="flex-1 overflow-y-auto p-4 md:p-10 bg-gray-50/50">
+              <div className="admin-mobile-content flex-1 min-w-0 min-h-0 w-full overflow-y-auto overflow-x-hidden pt-[3.75rem] px-3 pb-8 md:pt-0 md:p-10 bg-gray-50/50 overscroll-contain">
                 {adminActiveTab === 'dashboard' && (
-                  <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
-                    <div className="flex justify-between items-end">
-                      <div>
-                        <h2 className="text-3xl font-black text-brand-dark leading-none tracking-tighter uppercase">Bentornato</h2>
-                        <p className="text-sm font-bold text-gray-400 mt-2 uppercase tracking-[0.2em]">Ecco l'andamento del tuo impero BesPoint</p>
-                      </div>
-                      <div className="hidden md:flex gap-4">
-                         <div className="text-right">
-                           <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Tempo reale</p>
-                           <p className="text-sm font-black text-brand-dark flex items-center gap-2">
-                             <Activity className="w-4 h-4 text-green-500 animate-pulse" />
-                             32 Utenti Online
-                           </p>
-                         </div>
-                      </div>
-                    </div>
-
-                    {/* Big Stats Row */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                      {[
-                        { label: 'Fatturato Totale', value: '€128.430', change: '+18%', icon: DollarSign, color: 'text-brand-yellow', bg: 'bg-brand-dark' },
-                        { label: 'Ordini Ricevuti', value: '1.243', change: '+12%', icon: ShoppingBag, color: 'text-brand-blue', bg: 'bg-white' },
-                        { label: 'Resi Gestiti', value: '12', change: '-5%', icon: Repeat, color: 'text-red-500', bg: 'bg-white' },
-                        { label: 'Nuovi Clienti', value: '342', change: '+22%', icon: UserPlus, color: 'text-purple-500', bg: 'bg-white' }
-                      ].map((stat, i) => (
-                        <div key={i} className={`${stat.bg} ${stat.bg === 'bg-brand-dark' ? 'text-white' : 'text-brand-dark border border-gray-100'} p-8 rounded-[3rem] hover:-translate-y-2 transition-all relative overflow-hidden group`}>
-                           <div className="flex justify-between items-start relative z-10">
-                              <div className={`p-4 ${stat.bg === 'bg-brand-dark' ? 'bg-white/10' : 'bg-gray-50'} rounded-2xl group-hover:rotate-12 transition-transform`}>
-                                <stat.icon className={`w-7 h-7 ${stat.color}`} />
-                              </div>
-                              <span className={`text-[10px] font-black px-3 py-1.5 rounded-full ${stat.change.startsWith('+') ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
-                                {stat.change}
-                              </span>
-                           </div>
-                           <div className="mt-8 relative z-10">
-                              <p className={`text-[10px] font-black uppercase tracking-widest ${stat.bg === 'bg-brand-dark' ? 'text-gray-400' : 'text-gray-400'} mb-1`}>{stat.label}</p>
-                              <h4 className="text-[34px] font-black tracking-tight">{stat.value}</h4>
-                           </div>
-                           {stat.bg === 'bg-brand-dark' && <div className="absolute top-0 right-0 w-32 h-32 bg-brand-yellow rounded-full blur-[80px] opacity-20 -mr-10 -mt-10"></div>}
+                  <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                    {/* Welcome & Command Bar Banner */}
+                    <div className="flex flex-col gap-5 lg:flex-row lg:justify-between lg:items-center bg-white p-6 md:p-8 rounded-[2.5rem] border border-gray-100 shadow-sm relative overflow-hidden">
+                      <div className="flex items-center gap-4 relative z-10">
+                        <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-amber-400 via-amber-300 to-yellow-200 flex items-center justify-center shadow-lg shadow-amber-400/25 text-brand-dark flex-shrink-0">
+                          <Sparkles className="w-7 h-7" />
                         </div>
-                      ))}
+                        <div>
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
+                            <h2 className="text-2xl md:text-3xl font-black text-brand-dark tracking-tight uppercase">Bentornato nel Control Center</h2>
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200">
+                              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                              Store Attivo
+                            </span>
+                          </div>
+                          <p className="text-xs md:text-sm font-semibold text-gray-400">Panoramica strategica • Vendite in tempo reale, magazzino e spedizioni</p>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-3 relative z-10">
+                        <button 
+                          onClick={() => setAdminActiveTab('products')}
+                          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-brand-dark text-white hover:bg-black font-black text-xs uppercase tracking-wider transition-all shadow-md active:scale-95 hover:shadow-lg"
+                        >
+                          <Package className="w-4 h-4 text-brand-yellow" />
+                          <span>+ Nuovo Prodotto</span>
+                        </button>
+                        <button 
+                          onClick={() => setAdminActiveTab('orders')}
+                          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-50 text-indigo-900 hover:bg-indigo-100 border border-indigo-200 font-black text-xs uppercase tracking-wider transition-all active:scale-95"
+                        >
+                          <ShoppingBag className="w-4 h-4 text-indigo-600" />
+                          <span>Tutti gli Ordini</span>
+                        </button>
+                        <div className="hidden xl:flex items-center gap-3 pl-3 border-l border-gray-100 text-right">
+                          <div>
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">In tempo reale</p>
+                            <p className="text-sm font-black text-brand-dark flex items-center gap-1.5 justify-end">
+                              <Activity className="w-4 h-4 text-emerald-500 animate-pulse" />
+                              38 Utenti Online
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="absolute right-0 top-0 w-80 h-full bg-gradient-to-l from-amber-50/50 via-transparent to-transparent pointer-events-none"></div>
                     </div>
 
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                       {/* Sales Trend Chart */}
-                       <div className="lg:col-span-2 bg-white p-10 rounded-[3.5rem] border border-gray-100 space-y-8">
-                          <div className="flex justify-between items-center">
-                             <h3 className="text-2xl font-black text-brand-dark uppercase tracking-tighter">Andamento Vendite</h3>
-                             <div className="flex p-1 bg-gray-50 rounded-xl">
-                                {['Settimana', 'Mese', 'Anno'].map(t => (
-                                  <button key={t} className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${t === 'Mese' ? 'bg-brand-dark text-white shadow-lg' : 'text-gray-400 hover:text-brand-dark'}`}>
-                                    {t}
-                                  </button>
-                                ))}
-                             </div>
+                    {/* 4 Dynamic Distinct Color Metric Cards */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                      {/* 1. Fatturato Totale - Warm Amber / Gold */}
+                      <div className="bg-gradient-to-br from-amber-500/10 via-amber-100/30 to-white p-7 rounded-[2.5rem] hover:-translate-y-1.5 transition-all duration-300 relative overflow-hidden group border border-amber-300/80 shadow-lg shadow-amber-500/5">
+                        <div className="flex justify-between items-start relative z-10">
+                          <div className="p-3.5 bg-gradient-to-tr from-amber-400 to-yellow-300 text-neutral-950 rounded-2xl shadow-md shadow-amber-400/30 group-hover:rotate-12 transition-transform">
+                            <DollarSign className="w-6 h-6" />
                           </div>
-                          
-                          <div className="h-80 flex items-end gap-3 px-4">
-                             {[35, 45, 30, 75, 90, 65, 85, 40, 60, 95, 70, 80].map((h, i) => (
-                               <div key={i} className="flex-1 flex flex-col items-center gap-4 group cursor-pointer h-full justify-end">
-                                  <div className="w-full relative h-[85%] flex items-end">
-                                    <motion.div 
-                                      initial={{ height: 0 }}
-                                      animate={{ height: `${h}%` }}
-                                      className="w-full bg-gradient-to-t from-brand-blue/5 to-brand-blue rounded-2xl group-hover:from-brand-yellow group-hover:to-brand-yellow/80 transition-all duration-500"
-                                    />
-                                    <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-brand-dark text-white px-3 py-1.5 rounded-xl text-[11px] font-black opacity-0 group-hover:opacity-100 transition-all pointer-events-none whitespace-nowrap scale-75 group-hover:scale-100">
-                                      €{(h * 1500).toLocaleString()}
+                          <span className="text-[10px] font-black px-3 py-1 rounded-full bg-amber-500/20 text-amber-950 border border-amber-300/70 shadow-sm flex items-center gap-1">
+                            <TrendingUp className="w-3 h-3 text-amber-900" />
+                            +18.4%
+                          </span>
+                        </div>
+                        <div className="mt-6 relative z-10">
+                          <p className="text-[10px] font-black uppercase tracking-widest text-amber-900/60 mb-1">Fatturato Complessivo</p>
+                          <h4 className="text-[32px] font-black tracking-tight text-amber-950">€128.430</h4>
+                          <div className="mt-3 flex items-center justify-between text-[11px] font-bold text-amber-900/75">
+                            <span>Target Mese: 88%</span>
+                            <span className="font-black">€145.000</span>
+                          </div>
+                          <div className="w-full h-1.5 bg-amber-200/60 rounded-full mt-1.5 overflow-hidden">
+                            <div className="h-full bg-amber-500 rounded-full w-[88%]"></div>
+                          </div>
+                        </div>
+                        <div className="absolute -bottom-8 -right-8 w-28 h-28 bg-amber-300/30 rounded-full blur-2xl pointer-events-none"></div>
+                      </div>
+
+                      {/* 2. Ordini Ricevuti - Electric Indigo / Cobalt */}
+                      <div className="bg-gradient-to-br from-blue-500/10 via-indigo-100/30 to-white p-7 rounded-[2.5rem] hover:-translate-y-1.5 transition-all duration-300 relative overflow-hidden group border border-blue-300/80 shadow-lg shadow-blue-500/5">
+                        <div className="flex justify-between items-start relative z-10">
+                          <div className="p-3.5 bg-gradient-to-tr from-blue-600 to-indigo-500 text-white rounded-2xl shadow-md shadow-blue-500/30 group-hover:rotate-12 transition-transform">
+                            <ShoppingBag className="w-6 h-6" />
+                          </div>
+                          <span className="text-[10px] font-black px-3 py-1 rounded-full bg-blue-500/15 text-blue-900 border border-blue-300/70 shadow-sm flex items-center gap-1">
+                            <TrendingUp className="w-3 h-3 text-blue-800" />
+                            +12.6%
+                          </span>
+                        </div>
+                        <div className="mt-6 relative z-10">
+                          <p className="text-[10px] font-black uppercase tracking-widest text-indigo-900/60 mb-1">Ordini Elaborati</p>
+                          <h4 className="text-[32px] font-black tracking-tight text-indigo-950">1.243</h4>
+                          <div className="mt-3 flex items-center justify-between text-[11px] font-bold text-indigo-900/75">
+                            <span>In Transito Corrieri</span>
+                            <span className="font-black text-indigo-600">34 ordini</span>
+                          </div>
+                          <div className="w-full h-1.5 bg-blue-200/60 rounded-full mt-1.5 overflow-hidden">
+                            <div className="h-full bg-indigo-500 rounded-full w-[76%]"></div>
+                          </div>
+                        </div>
+                        <div className="absolute -bottom-8 -right-8 w-28 h-28 bg-blue-300/30 rounded-full blur-2xl pointer-events-none"></div>
+                      </div>
+
+                      {/* 3. Resi & Assistenza - Rose / Crimson */}
+                      <div className="bg-gradient-to-br from-rose-500/10 via-pink-100/30 to-white p-7 rounded-[2.5rem] hover:-translate-y-1.5 transition-all duration-300 relative overflow-hidden group border border-rose-300/80 shadow-lg shadow-rose-500/5">
+                        <div className="flex justify-between items-start relative z-10">
+                          <div className="p-3.5 bg-gradient-to-tr from-rose-500 to-pink-500 text-white rounded-2xl shadow-md shadow-rose-500/30 group-hover:rotate-12 transition-transform">
+                            <RefreshCw className="w-6 h-6" />
+                          </div>
+                          <span className="text-[10px] font-black px-3 py-1 rounded-full bg-emerald-500/15 text-emerald-800 border border-emerald-300/70 shadow-sm flex items-center gap-1">
+                            <TrendingDown className="w-3 h-3 text-emerald-700" />
+                            -5.2%
+                          </span>
+                        </div>
+                        <div className="mt-6 relative z-10">
+                          <p className="text-[10px] font-black uppercase tracking-widest text-rose-900/60 mb-1">Resi Gestiti</p>
+                          <h4 className="text-[32px] font-black tracking-tight text-rose-950">12</h4>
+                          <div className="mt-3 flex items-center justify-between text-[11px] font-bold text-rose-900/75">
+                            <span>Tasso di Reso Store</span>
+                            <span className="font-black text-emerald-600">0.9% (Ottimo)</span>
+                          </div>
+                          <div className="w-full h-1.5 bg-rose-200/60 rounded-full mt-1.5 overflow-hidden">
+                            <div className="h-full bg-rose-500 rounded-full w-[12%]"></div>
+                          </div>
+                        </div>
+                        <div className="absolute -bottom-8 -right-8 w-28 h-28 bg-rose-300/30 rounded-full blur-2xl pointer-events-none"></div>
+                      </div>
+
+                      {/* 4. Nuovi Clienti - Emerald Mint */}
+                      <div className="bg-gradient-to-br from-emerald-500/10 via-teal-100/30 to-white p-7 rounded-[2.5rem] hover:-translate-y-1.5 transition-all duration-300 relative overflow-hidden group border border-emerald-300/80 shadow-lg shadow-emerald-500/5">
+                        <div className="flex justify-between items-start relative z-10">
+                          <div className="p-3.5 bg-gradient-to-tr from-emerald-500 to-teal-400 text-white rounded-2xl shadow-md shadow-emerald-500/30 group-hover:rotate-12 transition-transform">
+                            <UserPlus className="w-6 h-6" />
+                          </div>
+                          <span className="text-[10px] font-black px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-950 border border-emerald-300/70 shadow-sm flex items-center gap-1">
+                            <TrendingUp className="w-3 h-3 text-emerald-800" />
+                            +22.0%
+                          </span>
+                        </div>
+                        <div className="mt-6 relative z-10">
+                          <p className="text-[10px] font-black uppercase tracking-widest text-emerald-900/60 mb-1">Clienti Registrati</p>
+                          <h4 className="text-[32px] font-black tracking-tight text-emerald-950">342</h4>
+                          <div className="mt-3 flex items-center justify-between text-[11px] font-bold text-emerald-900/75">
+                            <span>Scontrino Medio</span>
+                            <span className="font-black text-emerald-800">€103,50</span>
+                          </div>
+                          <div className="w-full h-1.5 bg-emerald-200/60 rounded-full mt-1.5 overflow-hidden">
+                            <div className="h-full bg-emerald-500 rounded-full w-[84%]"></div>
+                          </div>
+                        </div>
+                        <div className="absolute -bottom-8 -right-8 w-28 h-28 bg-emerald-300/30 rounded-full blur-2xl pointer-events-none"></div>
+                      </div>
+                    </div>
+
+                    {/* Main Analytics Row: Interactive Sales Chart + Top Visual Products */}
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                      {/* Obsidian Glow Sales Trend Chart (Span 2) */}
+                      <div className="lg:col-span-2 bg-gradient-to-br from-neutral-950 via-neutral-900 to-neutral-950 text-white p-8 md:p-10 rounded-[3rem] border border-neutral-800 shadow-2xl relative overflow-hidden space-y-8 flex flex-col justify-between">
+                        <div>
+                          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 relative z-10">
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <h3 className="text-2xl font-black uppercase tracking-tight text-white">Andamento Vendite</h3>
+                                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-amber-400/20 text-amber-300 border border-amber-400/30">
+                                  Live Analytics
+                                </span>
+                              </div>
+                              <p className="text-xs font-semibold text-white/50 mt-1">Ricavi mensili distribuiti nell'anno fiscale corrente</p>
+                            </div>
+
+                            <div className="flex p-1 bg-white/10 rounded-xl border border-white/10 backdrop-blur-md">
+                              {['Settimana', 'Mese', 'Anno'].map(t => (
+                                <button key={t} className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${t === 'Mese' ? 'bg-gradient-to-r from-amber-400 to-yellow-300 text-neutral-950 shadow-md font-black' : 'text-white/60 hover:text-white font-bold'}`}>
+                                  {t}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Chart Bars */}
+                          <div className="h-72 flex items-end gap-2.5 sm:gap-3 px-2 sm:px-4 mt-8 relative z-10">
+                            {[35, 45, 30, 75, 90, 65, 85, 40, 60, 95, 70, 80].map((h, i) => (
+                              <div key={i} className="flex-1 flex flex-col items-center gap-3 group cursor-pointer h-full justify-end">
+                                <div className="w-full relative h-[85%] flex items-end">
+                                  <motion.div 
+                                    initial={{ height: 0 }}
+                                    animate={{ height: `${h}%` }}
+                                    className="w-full bg-gradient-to-t from-amber-400/30 via-amber-400/80 to-yellow-300 rounded-2xl group-hover:from-amber-400/60 group-hover:to-yellow-200 transition-all duration-300 shadow-sm"
+                                  />
+                                  <div className="absolute -top-11 left-1/2 -translate-x-1/2 bg-neutral-900 border border-amber-400/50 text-amber-300 px-3 py-1.5 rounded-xl text-[11px] font-black opacity-0 group-hover:opacity-100 transition-all pointer-events-none whitespace-nowrap scale-75 group-hover:scale-100 shadow-2xl z-20">
+                                    €{(h * 1500).toLocaleString('it-IT')}
+                                  </div>
+                                </div>
+                                <span className="text-[10px] font-black text-white/50 uppercase tracking-tighter group-hover:text-amber-300 transition-colors">
+                                  M{i+1}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Chart Bottom KPI Strip */}
+                        <div className="pt-6 border-t border-white/10 grid grid-cols-2 sm:grid-cols-4 gap-4 relative z-10">
+                          <div>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-white/40">Conversione</p>
+                            <p className="text-sm sm:text-base font-black text-white flex items-center gap-1 mt-0.5">
+                              <span className="text-emerald-400">3.84%</span>
+                              <span className="text-[10px] text-white/40 font-bold">+0.6%</span>
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-white/40">Scontrino Medio</p>
+                            <p className="text-sm sm:text-base font-black text-white mt-0.5">€103,30</p>
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-white/40">Spediti in 24h</p>
+                            <p className="text-sm sm:text-base font-black text-white mt-0.5">98.2%</p>
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-white/40">Picco Mese</p>
+                            <p className="text-sm sm:text-base font-black text-amber-400 mt-0.5">M10 (€142k)</p>
+                          </div>
+                        </div>
+
+                        <div className="absolute top-0 right-0 w-96 h-96 bg-amber-400/10 rounded-full blur-[100px] pointer-events-none"></div>
+                      </div>
+
+                      {/* Right Column: Visual Product Showcases with REAL IMAGES */}
+                      <div className="space-y-6">
+                        {/* Top Bestseller Products with Images */}
+                        <div className="bg-white p-7 rounded-[2.5rem] border border-gray-100 shadow-sm space-y-5 relative overflow-hidden">
+                          <div className="flex justify-between items-center">
+                            <h3 className="text-lg font-black uppercase tracking-tight flex items-center gap-2 text-brand-dark">
+                              <Sparkles className="w-5 h-5 text-amber-500" /> Top Venduti
+                            </h3>
+                            <button 
+                              onClick={() => setAdminActiveTab('products')}
+                              className="text-[10px] font-black uppercase tracking-widest text-amber-700 hover:text-amber-800 transition-colors"
+                            >
+                              Tutti &rarr;
+                            </button>
+                          </div>
+
+                          <div className="space-y-3.5">
+                            {(products && products.length >= 3 ? products.slice(0, 3) : PRODUCTS.slice(0, 3)).map((p, i) => {
+                              const rankColors = [
+                                'bg-gradient-to-tr from-amber-400 to-yellow-300 text-neutral-950 shadow-amber-400/30',
+                                'bg-gradient-to-tr from-slate-300 to-slate-200 text-slate-800 shadow-slate-300/30',
+                                'bg-gradient-to-tr from-amber-700 to-amber-600 text-white shadow-amber-700/30'
+                              ];
+                              const salesCount = [432, 285, 219][i] || 150;
+                              const trends = ['+28%', '+19%', '+14%'][i] || '+10%';
+
+                              return (
+                                <div 
+                                  key={p.id || i}
+                                  onClick={() => handleProductSelect(p)}
+                                  className="group flex items-center justify-between p-3.5 bg-gray-50/70 hover:bg-amber-50/60 rounded-2xl border border-gray-100/80 hover:border-amber-200 transition-all cursor-pointer"
+                                >
+                                  <div className="flex items-center gap-3 min-w-0">
+                                    <div className="relative flex-shrink-0">
+                                      <img 
+                                        src={p.image || 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?auto=format&fit=crop&w=400&q=80'} 
+                                        alt={p.name}
+                                        className="w-13 h-13 rounded-xl object-cover border border-gray-200/80 shadow-sm group-hover:scale-105 transition-transform"
+                                      />
+                                      <div className={`absolute -top-1.5 -left-1.5 w-6 h-6 rounded-full flex items-center justify-center font-black text-[10px] shadow-sm ${rankColors[i] || rankColors[0]}`}>
+                                        #{i + 1}
+                                      </div>
+                                    </div>
+                                    <div className="min-w-0 pr-2">
+                                      <p className="text-xs font-black text-brand-dark truncate group-hover:text-amber-900 transition-colors">{p.name}</p>
+                                      <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-0.5">
+                                        {p.category} • <span className="text-brand-dark font-black">€{Number(p.price || 0).toFixed(2)}</span>
+                                      </p>
                                     </div>
                                   </div>
-                                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-tighter">M{i+1}</span>
-                               </div>
-                             ))}
-                          </div>
-                       </div>
-
-                       {/* Top/Worst Products */}
-                       <div className="space-y-6">
-                          <div className="bg-brand-dark p-8 rounded-[3rem] text-white space-y-6">
-                             <h3 className="text-lg font-black uppercase tracking-tighter flex items-center gap-2">
-                                <TrendingUp className="w-5 h-5 text-green-400" /> Top Venduti
-                             </h3>
-                             <div className="space-y-4">
-                                {[
-                                  { name: 'Lampada Minimal Led', sales: 432, trend: '+12%' },
-                                  { name: 'E-Scooter Pro X', sales: 215, trend: '+8%' },
-                                  { name: 'Cavo Fibra 10mt', sales: 189, trend: '+15%' }
-                                ].map((p, i) => (
-                                  <div key={i} className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/10">
-                                     <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center font-black text-brand-yellow">#{(i+1)}</div>
-                                        <div>
-                                          <p className="text-xs font-bold leading-none mb-1">{p.name}</p>
-                                          <p className="text-[10px] text-gray-500 font-bold">{p.sales} vendite</p>
-                                        </div>
-                                     </div>
-                                     <span className="text-[10px] font-black text-green-400">{p.trend}</span>
+                                  <div className="text-right flex-shrink-0">
+                                    <span className="text-[10px] font-black text-emerald-800 bg-emerald-100/70 px-2 py-0.5 rounded-full">
+                                      {trends}
+                                    </span>
+                                    <p className="text-[10px] text-gray-400 font-bold mt-1">{salesCount} ordini</p>
                                   </div>
-                                ))}
-                             </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        {/* Inventory & Actions Box with Images */}
+                        <div className="bg-white p-7 rounded-[2.5rem] border border-gray-100 shadow-sm space-y-5">
+                          <div className="flex justify-between items-center">
+                            <h3 className="text-lg font-black uppercase tracking-tight flex items-center gap-2 text-brand-dark">
+                              <AlertTriangle className="w-5 h-5 text-orange-500" /> Scorte & Attenzioni
+                            </h3>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-orange-600 bg-orange-50 px-2 py-0.5 rounded-md border border-orange-200">
+                              Azione Rapida
+                            </span>
                           </div>
 
-                          <div className="bg-white p-8 rounded-[3rem] border border-gray-100 space-y-6">
-                             <h3 className="text-lg font-black text-brand-dark uppercase tracking-tighter flex items-center gap-2">
-                                <TrendingDown className="w-5 h-5 text-red-500" /> Meno Venduti
-                             </h3>
-                             <div className="space-y-4">
-                                {[
-                                  { name: 'Cover TPU iPhone 12', sales: 2, trend: '-80%' },
-                                  { name: 'Batteria Litio 3V', sales: 5, trend: '-45%' }
-                                ].map((p, i) => (
-                                  <div key={i} className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl">
-                                     <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center">
-                                           <Box className="w-5 h-5 text-gray-300" />
-                                        </div>
-                                        <div>
-                                          <p className="text-xs font-bold leading-none mb-1 text-gray-700">{p.name}</p>
-                                          <p className="text-[10px] text-gray-400 font-bold">{p.sales} vendite</p>
-                                        </div>
-                                     </div>
-                                     <span className="text-[10px] font-black text-red-500">{p.trend}</span>
+                          <div className="space-y-3.5">
+                            {(products && products.length >= 5 ? products.slice(3, 5) : PRODUCTS.slice(3, 5)).map((p, i) => (
+                              <div key={p.id || i} className="flex items-center justify-between p-3.5 bg-gray-50 rounded-2xl border border-gray-100">
+                                <div className="flex items-center gap-3 min-w-0">
+                                  <img 
+                                    src={p.image || 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?auto=format&fit=crop&w=400&q=80'} 
+                                    alt={p.name}
+                                    className="w-12 h-12 rounded-xl object-cover border border-gray-200 shadow-sm flex-shrink-0"
+                                  />
+                                  <div className="min-w-0 pr-2">
+                                    <p className="text-xs font-black text-brand-dark truncate">{p.name}</p>
+                                    <p className="text-[10px] text-red-500 font-bold uppercase tracking-wider mt-0.5">
+                                      {i === 0 ? 'Solo 3 pezzi rimasti' : 'Vendite basse (-40%)'}
+                                    </p>
                                   </div>
-                                ))}
-                                <button className="w-full py-3 bg-red-50 hover:bg-red-100 text-[10px] font-black uppercase text-red-600 rounded-xl transition-all">Sconto Strategico</button>
-                             </div>
+                                </div>
+                                <span className="text-[10px] font-black text-red-600 bg-red-50 px-2.5 py-1 rounded-full border border-red-200 flex-shrink-0">
+                                  {i === 0 ? 'Rifornisci' : 'Sconto 20%'}
+                                </span>
+                              </div>
+                            ))}
+
+                            <button 
+                              onClick={() => {
+                                addToast("Campagna sconto strategico attivata sui prodotti a bassa rotazione!", "success");
+                              }}
+                              className="w-full py-3 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-md active:scale-95 flex items-center justify-center gap-1.5"
+                            >
+                              <Zap className="w-3.5 h-3.5" />
+                              <span>Attiva Sconto Strategico -20%</span>
+                            </button>
                           </div>
-                       </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Sales Channels & Fulfillment Logistics Strip */}
+                    <div className="bg-white p-7 rounded-[2.5rem] border border-gray-100 shadow-sm space-y-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <Globe className="w-5 h-5 text-indigo-600" />
+                          <h4 className="text-sm font-black text-brand-dark uppercase tracking-tight">Distribuzione Canali di Vendita & Magazzino</h4>
+                        </div>
+                        <span className="text-[10px] font-bold text-gray-400">Aggiornato in tempo reale con i marketplace sincronizzati</span>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div className="p-4 rounded-2xl bg-amber-50/70 border border-amber-200/80">
+                          <p className="text-[10px] font-black uppercase tracking-wider text-amber-900/60">Vincent Direct Store</p>
+                          <p className="text-xl font-black text-amber-950 mt-1">72% <span className="text-xs font-bold text-amber-900/70">(€92.470)</span></p>
+                          <div className="w-full h-1.5 bg-amber-200 rounded-full mt-2 overflow-hidden">
+                            <div className="h-full bg-amber-500 rounded-full w-[72%]"></div>
+                          </div>
+                        </div>
+
+                        <div className="p-4 rounded-2xl bg-blue-50/70 border border-blue-200/80">
+                          <p className="text-[10px] font-black uppercase tracking-wider text-blue-900/60">Amazon Brand Store</p>
+                          <p className="text-xl font-black text-blue-950 mt-1">18% <span className="text-xs font-bold text-blue-900/70">(€23.117)</span></p>
+                          <div className="w-full h-1.5 bg-blue-200 rounded-full mt-2 overflow-hidden">
+                            <div className="h-full bg-blue-500 rounded-full w-[18%]"></div>
+                          </div>
+                        </div>
+
+                        <div className="p-4 rounded-2xl bg-emerald-50/70 border border-emerald-200/80">
+                          <p className="text-[10px] font-black uppercase tracking-wider text-emerald-900/60">Ebay & Partner Marketplace</p>
+                          <p className="text-xl font-black text-emerald-950 mt-1">10% <span className="text-xs font-bold text-emerald-900/70">(€12.843)</span></p>
+                          <div className="w-full h-1.5 bg-emerald-200 rounded-full mt-2 overflow-hidden">
+                            <div className="h-full bg-emerald-500 rounded-full w-[10%]"></div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 )}
-                {adminActiveTab === 'company' && (
+                                {adminActiveTab === 'company' && (
                   <div className="space-y-8 animate-in fade-in slide-in-from-right-8 duration-500">
                     <div className="flex justify-between items-center">
                       <h2 className="text-3xl font-black text-brand-dark uppercase tracking-tighter">Configurazione Azienda</h2>
@@ -4547,7 +4844,7 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                              </h3>
                              <div className="p-8 bg-brand-dark rounded-[2.5rem] text-white space-y-4">
                                 <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Esempio Anteprima Google</p>
-                                <p className="text-blue-400 text-sm font-bold">https://bespoint.it/categoria/lampade-led</p>
+                                <p className="text-blue-400 text-sm font-bold">https://vincentstore.it/categoria/lampade-led</p>
                                 <p className="text-lg font-black leading-tight uppercase">Lampade Led Minimal - BesPoint</p>
                                 <p className="text-xs text-gray-400 leading-relaxed">Le migliori lampade led dal design unico... acquista ora su BesPoint con spedizione rapida.</p>
                              </div>
@@ -4607,7 +4904,7 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                             <button
                               key={mode}
                               onClick={() => setPageSettings({ ...pageSettings, topBarMode: mode })}
-                              className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${pageSettings.topBarMode === mode ? 'bg-white text-brand-dark shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                              className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${(pageSettings.topBarMode ?? 'static') === mode ? 'bg-white text-brand-dark shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
                             >
                               {mode === 'static' ? 'Testo Fisso' : mode === 'marquee' ? 'Scorrimento' : 'Immagine'}
                             </button>
@@ -4616,7 +4913,7 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                        {pageSettings.topBarMode === 'static' && (
+                        {(pageSettings.topBarMode ?? 'static') === 'static' && (
                           <>
                             <div className="space-y-2">
                                <label className="text-[10px] font-black uppercase text-gray-400 ml-1">Testo Sinistra</label>
@@ -4641,7 +4938,7 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                           </>
                         )}
 
-                        {pageSettings.topBarMode === 'marquee' && (
+                        {(pageSettings.topBarMode ?? 'static') === 'marquee' && (
                           <div className="col-span-2 space-y-6">
                             <div className="space-y-2">
                                <label className="text-[10px] font-black uppercase text-gray-400 ml-1">Testo a Scorrimento</label>
@@ -4673,7 +4970,7 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                           </div>
                         )}
 
-                        {pageSettings.topBarMode === 'image' && (
+                        {(pageSettings.topBarMode ?? 'static') === 'image' && (
                           <div className="col-span-2 space-y-4">
                             <div className="space-y-2">
                                <label className="text-[10px] font-black uppercase text-gray-400 ml-1">Immagine Top Bar (Dimensioni: 1920x40px)</label>
@@ -4704,6 +5001,30 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                             )}
                           </div>
                         )}
+                      </div>
+
+                      <div className="rounded-2xl border border-gray-100 bg-gray-900 overflow-hidden">
+                        <p className="text-[9px] font-black uppercase tracking-widest text-gray-400 px-4 py-2 border-b border-gray-800">Anteprima top bar (40px)</p>
+                        <div className="h-10 bg-gradient-to-r from-neutral-900 via-black to-neutral-900 text-white overflow-hidden relative">
+                          {(pageSettings.topBarMode ?? 'static') === 'image' && pageSettings.topBarImage ? (
+                            <img src={pageSettings.topBarImage} alt="" className="w-full h-full object-cover object-center" />
+                          ) : (pageSettings.topBarMode ?? 'static') === 'marquee' ? (
+                            <div className="marquee-topbar h-full w-full overflow-hidden flex items-center">
+                              <div
+                                className="marquee-topbar-track text-[10px] font-black uppercase tracking-[0.2em]"
+                                style={{ animationDuration: `${Math.max(8, Number(pageSettings.topBarMarqueeSpeed) || 30)}s` }}
+                              >
+                                <span className="px-8">{pageSettings.topBarMarqueeText || 'Testo scorrimento…'}</span>
+                                <span className="px-8" aria-hidden="true">{pageSettings.topBarMarqueeText || 'Testo scorrimento…'}</span>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="h-full px-4 flex items-center justify-between text-[10px] font-black uppercase tracking-widest">
+                              <span className="opacity-80 truncate max-w-[45%]">{pageSettings.topBarLeftText || 'Testo sinistra'}</span>
+                              <span className="opacity-80 truncate max-w-[45%] text-right">{pageSettings.topBarRightText || 'Testo destra'}</span>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
 
@@ -4773,7 +5094,17 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                             Slide Top (Hero) <span className="text-brand-blue text-xs ml-2 opacity-50 underline decoration-brand-yellow">1920x1080px</span>
                           </h3>
                           
-                          <div className="flex items-center gap-2 bg-gray-50 p-1.5 rounded-2xl border border-gray-100">
+                          <div className="flex flex-wrap items-center gap-2 bg-gray-50 p-1.5 rounded-2xl border border-gray-100">
+                            <button
+                              type="button"
+                              title={pageSettings.isHeroEnabled !== false ? 'Nascondi hero dalla home' : 'Mostra hero in home'}
+                              onClick={() => setPageSettings({ ...pageSettings, isHeroEnabled: pageSettings.isHeroEnabled === false })}
+                              className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${pageSettings.isHeroEnabled !== false ? 'bg-green-600 text-white' : 'bg-gray-400 text-white'}`}
+                            >
+                              {pageSettings.isHeroEnabled !== false ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
+                              <span>{pageSettings.isHeroEnabled !== false ? 'Visibile' : 'Nascosta'}</span>
+                            </button>
+                            <div className="w-px h-6 bg-gray-200 mx-1 hidden sm:block"></div>
                             <div className="flex items-center">
                               <button 
                                 onClick={() => setAdminTopIdx(prev => Math.max(0, prev - 1))}
@@ -4807,7 +5138,7 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                                 });
                                 setAdminTopIdx(adminTopSlides.length);
                               }}
-                              className="p-2 bg-neutral-950 text-white rounded-xl hover:bg-brand-orange transition-all active:scale-90"
+                              className="p-2 bg-brand-yellow text-brand-dark rounded-xl hover:bg-brand-orange transition-all active:scale-90"
                               title="Aggiungi Slide"
                             >
                               <Plus className="w-4 h-4" />
@@ -4953,12 +5284,17 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                           </h3>
                           
                           <div className="flex items-center gap-2 bg-gray-50 p-1.5 rounded-2xl border border-gray-100">
-                            <button 
-                              onClick={() => setPageSettings({ ...pageSettings, isMiddleSlidesEnabled: !pageSettings.isMiddleSlidesEnabled })}
-                              className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${pageSettings.isMiddleSlidesEnabled ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`}
+                            <button
+                              type="button"
+                              title={pageSettings.isMiddleSlidesEnabled !== false ? 'Nascondi slide middle dalla home' : 'Mostra slide middle in home'}
+                              onClick={() => setPageSettings({
+                                ...pageSettings,
+                                isMiddleSlidesEnabled: pageSettings.isMiddleSlidesEnabled === false,
+                              })}
+                              className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${pageSettings.isMiddleSlidesEnabled !== false ? 'bg-green-600 text-white' : 'bg-gray-400 text-white'}`}
                             >
-                              {pageSettings.isMiddleSlidesEnabled ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
-                              <span>{pageSettings.isMiddleSlidesEnabled ? 'Visibile' : 'Nascosta'}</span>
+                              {pageSettings.isMiddleSlidesEnabled !== false ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
+                              <span>{pageSettings.isMiddleSlidesEnabled !== false ? 'Visibile' : 'Nascosta'}</span>
                             </button>
                             <div className="w-px h-6 bg-gray-200 mx-1"></div>
                             <div className="flex items-center">
@@ -4994,7 +5330,7 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                                 });
                                 setAdminMidIdx(adminMidSlides.length);
                               }}
-                              className="p-2 bg-neutral-950 text-white rounded-xl hover:bg-brand-orange transition-all active:scale-90"
+                              className="p-2 bg-brand-yellow text-brand-dark rounded-xl hover:bg-brand-orange transition-all active:scale-90"
                               title="Aggiungi Slide"
                             >
                               <Plus className="w-4 h-4" />
@@ -5127,12 +5463,17 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                           </h3>
                           
                           <div className="flex items-center gap-2 bg-gray-50 p-1.5 rounded-2xl border border-gray-100">
-                            <button 
-                              onClick={() => setPageSettings({ ...pageSettings, isBottomSlidesEnabled: !pageSettings.isBottomSlidesEnabled })}
-                              className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${pageSettings.isBottomSlidesEnabled ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`}
+                            <button
+                              type="button"
+                              title={pageSettings.isBottomSlidesEnabled !== false ? 'Nascondi slide bottom dalla home' : 'Mostra slide bottom in home'}
+                              onClick={() => setPageSettings({
+                                ...pageSettings,
+                                isBottomSlidesEnabled: pageSettings.isBottomSlidesEnabled === false,
+                              })}
+                              className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${pageSettings.isBottomSlidesEnabled !== false ? 'bg-green-600 text-white' : 'bg-gray-400 text-white'}`}
                             >
-                              {pageSettings.isBottomSlidesEnabled ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
-                              <span>{pageSettings.isBottomSlidesEnabled ? 'Visibile' : 'Nascosta'}</span>
+                              {pageSettings.isBottomSlidesEnabled !== false ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
+                              <span>{pageSettings.isBottomSlidesEnabled !== false ? 'Visibile' : 'Nascosta'}</span>
                             </button>
                             <div className="w-px h-6 bg-gray-200 mx-1"></div>
                             <div className="flex items-center">
@@ -5168,7 +5509,7 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                                 });
                                 setAdminBotIdx(adminBotSlides.length);
                               }}
-                              className="p-2 bg-neutral-950 text-white rounded-xl hover:bg-brand-orange transition-all active:scale-90"
+                              className="p-2 bg-brand-yellow text-brand-dark rounded-xl hover:bg-brand-orange transition-all active:scale-90"
                               title="Aggiungi Slide"
                             >
                               <Plus className="w-4 h-4" />
@@ -5434,450 +5775,657 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                 )}
 
               {adminActiveTab === 'categories' && (
-                  <div className="space-y-8">
-                    <div className="flex justify-between items-center">
-                      <h2 className="text-3xl font-black text-brand-dark uppercase tracking-tighter">Gestione Categorie</h2>
-                      <div className="flex gap-2 items-center">
-                        <button 
-                          onClick={handleAiSuggest}
-                          disabled={isAiSuggesting}
-                          className="bg-brand-blue text-white px-4 py-2 rounded-xl font-black uppercase text-[10px] tracking-widest hover:bg-brand-dark transition-all flex items-center gap-2 disabled:opacity-50"
-                        >
-                          {isAiSuggesting ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />} 
-                          Suggerimento AI
-                        </button>
-                        {!isAddingCategory ? (
+                  <div className="space-y-6 md:space-y-8 animate-in fade-in duration-500 max-w-5xl mx-auto pb-12">
+                    {/* Header Card with Mobile-First Action Bar */}
+                    <div className="bg-white p-5 sm:p-7 md:p-8 rounded-[2.5rem] border border-gray-100 shadow-sm relative overflow-hidden">
+                      <div className="flex flex-col gap-4 lg:flex-row lg:justify-between lg:items-center relative z-10">
+                        <div className="flex items-center gap-3.5">
+                          <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-amber-400 text-neutral-950 flex items-center justify-center shadow-lg shadow-amber-400/25 shrink-0">
+                            <Compass className="w-6 h-6 sm:w-7 sm:h-7" />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-brand-dark uppercase tracking-tight">Gestione Categorie</h2>
+                              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-100 text-amber-900 border border-amber-300">
+                                Alberatura Store
+                              </span>
+                            </div>
+                            <p className="text-xs sm:text-sm font-semibold text-gray-400 mt-0.5">
+                              Organizza le categorie principali, le sottocategorie e il loro ordine visibile
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Top Action Buttons (Mobile Sized: min 48px) */}
+                        <div className="flex flex-wrap items-center gap-2.5">
                           <button 
-                            onClick={() => setIsAddingCategory(true)}
-                            className="bg-neutral-950 text-white px-4 py-2 rounded-xl font-black uppercase text-[10px] tracking-widest hover:bg-brand-orange transition-all flex items-center gap-2"
+                            type="button"
+                            onClick={handleAiSuggest}
+                            disabled={isAiSuggesting}
+                            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-950 border border-amber-300/80 font-black text-xs uppercase tracking-wider transition-all active:scale-95 disabled:opacity-50 min-h-[48px]"
                           >
-                            <Plus className="w-3 h-3" /> Aggiungi Categoria
+                            {isAiSuggesting ? <RefreshCw className="w-4 h-4 animate-spin text-amber-700" /> : <Sparkles className="w-4 h-4 text-amber-700" />} 
+                            <span>Suggerimento AI</span>
                           </button>
-                        ) : (
-                          <div className="flex gap-2 items-center">
-                            <input 
-                              type="text"
-                              placeholder="Nome categoria..."
-                              value={newCategoryName}
-                              onChange={(e) => setNewCategoryName(e.target.value)}
-                              className="bg-white border-gray-200 rounded-lg px-3 py-1.5 text-base font-bold focus:ring-brand-yellow focus:border-brand-yellow"
-                              autoFocus
-                            />
+                          
+                          <button 
+                            type="button"
+                            onClick={() => setIsAddingCategory(true)}
+                            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-brand-dark hover:bg-black text-brand-yellow font-black text-xs uppercase tracking-wider transition-all shadow-md active:scale-95 min-h-[48px]"
+                          >
+                            <Plus className="w-5 h-5 text-brand-yellow" />
+                            <span>+ Nuova Categoria</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Filter Search Bar & Fast Stats */}
+                      <div className="mt-6 pt-5 border-t border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
+                        <div className="flex items-center gap-2 flex-wrap text-xs font-bold text-gray-500">
+                          <span className="px-3 py-1.5 rounded-xl bg-gray-100 text-brand-dark font-black">
+                            {pageSettings.categories.filter((c: string) => c !== "Tutti").length} Categorie
+                          </span>
+                          <span className="px-3 py-1.5 rounded-xl bg-indigo-50 text-indigo-900 font-black border border-indigo-100">
+                            {Object.values(pageSettings.subcategories || {}).reduce((acc: number, arr: any) => acc + (arr?.length || 0), 0)} Sottocategorie
+                          </span>
+                        </div>
+
+                        {/* Search on Phone */}
+                        <div className="relative w-full md:w-80">
+                          <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                          <input 
+                            type="text"
+                            placeholder="Cerca categoria o sottocategoria..."
+                            value={categoryFilterSearch}
+                            onChange={(e) => setCategoryFilterSearch(e.target.value)}
+                            className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-9.5 pr-8 py-2.5 text-xs sm:text-sm font-bold text-brand-dark placeholder:text-gray-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-400 transition-all min-h-[44px]"
+                          />
+                          {categoryFilterSearch && (
                             <button 
-                              onClick={() => {
-                                if (newCategoryName && !pageSettings.categories.includes(newCategoryName)) {
-                                  setPageSettings({
-                                    ...pageSettings,
-                                    categories: [...pageSettings.categories, newCategoryName],
-                                    subcategories: { ...pageSettings.subcategories, [newCategoryName]: [] },
-                                    categorySeo: { 
-                                      ...pageSettings.categorySeo, 
-                                      [newCategoryName]: { 
-                                        metaTitle: `${newCategoryName} di Alta Qualità - BesPoint`, 
-                                        metaDescription: `Scopri la nostra selezione esclusiva di ${newCategoryName}. Qualità garantita, spedizione veloce e i migliori prezzi del mercato su BesPoint.` 
-                                      } 
-                                    },
-                                    categoryBanners: { ...pageSettings.categoryBanners, [newCategoryName]: { url: '', alt: '', title: '', link: '' } }
-                                  });
-                                  setNewCategoryName("");
-                                  setIsAddingCategory(false);
-                                }
-                              }}
-                              className="p-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-all"
-                            >
-                              <Check className="w-4 h-4" />
-                            </button>
-                            <button 
-                              onClick={() => {
-                                setIsAddingCategory(false);
-                                setNewCategoryName("");
-                              }}
-                              className="p-2 bg-gray-100 text-gray-500 rounded-lg hover:bg-gray-200 transition-all"
+                              type="button"
+                              onClick={() => setCategoryFilterSearch("")}
+                              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-brand-dark p-1"
                             >
                               <X className="w-4 h-4" />
                             </button>
-                          </div>
-                        )}
+                          )}
+                        </div>
                       </div>
                     </div>
 
+                    {/* New Category Inline Creator Panel */}
+                    {isAddingCategory && (
+                      <motion.div 
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="bg-amber-50/90 border-2 border-amber-300 rounded-[2.5rem] p-5 sm:p-7 shadow-lg space-y-4"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-9 h-9 rounded-xl bg-amber-400 flex items-center justify-center text-neutral-950 font-black">
+                              <Plus className="w-5 h-5" />
+                            </div>
+                            <h3 className="text-base sm:text-lg font-black text-brand-dark uppercase tracking-tight">Crea Nuova Categoria Principale</h3>
+                          </div>
+                          <button 
+                            type="button"
+                            onClick={() => { setIsAddingCategory(false); setNewCategoryName(""); }}
+                            className="w-9 h-9 rounded-xl bg-white/80 hover:bg-white flex items-center justify-center text-gray-500 hover:text-brand-dark border border-gray-200"
+                          >
+                            <X className="w-5 h-5" />
+                          </button>
+                        </div>
+
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                          <input 
+                            type="text"
+                            placeholder="Nome categoria (es. Accessori, Scarpe, Giacche...)"
+                            value={newCategoryName}
+                            onChange={(e) => setNewCategoryName(e.target.value)}
+                            className="bg-white border-2 border-amber-200 rounded-xl px-4 py-3 text-sm sm:text-base font-bold text-brand-dark focus:ring-2 focus:ring-amber-400 focus:border-amber-400 flex-1 min-h-[48px]"
+                            autoFocus
+                          />
+                          <div className="flex items-center gap-2">
+                            <button 
+                              type="button"
+                              onClick={() => {
+                                const trimmed = newCategoryName.trim();
+                                if (trimmed && !pageSettings.categories.includes(trimmed)) {
+                                  setPageSettings({
+                                    ...pageSettings,
+                                    categories: [...pageSettings.categories, trimmed],
+                                    subcategories: { ...pageSettings.subcategories, [trimmed]: [] },
+                                    categorySeo: { 
+                                      ...pageSettings.categorySeo, 
+                                      [trimmed]: { 
+                                        metaTitle: `${trimmed} di Alta Qualità - Vincent Store`, 
+                                        metaDescription: `Scopri la nostra selezione esclusiva di ${trimmed}. Qualità garantita e spedizione veloce su Vincent Store.` 
+                                      } 
+                                    },
+                                    categoryBanners: { ...pageSettings.categoryBanners, [trimmed]: { url: '', alt: '', title: '', link: '' } }
+                                  });
+                                  setNewCategoryName("");
+                                  setIsAddingCategory(false);
+                                  addToast(`Categoria "${trimmed}" creata con successo!`, "success");
+                                }
+                              }}
+                              className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-brand-dark hover:bg-black text-brand-yellow font-black text-xs uppercase tracking-wider transition-all min-h-[48px] shadow-md"
+                            >
+                              <Check className="w-4 h-4" />
+                              <span>Salva Categoria</span>
+                            </button>
+                            <button 
+                              type="button"
+                              onClick={() => { setIsAddingCategory(false); setNewCategoryName(""); }}
+                              className="px-4 py-3.5 rounded-xl bg-white hover:bg-gray-100 text-gray-600 font-black text-xs uppercase tracking-wider border border-gray-200 min-h-[48px]"
+                            >
+                              Annulla
+                            </button>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+
+                    {/* AI Suggestions Box */}
                     {aiSuggestions && (
                       <motion.div 
-                        initial={{ opacity: 0, y: -20 }}
+                        initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="bg-brand-yellow/10 p-6 rounded-2xl border-2 border-brand-yellow/30 space-y-4"
+                        className="bg-amber-50/70 p-6 rounded-[2rem] border-2 border-amber-300 space-y-4"
                       >
-                        <div className="flex justify-between items-center">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center">
                           <div className="flex items-center gap-2">
-                            <Sparkles className="w-5 h-5 text-brand-yellow" />
-                            <h3 className="font-black text-brand-dark uppercase tracking-tight">Suggerimenti AI</h3>
+                            <Sparkles className="w-5 h-5 text-amber-600" />
+                            <h3 className="font-black text-brand-dark uppercase tracking-tight">Suggerimenti AI Pronti</h3>
                           </div>
                           <div className="flex gap-2">
                             <button 
+                              type="button"
                               onClick={() => {
                                 setPageSettings({
                                   ...pageSettings,
                                   categories: aiSuggestions.categories,
                                   subcategories: aiSuggestions.subcategories,
-                                  categoryBanners: aiSuggestions.categories.filter(c => c !== "Tutti").reduce((acc, cat) => ({
+                                  categoryBanners: aiSuggestions.categories.filter((c: string) => c !== "Tutti").reduce((acc: any, cat: string) => ({
                                     ...acc,
                                     [cat]: pageSettings.categoryBanners[cat] || { url: '', alt: '', title: '', link: '' }
                                   }), {})
                                 });
                                 setAiSuggestions(null);
+                                addToast("Alberatura AI applicata con successo!", "success");
                               }}
-                              className="bg-neutral-950 text-white px-4 py-2 rounded-xl font-black uppercase text-[10px] tracking-widest hover:bg-brand-orange transition-all"
+                              className="px-4 py-2.5 rounded-xl bg-brand-dark text-brand-yellow font-black text-xs uppercase tracking-wider shadow-sm min-h-[44px]"
                             >
                               Applica Tutto
                             </button>
                             <button 
+                              type="button"
                               onClick={() => setAiSuggestions(null)}
-                              className="bg-white text-gray-400 px-4 py-2 rounded-xl font-black uppercase text-[10px] tracking-widest hover:bg-gray-50 transition-all border border-gray-100"
+                              className="px-4 py-2.5 rounded-xl bg-white text-gray-700 font-bold text-xs uppercase border border-gray-200 min-h-[44px]"
                             >
                               Ignora
                             </button>
                           </div>
                         </div>
-                        <div className="space-y-2">
-                          {aiSuggestions.categories.filter(c => c !== "Tutti").map(cat => (
-                            <div key={cat} className="bg-white/50 p-3 rounded-xl border border-brand-yellow/20">
-                              <div className="flex items-center gap-2">
-                                <div className="w-1.5 h-1.5 rounded-full bg-brand-yellow" />
-                                <p className="font-black text-xs text-brand-dark uppercase">{cat}</p>
-                              </div>
-                              <div className="mt-2 pl-4 flex flex-wrap gap-1 border-l border-brand-yellow/10 ml-0.5">
-                                {aiSuggestions.subcategories[cat]?.map(sub => (
-                                  <span key={sub} className="text-[9px] font-bold bg-brand-yellow/20 text-brand-dark px-2 py-0.5 rounded-full">{sub}</span>
-                                ))}
-                              </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
+                          {aiSuggestions.categories.filter((c: string) => c !== "Tutti").map(cat => (
+                            <div key={cat} className="bg-white p-3 rounded-xl border border-amber-200">
+                              <p className="font-black text-xs text-brand-dark uppercase">{cat}</p>
+                              <p className="text-[10px] text-gray-500 font-bold mt-1">
+                                {(aiSuggestions.subcategories[cat] || []).join(", ") || "Nessuna sottocategoria"}
+                              </p>
                             </div>
                           ))}
                         </div>
                       </motion.div>
                     )}
 
-                    <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-                      <div className="divide-y divide-gray-50">
-                        {pageSettings.categories.filter(c => c !== "Tutti").map((cat, fIdx, fArr) => {
+                    {/* Master Categories List (Clear Hierarchical Cards) */}
+                    <div className="space-y-4">
+                      {pageSettings.categories
+                        .filter((c: string) => c !== "Tutti")
+                        .filter((cat: string) => {
+                          if (!categoryFilterSearch.trim()) return true;
+                          const q = categoryFilterSearch.toLowerCase();
+                          if (cat.toLowerCase().includes(q)) return true;
+                          const subs = pageSettings.subcategories[cat] || [];
+                          return subs.some((s: string) => s.toLowerCase().includes(q));
+                        })
+                        .map((cat: string, fIdx: number, fArr: any[]) => {
                           const originalIdx = pageSettings.categories.indexOf(cat);
-                          return (
-                          <div key={cat} className="group">
-                            {/* Category Row */}
-                            <div className="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors">
-                              <div className="flex items-center gap-3">
-                                {/* Order Buttons */}
-                                <div className="flex flex-col gap-1 mr-2">
-                                  <button 
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      if (originalIdx > 1) {
-                                        const newCats = [...pageSettings.categories];
-                                        [newCats[originalIdx - 1], newCats[originalIdx]] = [newCats[originalIdx], newCats[originalIdx - 1]];
-                                        setPageSettings({...pageSettings, categories: newCats});
-                                      }
-                                    }}
-                                    disabled={fIdx === 0}
-                                    className="p-1 bg-white border border-gray-100 rounded shadow-sm hover:bg-brand-yellow transition-colors disabled:opacity-20"
-                                  >
-                                    <ChevronUp className="w-3 h-3" />
-                                  </button>
-                                  <button 
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      if (originalIdx < pageSettings.categories.length - 1) {
-                                        const newCats = [...pageSettings.categories];
-                                        [newCats[originalIdx], newCats[originalIdx + 1]] = [newCats[originalIdx + 1], newCats[originalIdx]];
-                                        setPageSettings({...pageSettings, categories: newCats});
-                                      }
-                                    }}
-                                    disabled={fIdx === fArr.length - 1}
-                                    className="p-1 bg-white border border-gray-100 rounded shadow-sm hover:bg-brand-yellow transition-colors disabled:opacity-20"
-                                  >
-                                    <ChevronDown className="w-3 h-3" />
-                                  </button>
-                                </div>
+                          const subcategories = pageSettings.subcategories[cat] || [];
+                          const isCollapsed = !categoryFilterSearch.trim() && Boolean(collapsedCategories[cat]);
 
-                                <div className="w-8 h-8 bg-brand-yellow/10 rounded-lg flex items-center justify-center text-brand-dark">
-                                  <Grid className="w-4 h-4" />
-                                </div>
-                                <div className="flex flex-col">
-                                  {editingCategory === cat ? (
-                                    <div className="flex items-center gap-1.5 mt-0.5">
-                                      <input
-                                        type="text"
-                                        value={editCategoryValue}
-                                        onChange={(e) => setEditCategoryValue(e.target.value)}
-                                        className="bg-white border-gray-200 rounded-lg px-2 py-0.5 text-sm font-bold focus:ring-brand-yellow focus:border-brand-yellow w-48"
-                                        autoFocus
-                                      />
-                                      <button
-                                        onClick={() => {
-                                          if (editCategoryValue.trim() && editCategoryValue.trim() !== cat) {
-                                            const oldCat = cat;
-                                            const newCat = editCategoryValue.trim();
-                                            
-                                            const newCats = pageSettings.categories.map(c => c === oldCat ? newCat : c);
-                                            const { [oldCat]: subs, ...restSubs } = pageSettings.subcategories;
-                                            const newSubs = { ...restSubs, [newCat]: subs || [] };
-                                            const { [oldCat]: banner, ...restBanners } = pageSettings.categoryBanners;
-                                            const newBanners = banner ? { ...restBanners, [newCat]: banner } : pageSettings.categoryBanners;
-                                            
+                          return (
+                            <div 
+                              key={cat} 
+                              className="bg-white rounded-[2rem] border border-gray-200/90 shadow-sm hover:shadow-md transition-all overflow-hidden"
+                            >
+                              {/* Level 1: Category Header Card */}
+                              <div className="p-4 sm:p-5 bg-gradient-to-r from-gray-50/90 via-white to-gray-50/90 border-b border-gray-100">
+                                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                  {/* Left: Reorder + Icon + Title + Counts */}
+                                  <div className="flex items-start sm:items-center gap-3 min-w-0 flex-1">
+                                    {/* Tactile Large Reorder Buttons for Smartphone */}
+                                    <div className="flex flex-row md:flex-col gap-1.5 shrink-0 bg-white p-1 rounded-xl border border-gray-200 shadow-xs">
+                                      <button 
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          if (originalIdx > 1) {
+                                            const newCats = [...pageSettings.categories];
+                                            [newCats[originalIdx - 1], newCats[originalIdx]] = [newCats[originalIdx], newCats[originalIdx - 1]];
+                                            setPageSettings({...pageSettings, categories: newCats});
+                                          }
+                                        }}
+                                        disabled={fIdx === 0}
+                                        className="w-10 h-10 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center text-brand-dark hover:bg-amber-100 disabled:opacity-20 disabled:pointer-events-none transition-colors"
+                                        title="Sposta Categoria in Alto"
+                                      >
+                                        <ChevronUp className="w-5 h-5 sm:w-4 sm:h-4" />
+                                      </button>
+                                      <button 
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          if (originalIdx < pageSettings.categories.length - 1) {
+                                            const newCats = [...pageSettings.categories];
+                                            [newCats[originalIdx], newCats[originalIdx + 1]] = [newCats[originalIdx + 1], newCats[originalIdx]];
+                                            setPageSettings({...pageSettings, categories: newCats});
+                                          }
+                                        }}
+                                        disabled={fIdx === fArr.length - 1}
+                                        className="w-10 h-10 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center text-brand-dark hover:bg-amber-100 disabled:opacity-20 disabled:pointer-events-none transition-colors"
+                                        title="Sposta Categoria in Basso"
+                                      >
+                                        <ChevronDown className="w-5 h-5 sm:w-4 sm:h-4" />
+                                      </button>
+                                    </div>
+
+                                    {/* Category Number Badge */}
+                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-400 to-yellow-300 text-neutral-950 flex items-center justify-center font-black text-sm shadow-md shadow-amber-400/20 shrink-0">
+                                      #{fIdx + 1}
+                                    </div>
+
+                                    {/* Title and Editing */}
+                                    <div className="min-w-0 flex-1">
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-[10px] font-black uppercase tracking-widest text-amber-900/70 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
+                                          Categoria Principale
+                                        </span>
+                                      </div>
+
+                                      {editingCategory === cat ? (
+                                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 mt-2 w-full">
+                                          <input
+                                            type="text"
+                                            value={editCategoryValue}
+                                            onChange={(e) => setEditCategoryValue(e.target.value)}
+                                            className="bg-white border-2 border-amber-300 rounded-xl px-3.5 py-2.5 text-base font-black text-brand-dark focus:ring-2 focus:ring-amber-400 w-full sm:w-60 min-h-[44px]"
+                                            autoFocus
+                                          />
+                                          <div className="flex gap-2">
+                                            <button
+                                              type="button"
+                                              onClick={() => {
+                                                if (editCategoryValue.trim() && editCategoryValue.trim() !== cat) {
+                                                  const oldCat = cat;
+                                                  const newCat = editCategoryValue.trim();
+                                                  const newCats = pageSettings.categories.map((c: string) => c === oldCat ? newCat : c);
+                                                  const { [oldCat]: subs, ...restSubs } = pageSettings.subcategories;
+                                                  const newSubs = { ...restSubs, [newCat]: subs || [] };
+                                                  const { [oldCat]: banner, ...restBanners } = pageSettings.categoryBanners;
+                                                  const newBanners = banner ? { ...restBanners, [newCat]: banner } : pageSettings.categoryBanners;
+                                                  
+                                                  setPageSettings({
+                                                    ...pageSettings,
+                                                    categories: newCats,
+                                                    subcategories: newSubs,
+                                                    categoryBanners: newBanners
+                                                  });
+                                                  setProducts(products.map((p: any) => p.category === oldCat ? { ...p, category: newCat } : p));
+                                                }
+                                                setEditingCategory(null);
+                                              }}
+                                              className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-brand-dark text-brand-yellow font-black text-xs uppercase min-h-[44px] flex items-center justify-center gap-1.5 shadow-sm"
+                                            >
+                                              <Check className="w-4 h-4" />
+                                              <span>Salva</span>
+                                            </button>
+                                            <button
+                                              type="button"
+                                              onClick={() => setEditingCategory(null)}
+                                              className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs uppercase min-h-[44px]"
+                                            >
+                                              Annulla
+                                            </button>
+                                          </div>
+                                        </div>
+                                      ) : (
+                                        <h3 className="text-lg sm:text-xl font-black text-brand-dark tracking-tight uppercase break-words mt-1">
+                                          {cat}
+                                        </h3>
+                                      )}
+
+                                      {/* Subcategory & Product Counts */}
+                                      <div className="flex items-center gap-2 mt-2 flex-wrap">
+                                        <span className="text-[11px] font-bold text-indigo-900 bg-indigo-50 border border-indigo-100 px-2.5 py-0.5 rounded-lg flex items-center gap-1">
+                                          <Layers className="w-3.5 h-3.5 text-indigo-600" />
+                                          {subcategories.length} {subcategories.length === 1 ? 'Sottocategoria' : 'Sottocategorie'}
+                                        </span>
+                                        <span className="text-[11px] font-bold text-amber-950 bg-amber-100/70 border border-amber-300 px-2.5 py-0.5 rounded-lg flex items-center gap-1">
+                                          <Package className="w-3.5 h-3.5 text-amber-700" />
+                                          {getProductCount(cat)} Prodotti nel Catalogo
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Right: Actions Row (Touch-Friendly Buttons) */}
+                                  <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 w-full md:w-auto pt-3 md:pt-0 border-t md:border-t-0 border-gray-100">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setEditingCategory(cat);
+                                        setEditCategoryValue(cat);
+                                      }}
+                                      className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-brand-dark font-bold text-xs uppercase tracking-wider transition-colors min-h-[44px]"
+                                    >
+                                      <Edit2 className="w-4 h-4 text-gray-600" />
+                                      <span>Rinomina</span>
+                                    </button>
+
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setAddingSubcategoryTo(cat);
+                                        setCollapsedCategories(prev => ({ ...prev, [cat]: false }));
+                                      }}
+                                      className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-500 text-neutral-950 font-black text-xs uppercase tracking-wider transition-colors min-h-[44px] shadow-sm"
+                                    >
+                                      <Plus className="w-4 h-4" />
+                                      <span>+ Sotto-cat</span>
+                                    </button>
+
+                                    {categoryToDelete === cat ? (
+                                      <div className="flex items-center gap-1.5 w-full sm:w-auto p-2 bg-red-50 rounded-xl border border-red-200">
+                                        <span className="text-[11px] font-black text-red-700 ml-1">Confermi eliminazione?</span>
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            const { [cat]: removedSub, ...remainingSubs } = pageSettings.subcategories;
+                                            const { [cat]: removedBanner, ...remainingBanners } = pageSettings.categoryBanners;
                                             setPageSettings({
                                               ...pageSettings,
-                                              categories: newCats,
-                                              subcategories: newSubs,
-                                              categoryBanners: newBanners
+                                              categories: pageSettings.categories.filter((c: string) => c !== cat),
+                                              subcategories: remainingSubs,
+                                              categoryBanners: remainingBanners
                                             });
-
-                                            setProducts(products.map(p => p.category === oldCat ? { ...p, category: newCat } : p));
-                                          }
-                                          setEditingCategory(null);
-                                        }}
-                                        className="p-1 bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
-                                      >
-                                        <Check className="w-3 h-3" />
-                                      </button>
+                                            setCategoryToDelete(null);
+                                            addToast(`Categoria "${cat}" eliminata.`, "info");
+                                          }}
+                                          className="px-3 py-1.5 rounded-lg bg-red-600 text-white font-black text-xs uppercase"
+                                        >
+                                          Sì
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => setCategoryToDelete(null)}
+                                          className="px-3 py-1.5 rounded-lg bg-white border border-gray-300 text-gray-700 font-bold text-xs"
+                                        >
+                                          No
+                                        </button>
+                                      </div>
+                                    ) : (
                                       <button
-                                        onClick={() => setEditingCategory(null)}
-                                        className="p-1 bg-gray-100 text-gray-500 rounded hover:bg-gray-200 transition-colors"
+                                        type="button"
+                                        onClick={() => setCategoryToDelete(cat)}
+                                        className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold text-xs uppercase tracking-wider transition-colors min-h-[44px]"
+                                        title="Elimina Categoria"
                                       >
-                                        <X className="w-3 h-3" />
+                                        <Trash2 className="w-4 h-4" />
+                                        <span>Elimina</span>
                                       </button>
-                                    </div>
-                                  ) : (
+                                    )}
+
+                                    {/* Expand / Collapse Button */}
+                                    <button
+                                      type="button"
+                                      onClick={() => setCollapsedCategories(prev => ({ ...prev, [cat]: !prev[cat] }))}
+                                      className="w-11 h-11 rounded-xl bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-brand-dark transition-colors shrink-0 ml-auto sm:ml-0"
+                                      title={isCollapsed ? "Espandi Sottocategorie" : "Comprimi Sottocategorie"}
+                                    >
+                                      {isCollapsed ? <ChevronDown className="w-5 h-5 text-gray-700" /> : <ChevronUp className="w-5 h-5 text-gray-700" />}
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Level 2: Subcategories Tree (Indented, Clearly Framed) */}
+                              {!isCollapsed && (
+                                <div className="p-4 sm:p-6 bg-slate-50/70 border-t border-gray-100 space-y-4">
+                                  {/* Subcategory Tree Title */}
+                                  <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2">
-                                      <h3 className="text-sm font-black text-brand-dark uppercase tracking-tight">{cat}</h3>
+                                      <div className="w-2.5 h-2.5 rounded-full bg-amber-400"></div>
+                                      <h4 className="text-xs font-black uppercase tracking-wider text-gray-500">
+                                        Albero Sottocategorie • <span className="text-brand-dark font-black">{cat}</span>
+                                      </h4>
+                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={() => setAddingSubcategoryTo(cat)}
+                                      className="text-xs font-black text-amber-800 hover:text-amber-900 flex items-center gap-1"
+                                    >
+                                      <Plus className="w-3.5 h-3.5" />
+                                      <span>Nuova Sottocategoria</span>
+                                    </button>
+                                  </div>
+
+                                  {/* Add Subcategory Inline Box */}
+                                  {addingSubcategoryTo === cat && (
+                                    <div className="p-4 bg-white rounded-2xl border-2 border-amber-300 shadow-md space-y-3 animate-in fade-in">
+                                      <p className="text-xs font-black text-brand-dark uppercase">Aggiungi nuova sottocategoria a {cat}:</p>
+                                      <div className="flex flex-col sm:flex-row gap-2">
+                                        <input 
+                                          type="text"
+                                          placeholder="Es. Slim Fit, Regular, Vintage..."
+                                          value={newSubcategoryName}
+                                          onChange={(e) => setNewSubcategoryName(e.target.value)}
+                                          className="bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-3 text-sm font-bold text-brand-dark focus:bg-white focus:ring-2 focus:ring-amber-400 flex-1 min-h-[44px]"
+                                          autoFocus
+                                        />
+                                        <div className="flex gap-2">
+                                          <button 
+                                            type="button"
+                                            onClick={() => {
+                                              const trimmed = newSubcategoryName.trim();
+                                              if (trimmed && !pageSettings.subcategories[cat]?.includes(trimmed)) {
+                                                setPageSettings({
+                                                  ...pageSettings,
+                                                  subcategories: {
+                                                    ...pageSettings.subcategories,
+                                                    [cat]: [...(pageSettings.subcategories[cat] || []), trimmed]
+                                                  }
+                                                });
+                                                setNewSubcategoryName("");
+                                                setAddingSubcategoryTo(null);
+                                                addToast(`Sottocategoria "${trimmed}" aggiunta a ${cat}!`, "success");
+                                              }
+                                            }}
+                                            className="flex-1 sm:flex-none px-5 py-3 rounded-xl bg-brand-dark text-brand-yellow font-black text-xs uppercase min-h-[44px] shadow-sm"
+                                          >
+                                            Conferma
+                                          </button>
+                                          <button 
+                                            type="button"
+                                            onClick={() => { setAddingSubcategoryTo(null); setNewSubcategoryName(""); }}
+                                            className="px-4 py-3 rounded-xl bg-gray-100 text-gray-600 font-bold text-xs uppercase min-h-[44px]"
+                                          >
+                                            Annulla
+                                          </button>
+                                        </div>
+                                      </div>
                                     </div>
                                   )}
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-[9px] font-bold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
-                                      {(pageSettings.subcategories[cat] || []).length} Sottocategorie
-                                    </span>
-                                    <span className="text-[9px] font-black text-brand-yellow bg-brand-dark px-2 py-0.5 rounded-full">
-                                      {getProductCount(cat)} Prodotti
-                                    </span>
+
+                                  {/* Subcategories List with Visual Tree Guide */}
+                                  <div className="space-y-2.5 border-l-4 border-amber-300 pl-3 sm:pl-4 ml-1">
+                                    {subcategories.map((sub: string, sIdx: number, sArr: any[]) => (
+                                      <div 
+                                        key={sub} 
+                                        className="bg-white p-3.5 sm:p-4 rounded-2xl border border-gray-200 shadow-xs hover:border-amber-300 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                                      >
+                                        {editingSubcategory?.category === cat && editingSubcategory?.subcategory === sub ? (
+                                          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full">
+                                            <input
+                                              type="text"
+                                              value={editSubcategoryValue}
+                                              onChange={(e) => setEditSubcategoryValue(e.target.value)}
+                                              className="bg-white border-2 border-amber-300 rounded-xl px-3 py-2.5 text-sm font-bold text-brand-dark flex-1 min-h-[44px]"
+                                              autoFocus
+                                            />
+                                            <div className="flex gap-2">
+                                              <button
+                                                type="button"
+                                                onClick={() => {
+                                                  if (editSubcategoryValue.trim() && editSubcategoryValue.trim() !== sub) {
+                                                    const oldSub = sub;
+                                                    const newSub = editSubcategoryValue.trim();
+                                                    const newSubs = pageSettings.subcategories[cat].map((s: string) => s === oldSub ? newSub : s);
+                                                    setPageSettings({
+                                                      ...pageSettings,
+                                                      subcategories: {
+                                                        ...pageSettings.subcategories,
+                                                        [cat]: newSubs
+                                                      }
+                                                    });
+                                                    setProducts(products.map((p: any) => p.category === cat && p.subcategory === oldSub ? { ...p, subcategory: newSub } : p));
+                                                  }
+                                                  setEditingSubcategory(null);
+                                                }}
+                                                className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-brand-dark text-brand-yellow font-black text-xs uppercase min-h-[44px]"
+                                              >
+                                                Salva
+                                              </button>
+                                              <button
+                                                type="button"
+                                                onClick={() => setEditingSubcategory(null)}
+                                                className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-gray-100 text-gray-700 font-bold text-xs uppercase min-h-[44px]"
+                                              >
+                                                Annulla
+                                              </button>
+                                            </div>
+                                          </div>
+                                        ) : (
+                                          <>
+                                            <div className="flex items-center gap-3 min-w-0">
+                                              <div className="w-8 h-8 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-700 font-black text-xs shrink-0">
+                                                {sIdx + 1}
+                                              </div>
+                                              <div className="min-w-0">
+                                                <p className="text-sm font-black text-brand-dark break-words">{sub}</p>
+                                                <p className="text-[11px] font-bold text-gray-400 mt-0.5">
+                                                  {getProductCount(cat, sub)} prodotti associati
+                                                </p>
+                                              </div>
+                                            </div>
+
+                                            {/* Subcategory Touch Actions */}
+                                            <div className="flex items-center gap-2 self-end sm:self-auto w-full sm:w-auto justify-between sm:justify-end border-t sm:border-t-0 pt-2 sm:pt-0 border-gray-100">
+                                              {/* Reorder subcategory buttons */}
+                                              <div className="flex items-center gap-1 bg-gray-50 p-1 rounded-xl border border-gray-200">
+                                                <button 
+                                                  type="button"
+                                                  onClick={() => {
+                                                    if (sIdx > 0) {
+                                                      const newSubs = [...pageSettings.subcategories[cat]];
+                                                      [newSubs[sIdx - 1], newSubs[sIdx]] = [newSubs[sIdx], newSubs[sIdx - 1]];
+                                                      setPageSettings({...pageSettings, subcategories: {...pageSettings.subcategories, [cat]: newSubs}});
+                                                    }
+                                                  }}
+                                                  disabled={sIdx === 0}
+                                                  className="w-9 h-9 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center text-gray-700 hover:bg-white disabled:opacity-20 transition-colors"
+                                                  title="Sposta Su"
+                                                >
+                                                  <ChevronUp className="w-4 h-4" />
+                                                </button>
+                                                <button 
+                                                  type="button"
+                                                  onClick={() => {
+                                                    if (sIdx < sArr.length - 1) {
+                                                      const newSubs = [...pageSettings.subcategories[cat]];
+                                                      [newSubs[sIdx], newSubs[sIdx + 1]] = [newSubs[sIdx + 1], newSubs[sIdx]];
+                                                      setPageSettings({...pageSettings, subcategories: {...pageSettings.subcategories, [cat]: newSubs}});
+                                                    }
+                                                  }}
+                                                  disabled={sIdx === sArr.length - 1}
+                                                  className="w-9 h-9 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center text-gray-700 hover:bg-white disabled:opacity-20 transition-colors"
+                                                  title="Sposta Giù"
+                                                >
+                                                  <ChevronDown className="w-4 h-4" />
+                                                </button>
+                                              </div>
+
+                                              <button
+                                                type="button"
+                                                onClick={() => {
+                                                  setEditingSubcategory({ category: cat, subcategory: sub });
+                                                  setEditSubcategoryValue(sub);
+                                                }}
+                                                className="px-3.5 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs flex items-center gap-1.5 transition-colors min-h-[38px]"
+                                                title="Rinomina sottocategoria"
+                                              >
+                                                <Edit2 className="w-3.5 h-3.5" />
+                                                <span className="hidden sm:inline">Rinomina</span>
+                                              </button>
+
+                                              <button 
+                                                type="button"
+                                                onClick={() => {
+                                                  setPageSettings({
+                                                    ...pageSettings,
+                                                    subcategories: {
+                                                      ...pageSettings.subcategories,
+                                                      [cat]: pageSettings.subcategories[cat].filter((s: string) => s !== sub)
+                                                    }
+                                                  });
+                                                  addToast(`Sottocategoria "${sub}" eliminata.`, "info");
+                                                }}
+                                                className="px-3.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 font-bold text-xs flex items-center gap-1.5 transition-colors min-h-[38px]"
+                                                title="Elimina sottocategoria"
+                                              >
+                                                <Trash2 className="w-3.5 h-3.5" />
+                                                <span className="hidden sm:inline">Elimina</span>
+                                              </button>
+                                            </div>
+                                          </>
+                                        )}
+                                      </div>
+                                    ))}
+
+                                    {subcategories.length === 0 && (
+                                      <div className="p-6 bg-white rounded-2xl border-2 border-dashed border-gray-200 text-center space-y-2">
+                                        <p className="text-xs font-bold text-gray-400">Nessuna sottocategoria in questa categoria.</p>
+                                        <button
+                                          type="button"
+                                          onClick={() => setAddingSubcategoryTo(cat)}
+                                          className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-amber-100 text-amber-900 font-black text-xs uppercase"
+                                        >
+                                          <Plus className="w-4 h-4" />
+                                          <span>Aggiungi la prima sottocategoria</span>
+                                        </button>
+                                      </div>
+                                    )}
                                   </div>
                                 </div>
-                              </div>
-                              
-                              <div className="flex gap-2 items-center">
-                                {/* Tasto modifica nome (matita) sempre visibile in chiaro */}
-                                <button
-                                  onClick={() => {
-                                    setEditingCategory(cat);
-                                    setEditCategoryValue(cat);
-                                  }}
-                                  className="p-2 bg-gray-100 text-gray-600 hover:bg-black hover:text-white rounded-xl transition-all flex items-center justify-center"
-                                  title="Modifica nome categoria"
-                                >
-                                  <Edit2 className="w-4 h-4" />
-                                </button>
-
-                                {addingSubcategoryTo === cat ? (
-                                  <div className="flex gap-1 items-center mr-2">
-                                    <input 
-                                      type="text"
-                                      placeholder="Nuova sottocategoria..."
-                                      value={newSubcategoryName}
-                                      onChange={(e) => setNewSubcategoryName(e.target.value)}
-                                      className="bg-white border-gray-200 rounded-lg px-2 py-1 text-base font-bold focus:ring-brand-yellow focus:border-brand-yellow w-48"
-                                      autoFocus
-                                    />
-                                    <button 
-                                      onClick={() => {
-                                        if (newSubcategoryName && !pageSettings.subcategories[cat]?.includes(newSubcategoryName)) {
-                                          setPageSettings({
-                                            ...pageSettings,
-                                            subcategories: {
-                                              ...pageSettings.subcategories,
-                                              [cat]: [...(pageSettings.subcategories[cat] || []), newSubcategoryName]
-                                            }
-                                          });
-                                          setNewSubcategoryName("");
-                                          setAddingSubcategoryTo(null);
-                                        }
-                                      }}
-                                      className="p-1.5 bg-green-500 text-white rounded-md hover:bg-green-600 transition-all"
-                                    >
-                                      <Check className="w-3 h-3" />
-                                    </button>
-                                    <button 
-                                      onClick={() => {
-                                        setAddingSubcategoryTo(null);
-                                        setNewSubcategoryName("");
-                                      }}
-                                      className="p-1.5 bg-gray-100 text-gray-500 rounded-md hover:bg-gray-200 transition-all"
-                                    >
-                                      <X className="w-3 h-3" />
-                                    </button>
-                                  </div>
-                                ) : (
-                                  <button 
-                                    onClick={() => setAddingSubcategoryTo(cat)}
-                                    className="p-2 bg-blue-50 text-blue-600 hover:bg-brand-blue hover:text-white rounded-xl transition-all flex items-center justify-center"
-                                    title="Aggiungi Sottocategoria"
-                                  >
-                                    <Plus className="w-4 h-4" />
-                                  </button>
-                                )}
-                                
-                                {categoryToDelete === cat ? (
-                                  <div className="flex gap-1 items-center">
-                                    <span className="text-[10px] font-bold text-red-500 mr-1">Confermi?</span>
-                                    <button 
-                                      onClick={() => {
-                                        const { [cat]: removedSub, ...remainingSubs } = pageSettings.subcategories;
-                                        const { [cat]: removedBanner, ...remainingBanners } = pageSettings.categoryBanners;
-                                        setPageSettings({
-                                          ...pageSettings,
-                                          categories: pageSettings.categories.filter(c => c !== cat),
-                                          subcategories: remainingSubs,
-                                          categoryBanners: remainingBanners
-                                        });
-                                        setCategoryToDelete(null);
-                                      }}
-                                      className="p-1.5 bg-red-500 text-white rounded-md hover:bg-red-600 transition-all"
-                                    >
-                                      <Check className="w-3 h-3" />
-                                    </button>
-                                    <button 
-                                      onClick={() => setCategoryToDelete(null)}
-                                      className="p-1.5 bg-gray-100 text-gray-500 rounded-md hover:bg-gray-200 transition-all"
-                                    >
-                                      <X className="w-3 h-3" />
-                                    </button>
-                                  </div>
-                                ) : (
-                                  <button 
-                                    onClick={() => setCategoryToDelete(cat)}
-                                    className="p-2 bg-red-50 text-red-500 hover:bg-red-500 hover:text-white rounded-xl transition-all flex items-center justify-center"
-                                    title="Elimina Categoria"
-                                  >
-                                    <X className="w-4 h-4" />
-                                  </button>
-                                )}
-                              </div>
-                            </div>
-
-                            {/* Subcategories List (Vertical Tree) */}
-                            <div className="bg-gray-50/50 pl-14 pr-4 py-2 space-y-1">
-                              {(pageSettings.subcategories[cat] || []).map((sub, sIdx, sArr) => (
-                                <div key={sub} className="flex items-center justify-between py-1.5 group/sub">
-                                  <div className="flex items-center gap-4">
-                                     {/* Sub Order Buttons */}
-                                     <div className="flex flex-col gap-0.5 mr-1 transition-all">
-                                       <button 
-                                         onClick={() => {
-                                           if (sIdx > 0) {
-                                             const newSubs = [...pageSettings.subcategories[cat]];
-                                             [newSubs[sIdx - 1], newSubs[sIdx]] = [newSubs[sIdx], newSubs[sIdx - 1]];
-                                             setPageSettings({...pageSettings, subcategories: {...pageSettings.subcategories, [cat]: newSubs}});
-                                           }
-                                         }}
-                                         disabled={sIdx === 0}
-                                         className="p-0.5 bg-white border border-gray-100 rounded shadow-sm hover:bg-brand-yellow transition-colors disabled:opacity-10"
-                                       >
-                                         <ChevronUp className="w-2.5 h-2.5 text-gray-400" />
-                                       </button>
-                                       <button 
-                                         onClick={() => {
-                                           if (sIdx < sArr.length - 1) {
-                                             const newSubs = [...pageSettings.subcategories[cat]];
-                                             [newSubs[sIdx], newSubs[sIdx + 1]] = [newSubs[sIdx + 1], newSubs[sIdx]];
-                                             setPageSettings({...pageSettings, subcategories: {...pageSettings.subcategories, [cat]: newSubs}});
-                                           }
-                                         }}
-                                         disabled={sIdx === sArr.length - 1}
-                                         className="p-0.5 bg-white border border-gray-100 rounded shadow-sm hover:bg-brand-yellow transition-colors disabled:opacity-10"
-                                       >
-                                         <ChevronDown className="w-2.5 h-2.5 text-gray-400" />
-                                       </button>
-                                     </div>
-
-                                     <div className="flex items-center gap-2">
-                                       <div className="w-1.5 h-1.5 rounded-full bg-gray-300" />
-                                       {editingSubcategory?.category === cat && editingSubcategory?.subcategory === sub ? (
-                                         <div className="flex items-center gap-1.5">
-                                           <input
-                                             type="text"
-                                             value={editSubcategoryValue}
-                                             onChange={(e) => setEditSubcategoryValue(e.target.value)}
-                                             className="bg-white border-gray-200 rounded-lg px-2 py-0.5 text-xs font-bold focus:ring-brand-yellow focus:border-brand-yellow w-36"
-                                             autoFocus
-                                           />
-                                           <button
-                                             onClick={() => {
-                                               if (editSubcategoryValue.trim() && editSubcategoryValue.trim() !== sub) {
-                                                 const oldSub = sub;
-                                                 const newSub = editSubcategoryValue.trim();
-                                                 const newSubs = pageSettings.subcategories[cat].map(s => s === oldSub ? newSub : s);
-                                                 setPageSettings({
-                                                   ...pageSettings,
-                                                   subcategories: {
-                                                     ...pageSettings.subcategories,
-                                                     [cat]: newSubs
-                                                   }
-                                                 });
-                                                 setProducts(products.map(p => p.category === cat && p.subcategory === oldSub ? { ...p, subcategory: newSub } : p));
-                                               }
-                                               setEditingSubcategory(null);
-                                             }}
-                                             className="p-1 bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
-                                           >
-                                             <Check className="w-2.5 h-2.5" />
-                                           </button>
-                                           <button
-                                             onClick={() => setEditingSubcategory(null)}
-                                             className="p-1 bg-gray-100 text-gray-500 rounded hover:bg-gray-200 transition-colors"
-                                           >
-                                             <X className="w-2.5 h-2.5" />
-                                           </button>
-                                         </div>
-                                       ) : (
-                                         <div className="flex items-center gap-1.5">
-                                           <span className="text-xs font-bold text-gray-600">{sub}</span>
-                                           <button
-                                             onClick={() => {
-                                               setEditingSubcategory({ category: cat, subcategory: sub });
-                                               setEditSubcategoryValue(sub);
-                                             }}
-                                             className="p-0.5 text-gray-400 hover:text-brand-dark hover:bg-gray-100 rounded transition-colors"
-                                             title="Modifica nome sottocategoria"
-                                           >
-                                             <Edit2 className="w-2.5 h-2.5" />
-                                           </button>
-                                         </div>
-                                       )}
-                                     </div>
-                                     <span className="text-[10px] font-black text-gray-300 uppercase">{getProductCount(cat, sub)} Prodotti</span>
-                                   </div>
-                                  <button 
-                                    onClick={() => {
-                                      setPageSettings({
-                                        ...pageSettings,
-                                        subcategories: {
-                                          ...pageSettings.subcategories,
-                                          [cat]: pageSettings.subcategories[cat].filter(s => s !== sub)
-                                        }
-                                      });
-                                    }}
-                                    className="p-1 text-gray-300 hover:text-red-500 transition-all"
-                                  >
-                                    <X className="w-3 h-3" />
-                                  </button>
-                                </div>
-                              ))}
-                              {(!pageSettings.subcategories[cat] || pageSettings.subcategories[cat].length === 0) && (
-                                <p className="text-[10px] font-bold text-gray-400 italic py-2">Nessuna sottocategoria configurata</p>
                               )}
                             </div>
-                          </div>
-                        )})}
-                      </div>
+                          );
+                        })}
                     </div>
                   </div>
                 )}
-
                 {adminActiveTab === ('link_rapidi' as any) && (
                    <div className="space-y-8 animate-in fade-in slide-in-from-right-8">
                      <div className="flex justify-between items-center bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm">
@@ -5995,7 +6543,7 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                                   }}
                                   className="mt-1 block w-full bg-gray-50 border-transparent rounded-xl px-4 py-2 text-xs font-bold focus:ring-brand-yellow"
                                 >
-                                  {pageSettings.categories.map((c: string) => <option key={c} value={c}>{c}</option>)}
+                                  {pageSettings.categories.map((c: string) => <option key={c} value={c} className="text-neutral-900 bg-white">{c}</option>)}
                                 </select>
                               </label>
 
@@ -6274,7 +6822,7 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                                 {/* Google SERP Preview */}
                                 <div className="bg-white p-4 rounded-xl border border-gray-200 border-l-4 border-l-blue-600">
                                   <div className="text-[11px] text-[#202124] flex items-center gap-1 mb-1">
-                                    <span>https://bespoint.it</span>
+                                    <span>https://vincentstore.it</span>
                                     <ChevronRight className="w-2.5 h-2.5 text-[#5f6368]" />
                                     <span className="text-[#5f6368]">{cat.toLowerCase()}</span>
                                   </div>
@@ -6427,19 +6975,19 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                 )}
 
                 {adminActiveTab === 'products' && (
-                  <div className="space-y-8 animate-in fade-in zoom-in-95 duration-300">
-                    <div className="flex justify-between items-center">
-                      <h2 className="text-3xl font-black text-brand-dark uppercase tracking-tighter">
+                  <div className="admin-products-panel space-y-6 md:space-y-8 animate-in fade-in zoom-in-95 duration-300">
+                    <div className="flex flex-col gap-4 md:flex-row md:justify-between md:items-center">
+                      <h2 className="text-2xl md:text-3xl font-black text-brand-dark uppercase tracking-tighter">
                         {adminProductView === 'list' && "Gestione Prodotti"}
                         {adminProductView === 'single' && "Nuovo Prodotto Multi-Canale"}
                         {adminProductView === 'mass' && "Importazione Massiva"}
                       </h2>
                       {adminProductView === 'list' && (
-                          <div className="flex gap-4 items-center">
-                            <div className="relative">
+                          <div className="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-4 items-stretch sm:items-center w-full md:w-auto">
+                            <div className="relative w-full sm:w-auto">
                               <button 
                                 onClick={() => setIsExportMenuOpen(!isExportMenuOpen)}
-                                className="bg-white text-gray-500 px-6 py-3 rounded-xl font-bold uppercase text-xs tracking-widest hover:bg-gray-50 border border-gray-100 transition-all flex items-center gap-2"
+                                className="w-full sm:w-auto bg-white text-gray-500 px-6 py-3 rounded-xl font-bold uppercase text-xs tracking-widest hover:bg-gray-50 border border-gray-100 transition-all flex items-center justify-center gap-2"
                               >
                                 <Download className="w-4 h-4" /> Esporta <ChevronDown className={`w-4 h-4 transition-transform ${isExportMenuOpen ? 'rotate-180' : ''}`} />
                               </button>
@@ -6468,7 +7016,7 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                                             const url = window.URL.createObjectURL(blob);
                                             const a = document.createElement('a');
                                             a.setAttribute('href', url);
-                                            a.setAttribute('download', 'bespoint_catalogo.csv');
+                                            a.setAttribute('download', 'vincent_catalogo.csv');
                                             a.click();
                                           } else {
                                             addToast(`Esportazione ${opt.label} completata correttamente!`, "success");
@@ -6487,7 +7035,7 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
 
                             <button 
                               onClick={() => setAdminProductView('mass')}
-                              className="bg-gray-100 text-gray-600 px-6 py-3 rounded-xl font-bold uppercase text-xs tracking-widest hover:bg-green-500 hover:text-white transition-all flex items-center gap-2"
+                              className="w-full sm:w-auto bg-gray-100 text-gray-600 px-6 py-3 rounded-xl font-bold uppercase text-xs tracking-widest hover:bg-green-500 hover:text-white transition-all flex items-center justify-center gap-2"
                             >
                               <FileSpreadsheet className="w-4 h-4" /> Importa
                             </button>
@@ -6496,7 +7044,7 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                                 setEditingAdminProduct(null);
                                 setAdminProductView('single');
                               }}
-                              className="bg-brand-dark text-white px-6 py-3 rounded-xl font-bold uppercase text-xs tracking-widest hover:bg-black hover:text-white transition-all flex items-center gap-2"
+                              className="w-full sm:w-auto bg-brand-dark text-white px-6 py-3 rounded-xl font-bold uppercase text-xs tracking-widest hover:bg-black hover:text-white transition-all flex items-center justify-center gap-2"
                             >
                               <Plus className="w-4 h-4" /> Crea Nuovo
                             </button>
@@ -6515,7 +7063,7 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                     {adminProductView === 'list' && (
                       <div className="space-y-6">
                         {/* Limits & Filters Row */}
-                        <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 space-y-6">
+                        <div className="bg-white p-4 md:p-8 rounded-2xl md:rounded-[2.5rem] border border-gray-100 space-y-6">
                            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
                               <div className="flex items-center gap-4">
                                  <div className="w-12 h-12 bg-brand-yellow rounded-2xl flex items-center justify-center">
@@ -6629,7 +7177,7 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                                </div>
                            </div>
 
-                           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-4 border-t border-gray-50">
+                           <div className="grid grid-cols-1 md:grid-cols-4 gap-3 md:gap-4 pt-4 border-t border-gray-50">
                               <div className="md:col-span-2 relative">
                                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                                  <input 
@@ -6640,10 +7188,10 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                                    className="w-full bg-gray-50 border-gray-100 rounded-xl py-3 pl-12 pr-4 text-sm font-bold focus:ring-2 focus:ring-brand-yellow transition-all"
                                  />
                               </div>
-                              <div className="flex gap-2">
+                              <div className="grid grid-cols-2 sm:flex sm:flex-row gap-2 md:col-span-2">
                                 <button 
                                   onClick={() => setShowAdvancedFilters(true)}
-                                  className="flex-1 bg-white border border-gray-100 hover:border-brand-yellow text-brand-dark px-4 py-3 rounded-xl font-bold uppercase text-[10px] tracking-widest transition-all flex items-center justify-center gap-2 group"
+                                  className="col-span-2 sm:col-span-1 sm:flex-1 bg-white border border-gray-100 hover:border-brand-yellow text-brand-dark px-3 py-3 rounded-xl font-bold uppercase text-[9px] sm:text-[10px] tracking-widest transition-all flex items-center justify-center gap-2 group"
                                 >
                                   <Layers className="w-4 h-4 text-brand-yellow group-hover:rotate-12 transition-transform" />
                                   Filtri Avanzati
@@ -6654,10 +7202,10 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                                      setShowFeaturedOnly(newVal);
                                      if (newVal) setShowSpecialOnly(false);
                                    }}
-                                   className={`px-4 py-3 rounded-xl font-bold uppercase text-[10px] tracking-widest transition-all border flex items-center gap-2 ${showFeaturedOnly ? 'bg-neutral-950 text-white border-brand-yellow shadow-lg' : 'bg-white text-gray-500 border-gray-100'}`}
+                                   className={`px-2 sm:px-4 py-3 rounded-xl font-bold uppercase text-[9px] sm:text-[10px] tracking-widest transition-all border flex items-center justify-center gap-1.5 ${showFeaturedOnly ? 'bg-neutral-950 text-white border-brand-yellow shadow-lg' : 'bg-white text-gray-500 border-gray-100'}`}
                                  >
-                                   <Sparkles className={`w-4 h-4 ${showFeaturedOnly ? 'fill-current' : ''}`} />
-                                   {showFeaturedOnly ? 'Solo Vetrina' : 'Filtra Vetrina'}
+                                   <Sparkles className={`w-4 h-4 shrink-0 ${showFeaturedOnly ? 'fill-current' : ''}`} />
+                                   {showFeaturedOnly ? 'Solo Vetrina' : 'Vetrina'}
                                  </button>
                                  <button 
                                    onClick={() => {
@@ -6665,10 +7213,10 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                                      setShowSpecialOnly(newVal);
                                      if (newVal) setShowFeaturedOnly(false);
                                    }}
-                                   className={`px-4 py-3 rounded-xl font-bold uppercase text-[10px] tracking-widest transition-all border flex items-center gap-2 ${showSpecialOnly ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg' : 'bg-white text-gray-500 border-gray-100'}`}
+                                   className={`px-2 sm:px-4 py-3 rounded-xl font-bold uppercase text-[9px] sm:text-[10px] tracking-widest transition-all border flex items-center justify-center gap-1.5 ${showSpecialOnly ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg' : 'bg-white text-gray-500 border-gray-100'}`}
                                  >
-                                   <Star className={`w-4 h-4 ${showSpecialOnly ? 'fill-current' : ''}`} />
-                                   {showSpecialOnly ? 'Solo Scelti' : 'Filtra Scelti'}
+                                   <Star className={`w-4 h-4 shrink-0 ${showSpecialOnly ? 'fill-current' : ''}`} />
+                                   {showSpecialOnly ? 'Solo Scelti' : 'Scelti'}
                                  </button>
                                 <button 
                                   onClick={() => {
@@ -6726,9 +7274,9 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                                         <select 
                                           value={adminCategoryFilter}
                                           onChange={e => setAdminCategoryFilter(e.target.value)}
-                                          className="w-full bg-gray-50 border-gray-100 rounded-2xl py-4 px-5 text-base font-bold focus:ring-4 focus:ring-brand-yellow/30 transition-all appearance-none"
+                                          className="w-full bg-gray-50 border-gray-100 rounded-2xl py-4 px-5 text-base font-bold text-neutral-900 focus:ring-4 focus:ring-brand-yellow/30 transition-all appearance-none"
                                         >
-                                          <option value="Tutti">Tutte le Categorie</option>
+                                          <option value="Tutti" className="text-neutral-900 bg-white">Tutte le Categorie</option>
                                           {pageSettings.categories.map((c: string) => <option key={c} value={c}>{c}</option>)}
                                         </select>
                                         <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
@@ -6745,9 +7293,9 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                                           onChange={e => setAdminBrandFilter(e.target.value)}
                                           className="w-full bg-gray-50 border-gray-100 rounded-2xl py-4 px-5 text-base font-bold focus:ring-4 focus:ring-brand-yellow/30 transition-all appearance-none"
                                         >
-                                          <option value="Tutti">Tutti i Brand</option>
+                                          <option value="Tutti" className="text-neutral-900 bg-white">Tutti i Brand</option>
                                           {adminUniqueBrands.map(b => (
-                                            <option key={b} value={b}>{b}</option>
+                                            <option key={b} value={b} className="text-neutral-900 bg-white">{b}</option>
                                           ))}
                                         </select>
                                         <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
@@ -6764,10 +7312,10 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                                           onChange={e => setAdminChannelFilter(e.target.value)}
                                           className="w-full bg-gray-50 border-gray-100 rounded-2xl py-4 px-5 text-base font-bold focus:ring-4 focus:ring-brand-yellow/30 transition-all appearance-none"
                                         >
-                                          <option value="Tutti">Tutti i Canali</option>
-                                          <option value="Web">Sito Web BesPoint</option>
-                                          <option value="Amazon">Amazon Market</option>
-                                          <option value="Ebay">eBay Market</option>
+                                          <option value="Tutti" className="text-neutral-900 bg-white">Tutti i Canali</option>
+                                          <option value="Web" className="text-neutral-900 bg-white">Sito Web BesPoint</option>
+                                          <option value="Amazon" className="text-neutral-900 bg-white">Amazon Market</option>
+                                          <option value="Ebay" className="text-neutral-900 bg-white">eBay Market</option>
                                         </select>
                                         <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                                       </div>
@@ -6797,7 +7345,299 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                           )}
                         </AnimatePresence>
 
-                        <div className="bg-white rounded-[2.5rem] overflow-hidden border border-gray-100">
+                        <div className="md:hidden space-y-7">
+                          {adminFilteredProducts.length === 0 ? (
+                            <div className="bg-white rounded-3xl p-10 text-center border-2 border-dashed border-gray-200">
+                              <Package className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                              <p className="text-base font-bold text-gray-400">Nessun prodotto trovato</p>
+                              <p className="text-xs text-gray-400 mt-1">Prova a cambiare i filtri o la ricerca</p>
+                            </div>
+                          ) : (
+                            adminFilteredProducts.map((p, index) => {
+                              const stockQty = p.stock ?? 0;
+                              const isLowStock = stockQty > 0 && stockQty <= 5;
+                              const isOutOfStock = stockQty === 0;
+                              const hasVariants = Boolean(p.variants && p.variants.length > 0);
+
+                              return (
+                                <article 
+                                  key={`m-${p.id}`} 
+                                  className="rounded-[2.2rem] border-2 border-gray-200/90 bg-white shadow-md hover:shadow-lg transition-all overflow-hidden relative"
+                                >
+                                  {/* Linea d'accento superiore colorata */}
+                                  <div className="h-1.5 w-full bg-gradient-to-r from-amber-400 via-amber-300 to-yellow-200" />
+
+                                  <div className="p-4 sm:p-5 space-y-4">
+                                    {/* RIGA 1: Codice SKU, Marchio e Stato Magazzino */}
+                                    <div className="flex items-center justify-between gap-2 flex-wrap border-b border-gray-100 pb-3">
+                                      <div className="flex items-center gap-2 flex-wrap">
+                                        <span className="text-[10px] font-black uppercase tracking-wider bg-gray-100 text-gray-800 px-2.5 py-1 rounded-lg border border-gray-200/80">
+                                          SKU: {p.sku || `BP-${p.id.padStart(4, '0')}`}
+                                        </span>
+                                        {p.brand && (
+                                          <span className="text-[10px] font-black uppercase tracking-wider text-amber-900 bg-amber-50 border border-amber-200/80 px-2.5 py-1 rounded-lg">
+                                            {p.brand}
+                                          </span>
+                                        )}
+                                      </div>
+
+                                      {/* Badge Disponibilità */}
+                                      <div className="shrink-0">
+                                        {isOutOfStock ? (
+                                          <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider bg-red-50 text-red-700 border border-red-200 px-2.5 py-1 rounded-full">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span>
+                                            Esaurito (0)
+                                          </span>
+                                        ) : isLowStock ? (
+                                          <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider bg-amber-50 text-amber-800 border border-amber-300 px-2.5 py-1 rounded-full">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                                            Scorte Basse ({stockQty})
+                                          </span>
+                                        ) : (
+                                          <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-800 border border-emerald-200 px-2.5 py-1 rounded-full">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                            In Stock ({stockQty})
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+
+                                    {/* RIGA 2: Foto Prodotto + Titolo + Prezzo Base in Risalto */}
+                                    <div className="flex gap-3.5 items-start">
+                                      <div className="relative shrink-0">
+                                        <img 
+                                          src={p.image || 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?auto=format&fit=crop&w=400&q=80'} 
+                                          alt={p.name} 
+                                          className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl object-cover border-2 border-gray-100 shadow-sm bg-gray-50" 
+                                        />
+                                        {p.rating ? (
+                                          <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-neutral-950 text-amber-300 text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm flex items-center gap-0.5 whitespace-nowrap">
+                                            <Star className="w-2.5 h-2.5 fill-amber-300 text-amber-300" />
+                                            <span>{p.rating}</span>
+                                          </div>
+                                        ) : null}
+                                      </div>
+
+                                      <div className="min-w-0 flex-1 space-y-1">
+                                        <h3 className="font-black text-base text-brand-dark leading-snug break-words">
+                                          {p.name}
+                                        </h3>
+                                        <div className="flex items-baseline gap-2 pt-0.5">
+                                          <span className="text-xl font-black text-brand-dark">
+                                            €{Number(p.price || 0).toFixed(2)}
+                                          </span>
+                                          {p.originalPrice && p.originalPrice > p.price && (
+                                            <span className="text-xs text-gray-400 line-through font-bold">
+                                              €{Number(p.originalPrice).toFixed(2)}
+                                            </span>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+
+                                    {/* RIGA 3: Categoria, Sottocategoria & Canali Vendita */}
+                                    <div className="p-3 bg-gray-50/90 rounded-2xl border border-gray-100 space-y-2">
+                                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                                        <div className="flex flex-wrap items-center gap-1.5">
+                                          <span className="text-[10px] font-black uppercase tracking-wider bg-amber-100 text-amber-950 px-2.5 py-0.5 rounded-md border border-amber-300">
+                                            {p.category}
+                                          </span>
+                                          {p.subcategory && (
+                                            <span className="text-[10px] font-bold text-gray-600 bg-white border border-gray-200 px-2.5 py-0.5 rounded-md">
+                                              {p.subcategory}
+                                            </span>
+                                          )}
+                                        </div>
+                                        <div className="flex items-center gap-2 text-[10px] font-bold text-gray-500">
+                                          <span className="flex items-center gap-1 text-emerald-700 font-black">
+                                            <Check className="w-3.5 h-3.5" /> Web
+                                          </span>
+                                          <span className={`flex items-center gap-1 ${p.amazonActive !== false ? 'text-amber-800 font-bold' : 'text-gray-400 line-through'}`}>
+                                            Amazon {p.amazonActive !== false ? '✓' : '✗'}
+                                          </span>
+                                          <span className={`flex items-center gap-1 ${p.ebayActive !== false ? 'text-blue-800 font-bold' : 'text-gray-400 line-through'}`}>
+                                            eBay {p.ebayActive !== false ? '✓' : '✗'}
+                                          </span>
+                                        </div>
+                                      </div>
+                                    </div>
+
+                                    {/* RIGA 4: Descrizione Prodotto Dettagliata su Più Righe */}
+                                    {p.description && (
+                                      <div className="bg-gray-50/90 rounded-2xl p-3 border border-gray-100 space-y-1">
+                                        <p className="text-[9px] font-black uppercase tracking-wider text-gray-400 flex items-center gap-1">
+                                          <FileText className="w-3 h-3 text-gray-400" />
+                                          Descrizione Voce
+                                        </p>
+                                        <p className="text-xs text-gray-700 font-medium leading-relaxed">
+                                          {p.description}
+                                        </p>
+                                      </div>
+                                    )}
+
+                                    {/* RIGA 5: Opzioni Visibilità & Promozioni */}
+                                    <div className="p-3 bg-slate-50/70 rounded-2xl border border-gray-100 space-y-2.5">
+                                      <p className="text-[9px] font-black uppercase tracking-wider text-gray-400">Opzioni Visibilità & Promozioni</p>
+                                      
+                                      <div className="grid grid-cols-2 gap-2 text-xs font-bold">
+                                        {/* Vetrina Toggle */}
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setProducts(prev => prev.map(prod => prod.id === p.id ? { ...prod, isFeatured: !prod.isFeatured } : prod));
+                                            setCartTrigger(c => c + 1);
+                                          }}
+                                          className={`flex items-center justify-between p-2.5 rounded-xl border transition-all text-[11px] font-black uppercase ${
+                                            p.isFeatured 
+                                              ? 'bg-amber-100 border-amber-300 text-amber-950 shadow-xs' 
+                                              : 'bg-white border-gray-200 text-gray-400 hover:text-gray-600'
+                                          }`}
+                                        >
+                                          <span className="flex items-center gap-1.5">
+                                            <Sparkles className={`w-4 h-4 ${p.isFeatured ? 'text-amber-600 fill-amber-500' : 'text-gray-400'}`} />
+                                            Vetrina
+                                          </span>
+                                          <span className={`w-3.5 h-3.5 rounded-full ${p.isFeatured ? 'bg-amber-500' : 'bg-gray-200'}`} />
+                                        </button>
+
+                                        {/* Scelti Per Te Toggle */}
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setProducts(prev => prev.map(prod => prod.id === p.id ? { ...prod, isSpecialPromotion: !prod.isSpecialPromotion } : prod));
+                                            setCartTrigger(c => c + 1);
+                                          }}
+                                          className={`flex items-center justify-between p-2.5 rounded-xl border transition-all text-[11px] font-black uppercase ${
+                                            p.isSpecialPromotion 
+                                              ? 'bg-indigo-100 border-indigo-300 text-indigo-950 shadow-xs' 
+                                              : 'bg-white border-gray-200 text-gray-400 hover:text-gray-600'
+                                          }`}
+                                        >
+                                          <span className="flex items-center gap-1.5">
+                                            <Star className={`w-4 h-4 ${p.isSpecialPromotion ? 'text-indigo-600 fill-indigo-500' : 'text-gray-400'}`} />
+                                            Scelti
+                                          </span>
+                                          <span className={`w-3.5 h-3.5 rounded-full ${p.isSpecialPromotion ? 'bg-indigo-600' : 'bg-gray-200'}`} />
+                                        </button>
+                                      </div>
+                                    </div>
+
+                                    {/* RIGA 6: Varianti Preview (Taglie & Colori) */}
+                                    {hasVariants && (
+                                      <div className="p-3 bg-amber-50/50 rounded-2xl border border-amber-200/80 space-y-2">
+                                        <div className="flex items-center justify-between">
+                                          <span className="text-[10px] font-black uppercase tracking-wider text-amber-900 flex items-center gap-1">
+                                            <Layers className="w-3.5 h-3.5 text-amber-600" />
+                                            Varianti Attive ({p.variants.length})
+                                          </span>
+                                          <span className="text-[9px] font-bold text-gray-500">Taglie / Colori</span>
+                                        </div>
+                                        <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto">
+                                          {p.variants.map((v: any, vIdx: number) => (
+                                            <span 
+                                              key={v.id || vIdx} 
+                                              className="inline-flex items-center gap-1 text-[10px] font-bold bg-white text-brand-dark px-2.5 py-1 rounded-lg border border-gray-200 shadow-2xs"
+                                            >
+                                              <span className="font-black text-amber-700">{v.type}:</span>
+                                              <span>{v.value}</span>
+                                              <span className="text-gray-400 text-[9px] font-mono">({v.webStock ?? v.stock ?? 0} pz)</span>
+                                            </span>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
+
+                                    {/* RIGA 7: Modifica Rapida Prezzo & Stock */}
+                                    <div className="grid grid-cols-2 gap-3 pt-1">
+                                      <div className="bg-gray-50 p-2.5 rounded-2xl border border-gray-200">
+                                        <label className="text-[9px] font-black text-gray-400 uppercase tracking-wider block mb-1">
+                                          Prezzo Rapido (€)
+                                        </label>
+                                        <div className="relative">
+                                          <input
+                                            type="number"
+                                            step="0.01"
+                                            value={p.price}
+                                            disabled={hasVariants}
+                                            onChange={(e) => {
+                                              const newPrice = parseFloat(e.target.value) || 0;
+                                              setProducts(prev => prev.map(prod => prod.id === p.id ? { ...prod, price: newPrice } : prod));
+                                            }}
+                                            className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm font-black text-brand-dark focus:ring-2 focus:ring-amber-400 disabled:opacity-50 min-h-[40px]"
+                                          />
+                                        </div>
+                                      </div>
+
+                                      <div className="bg-gray-50 p-2.5 rounded-2xl border border-gray-200">
+                                        <label className="text-[9px] font-black text-gray-400 uppercase tracking-wider block mb-1">
+                                          Quantità Stock (Pz)
+                                        </label>
+                                        <div className="relative">
+                                          <input
+                                            type="number"
+                                            value={p.stock ?? 0}
+                                            disabled={hasVariants}
+                                            onChange={(e) => {
+                                              const newStock = parseInt(e.target.value, 10) || 0;
+                                              setProducts(prev => prev.map(prod => prod.id === p.id ? { ...prod, stock: newStock } : prod));
+                                            }}
+                                            className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm font-black text-center text-brand-dark focus:ring-2 focus:ring-amber-400 disabled:opacity-50 min-h-[40px]"
+                                          />
+                                        </div>
+                                      </div>
+                                    </div>
+
+                                    {/* RIGA 8: Barra Azioni Mobile Sempre Visibili e Comode */}
+                                    <div className="flex gap-2 pt-2 border-t border-gray-100">
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setEditingAdminProduct(p);
+                                          setAdminProductView('single');
+                                        }}
+                                        className="flex-[2] py-3.5 px-4 rounded-xl bg-neutral-950 hover:bg-black text-white text-xs font-black uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-all min-h-[48px]"
+                                      >
+                                        <Edit2 className="w-4 h-4 text-brand-yellow" />
+                                        <span>Modifica Scheda</span>
+                                      </button>
+
+                                      <button
+                                        type="button"
+                                        onClick={() => handleProductSelect(p)}
+                                        className="py-3.5 px-3.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-brand-dark flex items-center justify-center transition-colors min-h-[48px] border border-gray-200"
+                                        title="Visualizza nello Store"
+                                      >
+                                        <Eye className="w-4 h-4" />
+                                      </button>
+
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setAdminConfirmAction({
+                                            active: true,
+                                            title: 'Elimina Prodotto',
+                                            message: `Eliminare definitivamente "${p.name}"? L'azione non è reversibile.`,
+                                            color: 'bg-red-500',
+                                            onConfirm: () => {
+                                              setProducts(prev => prev.filter(prod => prod.id !== p.id));
+                                              addToast('Prodotto eliminato dal catalogo.', 'success');
+                                            },
+                                          });
+                                        }}
+                                        className="py-3.5 px-3.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 flex items-center justify-center transition-colors min-h-[48px]"
+                                        aria-label="Elimina Prodotto"
+                                      >
+                                        <Trash2 className="w-4 h-4" />
+                                      </button>
+                                    </div>
+                                  </div>
+                                </article>
+                              );
+                            })
+                          )}
+                        </div>
+
+                        <div className="hidden md:block bg-white rounded-[2.5rem] overflow-hidden border border-gray-100">
                         <div className="overflow-x-auto">
                           <table className="w-full text-left border-collapse min-w-[800px]">
                             <thead>
@@ -6814,24 +7654,7 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100">
-                              {products.filter(p => {
-                                const matchesSearch = adminSearchQuery === "" || 
-                                  p.name.toLowerCase().includes(adminSearchQuery.toLowerCase()) ||
-                                  (p.sku && p.sku.toLowerCase().includes(adminSearchQuery.toLowerCase())) ||
-                                  (p.ean && p.ean.toLowerCase().includes(adminSearchQuery.toLowerCase())) ||
-                                  `BP-${p.id.padStart(4, '0')}`.toLowerCase().includes(adminSearchQuery.toLowerCase());
-                                
-                                const matchesCategory = adminCategoryFilter === "Tutti" || p.category === adminCategoryFilter;
-                                const matchesBrand = adminBrandFilter === "Tutti" || p.brand === adminBrandFilter;
-                                
-                                let matchesChannel = true;
-                                if (adminChannelFilter === "Web") matchesChannel = (p.stock || 0) > 0;
-                                if (adminChannelFilter === "Amazon") matchesChannel = (p.amazonStock || 0) > 0;
-                                 const matchesFeatured = !showFeaturedOnly || p.isFeatured;
-                                const matchesSpecial = !showSpecialOnly || p.isSpecialPromotion;
-                                
-                                return matchesSearch && matchesCategory && matchesBrand && matchesChannel && matchesFeatured && matchesSpecial;
-                              }).map(p => (
+                              {adminFilteredProducts.map(p => (
                                 <React.Fragment key={p.id}>
                                   <tr 
                                     className={`hover:bg-gray-50/50 transition-colors ${p.variants && p.variants.length > 0 ? 'cursor-pointer select-none' : ''}`}
@@ -6982,34 +7805,44 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                                       </div>
                                     </td>
                                     <td className="p-4 text-right">
-                                      <button 
-                                        onClick={() => {
-                                          setEditingAdminProduct(p);
-                                          setAdminProductView('single');
-                                        }}
-                                        className="p-2 text-gray-400 hover:text-brand-yellow hover:bg-brand-dark rounded-lg transition-colors inline-block"
-                                        title="Modifica Singolo"
-                                      >
-                                        <Edit2 className="w-5 h-5" />
-                                      </button>
-                                      <button 
-                                        onClick={() => {
-                                          setAdminConfirmAction({
-                                            active: true,
-                                            title: "Elimina Prodotto",
-                                            message: `Sei sicuro di voler eliminare definitivamente "${p.name}"? Questa operazione non può essere annullata.`,
-                                            color: "bg-red-500",
-                                            onConfirm: () => {
-                                              setProducts(prev => prev.filter(prod => prod.id !== p.id));
-                                              addToast("Prodotto eliminato con successo!", "success");
-                                            }
-                                          });
-                                        }}
-                                        className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors inline-block"
-                                        title="Elimina Prodotto"
-                                      >
-                                        <Trash2 className="w-5 h-5" />
-                                      </button>
+                                      <div className="flex items-center justify-end gap-1.5">
+                                        <button 
+                                          onClick={() => {
+                                            setEditingAdminProduct(p);
+                                            setAdminProductView('single');
+                                          }}
+                                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-neutral-900 text-brand-yellow hover:bg-black hover:text-white rounded-xl text-xs font-black uppercase tracking-wider shadow-xs transition-all active:scale-95"
+                                          title="Modifica Prodotto"
+                                        >
+                                          <Edit2 className="w-3.5 h-3.5" />
+                                          <span>Modifica</span>
+                                        </button>
+                                        <button 
+                                          onClick={() => handleProductSelect(p)}
+                                          className="p-2 bg-gray-100 text-gray-700 hover:bg-gray-200 hover:text-brand-dark rounded-xl transition-all border border-gray-200"
+                                          title="Visualizza nello Store"
+                                        >
+                                          <Eye className="w-4 h-4" />
+                                        </button>
+                                        <button 
+                                          onClick={() => {
+                                            setAdminConfirmAction({
+                                              active: true,
+                                              title: "Elimina Prodotto",
+                                              message: `Sei sicuro di voler eliminare definitivamente "${p.name}"? Questa operazione non può essere annullata.`,
+                                              color: "bg-red-500",
+                                              onConfirm: () => {
+                                                setProducts(prev => prev.filter(prod => prod.id !== p.id));
+                                                addToast("Prodotto eliminato con successo!", "success");
+                                              }
+                                            });
+                                          }}
+                                          className="p-2 bg-red-50 text-red-600 hover:bg-red-600 hover:text-white rounded-xl transition-all border border-red-200 shadow-2xs"
+                                          title="Elimina Prodotto"
+                                        >
+                                          <Trash2 className="w-4 h-4" />
+                                        </button>
+                                      </div>
                                     </td>
                                   </tr>
 
@@ -7175,6 +8008,7 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                         existingSubcategories={pageSettings.subcategories}
                         availableVariants={availableVariants}
                         setAvailableVariants={setAvailableVariants}
+                        enabledMarketplaces={pageSettings?.enabledMarketplaces || []}
                         onDelete={(id) => {
                           const p = products.find(prod => prod.id === id);
                           if (!p) return;
@@ -7349,7 +8183,7 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                               type="email" 
                               value={paymentSettings.paypalEmail}
                               onChange={e => setPaymentSettings(prev => ({ ...prev, paypalEmail: e.target.value }))}
-                              placeholder="info@bespoint.it" 
+                              placeholder="info@vincentstore.it" 
                               className="w-full bg-gray-50 border-gray-100 rounded-xl px-4 py-3 text-sm font-bold placeholder:text-gray-300 focus:ring-2 focus:ring-blue-500 transition-all" 
                             />
                           </label>
@@ -8572,7 +9406,7 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                       {authStep === 'support' && (
                         <div className="space-y-4">
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <a href="mailto:assistenza@bespoint.it" className="bg-white border border-gray-100 rounded-3xl p-6 text-center hover:border-brand-blue hover:shadow-lg transition-all group flex flex-col items-center gap-3">
+                            <a href="mailto:assistenza@vincentstore.it" className="bg-white border border-gray-100 rounded-3xl p-6 text-center hover:border-brand-blue hover:shadow-lg transition-all group flex flex-col items-center gap-3">
                               <div className="w-12 h-12 bg-blue-50 text-brand-blue rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
                                 <Mail className="w-5 h-5" />
                               </div>

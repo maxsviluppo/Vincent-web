@@ -68,7 +68,7 @@ export const AdminMassiveImport = ({
   const [importMode, setImportMode] = useState<'integrate' | 'replace'>('integrate');
   
   const [savedMappings, setSavedMappings] = useState<Record<string, FieldMapping[]>>(() => {
-    const saved = localStorage.getItem('bespoint_import_presets');
+    const saved = localStorage.getItem('vincent_import_presets');
     const base = saved ? JSON.parse(saved) : {};
     // Inietta sempre il preset BesPoint aggiornato
     return { ...base, 'BesPoint Listino': BESPOINT_PRESET };
@@ -140,7 +140,7 @@ export const AdminMassiveImport = ({
     if (!newMappingName.trim()) return;
     const updated = { ...savedMappings, [newMappingName]: mappings };
     setSavedMappings(updated);
-    localStorage.setItem('bespoint_import_presets', JSON.stringify(updated));
+    localStorage.setItem('vincent_import_presets', JSON.stringify(updated));
     setNewMappingName("");
   };
 

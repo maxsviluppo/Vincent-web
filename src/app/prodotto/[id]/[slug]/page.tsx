@@ -37,7 +37,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       priceCurrency: 'EUR',
       price: product.price.toFixed(2),
       availability: 'https://schema.org/InStock',
-      url: `https://www.bespoint.it/prodotto/${product.id}/${slugify(product.name)}`,
+      url: `https://www.vincentstore.it/prodotto/${product.id}/${slugify(product.name)}`,
     },
     aggregateRating: product.reviews > 0
       ? {
@@ -56,7 +56,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     openGraph: {
       title,
       description,
-      url: `https://www.bespoint.it/prodotto/${id}/${slugify(product.name)}`,
+      url: `https://www.vincentstore.it/prodotto/${id}/${slugify(product.name)}`,
       images: [
         {
           url: product.image,
@@ -74,7 +74,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       images: [product.image],
     },
     alternates: {
-      canonical: `https://www.bespoint.it/prodotto/${id}/${slugify(product.name)}`,
+      canonical: `https://www.vincentstore.it/prodotto/${id}/${slugify(product.name)}`,
     },
     other: {
       'script:ld+json': JSON.stringify(productSchema),

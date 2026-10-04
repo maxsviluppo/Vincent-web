@@ -20,6 +20,7 @@
     ],
     "paths": {
       "@/*": ["./src/*"],
+      "@vincent-src/*": ["./src/original-src/*"],
       "@bespoint-src/*": ["./src/original-src/*"],
       "react-router-dom": ["./src/lib/router-shim.tsx"]
     }

@@ -14,7 +14,7 @@ import { ShoppingCart } from 'lucide-react';
 import { Header } from '@/components/storefront/Header';
 import { Footer } from '@/components/storefront/Footer';
 import { ModularStorefront } from '@/components/storefront/ModularStorefront';
-import { BespointApp } from '@/components/storefront/BespointApp';
+import { VincentApp } from '@/components/storefront/VincentApp';
 
 export function StorefrontShell({ children }: { children?: React.ReactNode }) {
   const router = useRouter();
@@ -150,7 +150,7 @@ export function StorefrontShell({ children }: { children?: React.ReactNode }) {
       </AnimatePresence>
 
       {/* Headless Layer (Legacy Modals & Admin) */}
-      <BespointApp />
+      <VincentApp />
     </div>
   );
 }

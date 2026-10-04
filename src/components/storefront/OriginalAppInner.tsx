@@ -8,7 +8,7 @@ import React, { Suspense, memo } from 'react';
 
 // Lazy-import the heavy original App ONCE, outside the component.
 const AppComponent = React.lazy(() =>
-  import('@bespoint-src/App').then((mod) => ({ default: mod.default }))
+  import('@vincent-src/App').then((mod) => ({ default: mod.default }))
 );
 
 function OriginalAppInner({ onCategorySelect, onProductSelect }: Props) {

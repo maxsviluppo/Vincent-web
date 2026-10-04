@@ -246,15 +246,43 @@ const ToolbarButton = ({ onClick, icon, title }: { onClick: () => void, icon: Re
   </button>
 );
 
-export const AdminSingleProduct = ({ onBack, onSave, onDelete, initialData, existingBrands = [], existingCategories = [], existingSubcategories = {}, allProducts = [], availableVariants = ['Colore', 'Taglia'], setAvailableVariants }: { onBack: () => void, onSave: (p: any) => void, onDelete?: (id: string) => void, initialData?: any, existingBrands?: string[], existingCategories?: string[], existingSubcategories?: Record<string, string[]>, allProducts?: any[], availableVariants?: string[], setAvailableVariants?: (v: string[]) => void }) => {
+export const AdminSingleProduct = ({ onBack, onSave, onDelete, initialData, existingBrands = [], existingCategories = [], existingSubcategories = {}, allProducts = [], availableVariants = ['Colore', 'Taglia'], setAvailableVariants, enabledMarketplaces }: { onBack: () => void, onSave: (p: any) => void, onDelete?: (id: string) => void, initialData?: any, existingBrands?: string[], existingCategories?: string[], existingSubcategories?: Record<string, string[]>, allProducts?: any[], availableVariants?: string[], setAvailableVariants?: (v: string[]) => void, enabledMarketplaces?: string[] }) => {
   const [baseCost, setBaseCost] = useState<number>(Number(initialData?.cost) || 0);
-  // Prezzo al pubblico IVA inclusa (manuale)
+  // Prezzo al pubblico IVA inclusa (manuale o calcolato da ricarico)
   const [manualB2c, setManualB2c] = useState<string>(initialData?.price ? String(initialData.price) : "");
+  // Ricarico su Costo d'Acquisto: default 20% su nuovo prodotto, modificabile o impostabile a importo fisso €
+  const [markupType, setMarkupType] = useState<'percent' | 'fixed'>(initialData?.markupType || 'percent');
+  const [markupValue, setMarkupValue] = useState<string>(
+    initialData?.markupValue !== undefined
+      ? String(initialData.markupValue)
+      : (initialData?.price ? '' : '20')
+  );
   // Sconto % rivenditori rispetto al prezzo pubblico
   const [b2bDiscount, setB2bDiscount] = useState<number>(Number(initialData?.b2bDiscount) || 20);
   // Spedizione
   const [freeShipping, setFreeShipping] = useState<boolean>(initialData?.freeShipping ?? false);
   const [shippingCost, setShippingCost] = useState<string>(initialData?.shippingCost ? String(initialData.shippingCost) : "");
+
+  // Marketplaces attivi nel negozio
+  const activeMarketplaces: string[] = React.useMemo(() => {
+    if (Array.isArray(enabledMarketplaces)) {
+      return enabledMarketplaces;
+    }
+    try {
+      if (typeof window !== 'undefined') {
+        const raw = localStorage.getItem('vincent_page_settings') || localStorage.getItem('bespoint_page_settings');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed?.enabledMarketplaces)) return parsed.enabledMarketplaces;
+        }
+      }
+    } catch (e) {}
+    return [];
+  }, [enabledMarketplaces]);
+
+  const isAmazonStoreEnabled = activeMarketplaces.includes("Amazon");
+  const isEbayStoreEnabled = activeMarketplaces.includes("eBay");
+  const hasAnyMarketplace = isAmazonStoreEnabled || isEbayStoreEnabled;
 
   const [isAmazonActive, setIsAmazonActive] = useState<boolean>(initialData?.amazonActive ?? false);
   const [isEbayActive, setIsEbayActive] = useState<boolean>(initialData?.ebayActive ?? false);
@@ -459,6 +487,103 @@ export const AdminSingleProduct = ({ onBack, onSave, onDelete, initialData, exis
   const [ebayStock, setEbayStock] = useState<number>(Number(initialData?.ebayStock) || 0);
 
   // UPDATED: Variants State with independent inventory
+  // --- CONFIGURAZIONE VARIANTI ABBIGLIAMENTO & CALZATURE ---
+  const [clothingCategoryType, setClothingCategoryType] = useState<'tops' | 'pants' | 'shoes' | 'custom'>('tops');
+  const [selectedPresetSizes, setSelectedPresetSizes] = useState<string[]>(['S', 'M', 'L', 'XL']);
+  const [selectedPresetColors, setSelectedPresetColors] = useState<string[]>(['Nero']);
+  const [customSizeText, setCustomSizeText] = useState<string>('');
+  const [customColorText, setCustomColorText] = useState<string>('');
+  const [batchQty, setBatchQty] = useState<number>(5);
+
+  const CLOTHING_PRESETS: Record<'tops' | 'pants' | 'shoes', { label: string; icon: string; sizes: string[] }> = {
+    tops: {
+      label: "Maglie & Abbigliamento",
+      icon: "👕",
+      sizes: ["XS", "S", "M", "L", "XL", "XXL", "3XL"]
+    },
+    pants: {
+      label: "Pantaloni & Jeans",
+      icon: "👖",
+      sizes: ["38", "40", "42", "44", "46", "48", "50", "52", "54"]
+    },
+    shoes: {
+      label: "Scarpe & Calzature",
+      icon: "👟",
+      sizes: ["36", "37", "38", "39", "40", "41", "42", "43", "44", "45", "46"]
+    }
+  };
+
+  const PRESET_COLORS = [
+    "Nero", "Bianco", "Blu", "Grigio", "Rosso", "Verde", "Beige", "Rosa", "Marrone", "Giallo", "Bordeaux"
+  ];
+
+  const handleGenerateClothingVariants = () => {
+    if (selectedPresetSizes.length === 0) {
+      alert("Seleziona almeno una taglia per generare le combinazioni.");
+      return;
+    }
+    const colorsToUse = selectedPresetColors.length > 0 ? selectedPresetColors : [""];
+    const newItems: any[] = [];
+
+    selectedPresetSizes.forEach(sz => {
+      colorsToUse.forEach(col => {
+        const valStr = col ? `${sz} - ${col}` : sz;
+        const alreadyExists = variants.some(v => 
+          (v.size === sz && v.color === col) || v.value === valStr
+        );
+        if (!alreadyExists) {
+          newItems.push({
+            id: `var-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
+            type: 'Taglia / Colore',
+            size: sz,
+            color: col,
+            value: valStr,
+            ean: '', // CODICE A BARRE
+            webStock: Number(batchQty) || 1,
+            amazonStock: 0,
+            ebayStock: 0,
+            costType: 'fixed',
+            costValue: baseCost,
+            sku: '',
+            title: valStr,
+            note: '',
+            image: ''
+          });
+        }
+      });
+    });
+
+    if (newItems.length > 0) {
+      setVariants(prev => [...prev, ...newItems]);
+    }
+  };
+
+  const handleAddSingleRow = () => {
+    const defaultSize = selectedPresetSizes[0] || 'M';
+    const defaultColor = selectedPresetColors[0] || 'Nero';
+    const valStr = defaultColor ? `${defaultSize} - ${defaultColor}` : defaultSize;
+    setVariants(prev => [
+      ...prev,
+      {
+        id: `var-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
+        type: 'Taglia / Colore',
+        size: defaultSize,
+        color: defaultColor,
+        value: valStr,
+        ean: '', // CODICE A BARRE
+        webStock: Number(batchQty) || 1,
+        amazonStock: 0,
+        ebayStock: 0,
+        costType: 'fixed',
+        costValue: baseCost,
+        sku: '',
+        title: valStr,
+        note: '',
+        image: ''
+      }
+    ]);
+  };
+
   const [variants, setVariants] = useState<{
     id: string, 
     type: string, 
@@ -657,6 +782,8 @@ Rispondi SOLO con JSON valido, nessun testo extra: { "title": "...", "descriptio
       techSheet,
       manual,
       cost: baseCost,
+      markupType,
+      markupValue,
       amazonMarkup,
       ebayMarkup,
       amazonTitle,
@@ -672,14 +799,24 @@ Rispondi SOLO con JSON valido, nessun testo extra: { "title": "...", "descriptio
 
   return (
     <>
-    <div className="bg-white rounded-[2.5rem] p-8 lg:p-12 border border-gray-100 shadow-xl space-y-10 animate-in slide-in-from-bottom-8 duration-500 relative w-full max-w-7xl mx-auto">
-      <button onClick={onBack} className="absolute top-8 right-8 p-3 bg-gray-50 text-gray-500 hover:bg-brand-yellow hover:text-brand-dark rounded-xl transition-all">
-        <X className="w-6 h-6" />
-      </button>
-      
-      <div>
-        <h2 className="text-3xl font-black text-brand-dark uppercase tracking-tighter mb-2">Creazione Prodotto Master</h2>
-        <p className="text-sm font-bold text-gray-400">Dati completi per il sito eCommerce e sincronizzazione avanzata canali (B2C, B2B, Marketplace).</p>
+    <div className="bg-white rounded-2xl sm:rounded-[2.5rem] p-4 sm:p-8 lg:p-12 border border-gray-100 shadow-xl space-y-6 sm:space-y-10 animate-in slide-in-from-bottom-8 duration-500 relative w-full max-w-7xl mx-auto">
+      {/* Header Form Responsive */}
+      <div className="flex items-start justify-between gap-3 sm:gap-6 border-b border-gray-100 pb-5">
+        <div className="min-w-0 flex-1">
+          <h2 className="text-xl sm:text-3xl font-black text-brand-dark uppercase tracking-tight sm:tracking-tighter mb-1.5 break-words">
+            {initialData?.id ? 'Modifica Prodotto Master' : 'Creazione Prodotto Master'}
+          </h2>
+          <p className="text-xs sm:text-sm font-bold text-gray-400 leading-snug">
+            Dati completi per il sito eCommerce e sincronizzazione avanzata canali (B2C, B2B, Marketplace).
+          </p>
+        </div>
+        <button 
+          onClick={onBack} 
+          className="flex-shrink-0 p-2.5 sm:p-3 bg-gray-100 text-gray-600 hover:bg-brand-yellow hover:text-brand-dark rounded-xl sm:rounded-2xl transition-all shadow-sm active:scale-95"
+          title="Chiudi"
+        >
+          <X className="w-5 h-5 sm:w-6 sm:h-6" />
+        </button>
       </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
@@ -713,7 +850,7 @@ Rispondi SOLO con JSON valido, nessun testo extra: { "title": "...", "descriptio
                         setCategory(e.target.value);
                       }
                     }}
-                    className="w-full bg-white border-gray-200 rounded-xl px-4 py-2.5 text-xs font-bold focus:ring-brand-blue focus:border-brand-blue"
+                    className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-xs font-bold text-neutral-900 focus:ring-brand-blue focus:border-brand-blue"
                   >
                     {existingCategories.map(c => <option key={c} value={c}>{c}</option>)}
                     <option value="ADD_NEW" className="text-brand-blue font-black">+ NUOVA CATEGORIA</option>
@@ -743,7 +880,7 @@ Rispondi SOLO con JSON valido, nessun testo extra: { "title": "...", "descriptio
                         setSubcategory(e.target.value);
                       }
                     }}
-                    className="w-full bg-white border-gray-200 rounded-xl px-4 py-2.5 text-xs font-bold focus:ring-brand-blue focus:border-brand-blue"
+                    className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-xs font-bold text-neutral-900 focus:ring-brand-blue focus:border-brand-blue"
                   >
                     <option value="Tutti">Tutte</option>
                     {(existingSubcategories[category] || []).map(s => <option key={s} value={s}>{s}</option>)}
@@ -852,26 +989,116 @@ Rispondi SOLO con JSON valido, nessun testo extra: { "title": "...", "descriptio
 
                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative z-10 items-start">
 
-                 {/* COL 1: Costo acquisto */}
+                 {/* COL 1: Costo acquisto + Percentuale / Importo Fisso di Ricarico */}
                  <div className="flex flex-col gap-3">
                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 block h-8 flex items-center">Costo d'Acquisto (Imponibile)</span>
                    <div className="relative">
                      <span className="absolute left-4 top-1/2 -translate-y-1/2 font-black text-gray-500">€</span>
                      <input
                        type="number"
+                       step="0.01"
                        value={baseCost}
                        onFocus={e => baseCost === 0 && setBaseCost('' as any)}
-                       onChange={e => setBaseCost(Number(e.target.value))}
+                       onChange={e => {
+                         const val = Number(e.target.value);
+                         setBaseCost(val);
+                         // Se il ricarico è specificato, calcola e carica automaticamente il prezzo al pubblico
+                         if (markupValue && markupValue.trim() !== '' && !isNaN(Number(markupValue))) {
+                           const mVal = Number(markupValue);
+                           const computed = markupType === 'percent'
+                             ? (val * (1 + mVal / 100)).toFixed(2)
+                             : (val + mVal).toFixed(2);
+                           setManualB2c(computed);
+                         }
+                       }}
                        className="w-full bg-black/40 border-2 border-gray-800 text-white rounded-2xl pl-9 pr-4 py-3 text-xl font-black focus:border-brand-yellow focus:ring-brand-yellow outline-none transition-all"
                        placeholder="0.00"
                      />
                    </div>
-                   <div className="bg-black/20 rounded-xl px-4 py-2 flex justify-between items-center">
-                     <span className="text-[9px] font-black uppercase text-gray-500">Prezzo Netto</span>
-                     <span className="text-sm font-black text-gray-400">€{(Number(baseCost) || 0).toFixed(2)}</span>
+
+                   {/* SOTTO AL COSTO ACQUISTO: Modulo Ricarico Automatico / Manuale */}
+                   <div className="bg-black/40 border border-gray-800 rounded-2xl p-3.5 space-y-2.5 shadow-sm">
+                     <div className="flex items-center justify-between gap-1 flex-wrap">
+                       <span className="text-[9px] font-black uppercase tracking-wider text-gray-300">
+                         Ricarico Prezzo Pubblico
+                       </span>
+                       {/* Selettore % Percentuale o € Importo Fisso */}
+                       <div className="flex items-center bg-black/60 p-0.5 rounded-lg border border-gray-700/80">
+                         <button
+                           type="button"
+                           onClick={() => {
+                             setMarkupType('percent');
+                             if (markupValue && markupValue.trim() !== '' && !isNaN(Number(markupValue)) && baseCost > 0) {
+                               const computed = (baseCost * (1 + Number(markupValue) / 100)).toFixed(2);
+                               setManualB2c(computed);
+                             }
+                           }}
+                           className={`px-2.5 py-1 text-[9px] font-black rounded-md transition-all ${
+                             markupType === 'percent'
+                               ? 'bg-brand-yellow text-brand-dark shadow-xs'
+                               : 'text-gray-400 hover:text-white'
+                           }`}
+                           title="Ricarico in Percentuale (%)"
+                         >
+                           % Percentuale
+                         </button>
+                         <button
+                           type="button"
+                           onClick={() => {
+                             setMarkupType('fixed');
+                             if (markupValue && markupValue.trim() !== '' && !isNaN(Number(markupValue)) && baseCost > 0) {
+                               const computed = (baseCost + Number(markupValue)).toFixed(2);
+                               setManualB2c(computed);
+                             }
+                           }}
+                           className={`px-2.5 py-1 text-[9px] font-black rounded-md transition-all ${
+                             markupType === 'fixed'
+                               ? 'bg-brand-yellow text-brand-dark shadow-xs'
+                               : 'text-gray-400 hover:text-white'
+                           }`}
+                           title="Ricarico con Importo Fisso (€)"
+                         >
+                           € Fisso
+                         </button>
+                       </div>
+                     </div>
+
+                     {/* Campo Valore Ricarico */}
+                     <div className="relative">
+                       <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-black text-brand-yellow">
+                         {markupType === 'percent' ? '%' : '€'}
+                       </span>
+                       <input
+                         type="number"
+                         step="0.01"
+                         value={markupValue}
+                         onChange={(e) => {
+                           const valStr = e.target.value;
+                           setMarkupValue(valStr);
+                           if (valStr.trim() !== '' && !isNaN(Number(valStr)) && baseCost > 0) {
+                             const mVal = Number(valStr);
+                             const computed = markupType === 'percent'
+                               ? (baseCost * (1 + mVal / 100)).toFixed(2)
+                               : (baseCost + mVal).toFixed(2);
+                             setManualB2c(computed);
+                           }
+                           // Se resta vuota, non sovrascrive: si inserisce direttamente il prezzo al pubblico
+                         }}
+                         placeholder={markupType === 'percent' ? "Default 20 (o lascia vuoto per manuale)" : "Es. 15.00 (o lascia vuoto per manuale)"}
+                         className="w-full bg-black/60 border border-gray-700 text-white rounded-xl pl-8 pr-3 py-2 text-sm font-bold focus:border-brand-yellow outline-none transition-all placeholder:text-gray-600"
+                       />
+                     </div>
+
+                     <p className="text-[8.5px] font-bold text-gray-400 leading-tight">
+                       {markupValue.trim() !== ''
+                         ? `Calcolo automatico attivo: ${markupType === 'percent' ? `+ ${markupValue}% su costo` : `+ €${markupValue} su costo`}`
+                         : "Campo vuoto: puoi inserire direttamente il Prezzo al Pubblico IVA inclusa a destra."}
+                     </p>
                    </div>
-                   <div className="bg-black/20 rounded-xl px-4 py-2 flex justify-between items-center opacity-0 pointer-events-none">
-                     <span className="text-[9px]">&nbsp;</span>
+
+                   <div className="bg-black/20 rounded-xl px-4 py-2 flex justify-between items-center">
+                     <span className="text-[9px] font-black uppercase text-gray-500">Costo Netto Base</span>
+                     <span className="text-sm font-black text-gray-400">€{(Number(baseCost) || 0).toFixed(2)}</span>
                    </div>
                  </div>
 
@@ -1289,686 +1516,779 @@ Rispondi SOLO con JSON valido, nessun testo extra: { "title": "...", "descriptio
           </div>
 
           
-          <div className="space-y-4">
-            <h3 className="text-lg font-black uppercase tracking-widest text-brand-dark border-b border-gray-100 pb-3 flex items-center gap-2">
-              <Plus className="w-5 h-5 text-gray-400"/> Varianti & Stock Canali
-            </h3>
-             <div className="space-y-4">
-               {/* Global Variants Management */}
-               <div className="bg-brand-blue/5 rounded-2xl p-6 border border-brand-blue/10 mb-4">
-                  <div className="flex items-center justify-between mb-4">
-                     <h4 className="text-[11px] font-black uppercase tracking-widest text-brand-blue flex items-center gap-2">
-                       <Layers className="w-4 h-4" /> Configurazione Tipi Varianti (Tabella Master)
-                     </h4>
-                     {!isAddingVariantType && (
-                       <button 
-                         onClick={() => setIsAddingVariantType(true)}
-                         className="px-4 py-2 bg-brand-blue text-white rounded-xl text-[10px] font-black uppercase hover:bg-brand-dark transition-all shadow-md active:scale-95"
-                       >
-                         + Nuovo Parametro
-                       </button>
-                     )}
+          <div className="space-y-6">
+            <div className="flex items-center justify-between border-b border-gray-100 pb-3 flex-wrap gap-2">
+              <div>
+                <h3 className="text-lg font-black uppercase tracking-widest text-brand-dark flex items-center gap-2">
+                  <Package className="w-5 h-5 text-brand-yellow" />
+                  Taglie, Colori & Codici a Barre (Magazzino Abbigliamento)
+                </h3>
+                <p className="text-xs text-gray-500 font-bold mt-0.5">
+                  Procedura preimpostata per negozio di abbigliamento e scarpe. Gestisci taglie, colori, giacenze e barcode univoci senza codici complessi.
+                </p>
+              </div>
+
+              {/* Contatore Capi Totali */}
+              <div className="flex items-center gap-2 bg-neutral-950 text-white px-4 py-2 rounded-2xl shadow-sm">
+                <span className="text-[10px] font-black uppercase tracking-wider text-brand-yellow">Totale Capi in Magazzino:</span>
+                <span className="text-base font-black text-white">
+                  {variants.reduce((acc, curr) => acc + (Number(curr.webStock) || 0), 0)} pz
+                </span>
+              </div>
+            </div>
+
+            {/* BOX PREIMPOSTATO VELOCE: GENERATORE TAGLIE E COLORI */}
+            <div className="bg-gradient-to-br from-amber-50/70 via-orange-50/40 to-yellow-50/60 p-6 rounded-[2.2rem] border-2 border-amber-200/80 shadow-xs space-y-6">
+              
+              {/* PASSO 1: SCELTA CATEGORIA / TEMPLATE TAGLIE */}
+              <div className="space-y-2">
+                <span className="text-[10px] font-black uppercase tracking-widest text-amber-950 flex items-center gap-1.5">
+                  <span>1.</span> Seleziona Tipo di Capo / Tagliario Preimpostato:
+                </span>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                  {[
+                    { key: 'tops', label: 'Maglie & Abbigliamento', icon: '👕', desc: 'XS, S, M, L, XL...' },
+                    { key: 'pants', label: 'Pantaloni & Jeans', icon: '👖', desc: '38, 40, 42, 44...' },
+                    { key: 'shoes', label: 'Scarpe & Calzature', icon: '👟', desc: '36, 37, 38, 39...' },
+                    { key: 'custom', label: 'Taglie Libere', icon: '⚙️', desc: 'Personalizzate' }
+                  ].map(tab => (
+                    <button
+                      key={tab.key}
+                      type="button"
+                      onClick={() => {
+                        const newKey = tab.key as any;
+                        setClothingCategoryType(newKey);
+                        if (newKey !== 'custom') {
+                          setSelectedPresetSizes(CLOTHING_PRESETS[newKey].sizes.slice(0, 5));
+                        }
+                      }}
+                      className={`p-3.5 rounded-2xl border text-left transition-all flex flex-col gap-1 ${
+                        clothingCategoryType === tab.key
+                          ? 'bg-neutral-950 text-white border-neutral-950 shadow-md scale-[1.01]'
+                          : 'bg-white text-gray-700 border-amber-200/70 hover:border-amber-300 hover:bg-white/90'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="text-xl">{tab.icon}</span>
+                        <span className="text-xs font-black uppercase tracking-tight">{tab.label}</span>
+                      </div>
+                      <span className={`text-[9px] font-bold ${clothingCategoryType === tab.key ? 'text-amber-300' : 'text-gray-400'}`}>
+                        {tab.desc}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* PASSO 2: SELEZIONE TAGLIE */}
+              <div className="space-y-2 bg-white/80 p-4 rounded-2xl border border-amber-200/60">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-amber-950 flex items-center gap-1.5">
+                    <span>2.</span> Seleziona le Taglie da Generare:
+                  </span>
+                  {clothingCategoryType !== 'custom' && (
+                    <div className="flex items-center gap-2 text-[9px] font-bold">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedPresetSizes(CLOTHING_PRESETS[clothingCategoryType].sizes)}
+                        className="text-amber-900 hover:text-black font-black underline uppercase"
+                      >
+                        Seleziona Tutte
+                      </button>
+                      <span className="text-gray-300">•</span>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedPresetSizes([])}
+                        className="text-gray-500 hover:text-red-600 font-bold uppercase"
+                      >
+                        Deseleziona
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {(clothingCategoryType !== 'custom' 
+                    ? CLOTHING_PRESETS[clothingCategoryType].sizes 
+                    : ['XS', 'S', 'M', 'L', 'XL', 'XXL', '38', '40', '42', '44', '46']
+                  ).map(sz => {
+                    const isSelected = selectedPresetSizes.includes(sz);
+                    return (
+                      <button
+                        key={sz}
+                        type="button"
+                        onClick={() => {
+                          if (isSelected) {
+                            setSelectedPresetSizes(prev => prev.filter(s => s !== sz));
+                          } else {
+                            setSelectedPresetSizes(prev => [...prev, sz]);
+                          }
+                        }}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all border ${
+                          isSelected
+                            ? 'bg-neutral-950 text-brand-yellow border-neutral-950 shadow-sm scale-105'
+                            : 'bg-white text-gray-700 border-gray-200 hover:border-gray-400'
+                        }`}
+                      >
+                        {sz}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Input rapido per aggiungere altra taglia personalizzata */}
+                <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
+                  <input
+                    type="text"
+                    value={customSizeText}
+                    onChange={e => setCustomSizeText(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        if (customSizeText.trim() && !selectedPresetSizes.includes(customSizeText.trim())) {
+                          setSelectedPresetSizes(prev => [...prev, customSizeText.trim()]);
+                          setCustomSizeText('');
+                        }
+                      }
+                    }}
+                    placeholder="+ Aggiungi altra taglia (es. 4XL o 35)..."
+                    className="bg-white border border-gray-200 rounded-xl px-3 py-1.5 text-xs font-bold text-neutral-900 w-64 focus:ring-2 focus:ring-amber-400 outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (customSizeText.trim() && !selectedPresetSizes.includes(customSizeText.trim())) {
+                        setSelectedPresetSizes(prev => [...prev, customSizeText.trim()]);
+                        setCustomSizeText('');
+                      }
+                    }}
+                    className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-black uppercase"
+                  >
+                    Aggiungi Taglia
+                  </button>
+                </div>
+              </div>
+
+              {/* PASSO 3: SELEZIONE COLORI */}
+              <div className="space-y-2 bg-white/80 p-4 rounded-2xl border border-amber-200/60">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-amber-950 flex items-center gap-1.5">
+                    <span>3.</span> Seleziona i Colori del Capo:
+                  </span>
+                  <div className="flex items-center gap-2 text-[9px] font-bold">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedPresetColors([])}
+                      className="text-gray-500 hover:text-red-600 font-bold uppercase"
+                    >
+                      Nessun Colore / Reset
+                    </button>
                   </div>
-                  
-                  <div className="flex flex-wrap gap-3">
-                     {availableVariants.map(type => (
-                       <div key={type} className="flex items-center gap-2 bg-white px-4 py-2.5 rounded-2xl border border-gray-100 shadow-sm group">
-                          {editingVariantType === type ? (
-                            <div className="flex items-center gap-2">
-                              <input 
-                                type="text" 
-                                value={editingVariantValue} 
-                                onChange={e => setEditingVariantValue(e.target.value)}
-                                className="w-24 bg-gray-50 border-none rounded-lg px-2 py-1 text-[10px] font-bold focus:ring-1 focus:ring-brand-blue"
-                                autoFocus
-                              />
-                              <button 
-                                onClick={() => {
-                                  if (editingVariantValue && setAvailableVariants) {
-                                    setAvailableVariants(availableVariants.map(v => v === type ? editingVariantValue : v));
-                                    setEditingVariantType(null);
-                                  }
+                </div>
+
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {PRESET_COLORS.map(col => {
+                    const isSelected = selectedPresetColors.includes(col);
+                    return (
+                      <button
+                        key={col}
+                        type="button"
+                        onClick={() => {
+                          if (isSelected) {
+                            setSelectedPresetColors(prev => prev.filter(c => c !== col));
+                          } else {
+                            setSelectedPresetColors(prev => [...prev, col]);
+                          }
+                        }}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all border flex items-center gap-1.5 ${
+                          isSelected
+                            ? 'bg-neutral-950 text-white border-neutral-950 shadow-sm scale-105'
+                            : 'bg-white text-gray-700 border-gray-200 hover:border-gray-400'
+                        }`}
+                      >
+                        <span 
+                          className="w-2.5 h-2.5 rounded-full border border-black/10 shrink-0"
+                          style={{
+                            backgroundColor: 
+                              col === 'Nero' ? '#111111' :
+                              col === 'Bianco' ? '#ffffff' :
+                              col === 'Blu' ? '#1e40af' :
+                              col === 'Grigio' ? '#9ca3af' :
+                              col === 'Rosso' ? '#dc2626' :
+                              col === 'Verde' ? '#16a34a' :
+                              col === 'Beige' ? '#f5f5dc' :
+                              col === 'Rosa' ? '#f472b6' :
+                              col === 'Marrone' ? '#78350f' :
+                              col === 'Giallo' ? '#eab308' :
+                              col === 'Bordeaux' ? '#800020' : '#cccccc'
+                          }}
+                        />
+                        <span>{col}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Input rapido per colore personalizzato */}
+                <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
+                  <input
+                    type="text"
+                    value={customColorText}
+                    onChange={e => setCustomColorText(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        if (customColorText.trim() && !selectedPresetColors.includes(customColorText.trim())) {
+                          setSelectedPresetColors(prev => [...prev, customColorText.trim()]);
+                          setCustomColorText('');
+                        }
+                      }
+                    }}
+                    placeholder="+ Aggiungi altro colore (es. Verde Militare, Fantasia)..."
+                    className="bg-white border border-gray-200 rounded-xl px-3 py-1.5 text-xs font-bold text-neutral-900 w-64 focus:ring-2 focus:ring-amber-400 outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (customColorText.trim() && !selectedPresetColors.includes(customColorText.trim())) {
+                        setSelectedPresetColors(prev => [...prev, customColorText.trim()]);
+                        setCustomColorText('');
+                      }
+                    }}
+                    className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-black uppercase"
+                  >
+                    Aggiungi Colore
+                  </button>
+                </div>
+              </div>
+
+              {/* PASSO 4: QUANTITÀ DEFAULT E PULSANTE DI GENERAZIONE */}
+              <div className="flex items-center justify-between gap-4 flex-wrap bg-white/90 p-4 rounded-2xl border border-amber-300">
+                <div className="flex items-center gap-3">
+                  <label className="text-xs font-black text-neutral-900 uppercase">
+                    Giacenza Iniziale per capo:
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={batchQty}
+                    onChange={e => setBatchQty(Number(e.target.value))}
+                    className="w-20 bg-gray-50 border border-gray-300 rounded-xl px-3 py-2 text-center text-sm font-black text-neutral-900 focus:ring-2 focus:ring-amber-400 outline-none"
+                  />
+                  <span className="text-xs text-gray-500 font-bold">pz / variante</span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleAddSingleRow}
+                    className="px-4 py-3 bg-white border border-gray-300 hover:border-neutral-900 text-neutral-900 rounded-2xl text-xs font-black uppercase tracking-wider transition-all"
+                  >
+                    + Riga Singola
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleGenerateClothingVariants}
+                    className="px-6 py-3 bg-neutral-950 hover:bg-black text-brand-yellow rounded-2xl text-xs font-black uppercase tracking-wider shadow-md hover:shadow-lg transition-all active:scale-95 flex items-center gap-2"
+                  >
+                    <Sparkles className="w-4 h-4 text-brand-yellow" />
+                    <span>Genera Combinazioni ({selectedPresetSizes.length} Taglie × {selectedPresetColors.length || 1} Colori)</span>
+                  </button>
+                </div>
+              </div>
+
+            </div>
+
+            {/* TABELLA VARIANTI GENERATE (SOLO TAGLIA, COLORE, QUANTITÀ, CODICE A BARRE) */}
+            <div className="bg-white rounded-3xl border border-gray-200 overflow-hidden shadow-xs">
+              {variants.length === 0 ? (
+                <div className="p-12 text-center space-y-3">
+                  <div className="w-14 h-14 mx-auto rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center text-2xl">
+                    👕
+                  </div>
+                  <h4 className="text-base font-black text-neutral-900 uppercase tracking-tight">Nessuna variante inserita</h4>
+                  <p className="text-xs text-gray-500 font-bold max-w-md mx-auto">
+                    Usa il modulo rapido in alto per selezionare taglie e colori del capo e clicca su <strong>"Genera Combinazioni"</strong>, oppure clicca su <strong>"+ Riga Singola"</strong>.
+                  </p>
+                </div>
+              ) : (
+                <div>
+                  {/* VISTA DESKTOP: Tabella standard completa */}
+                  {/* VISTA DESKTOP: Layout a 2 Righe per visualizzare il Codice a Barre per intero */}
+                  <div className="hidden md:block overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="bg-neutral-950 text-white text-[10px] font-black uppercase tracking-widest">
+                          <th className="py-3 px-4 w-12 text-center text-gray-400">#</th>
+                          <th className="py-3 px-4 w-44">Taglia</th>
+                          <th className="py-3 px-4">Colore</th>
+                          <th className="py-3 px-4 w-32 text-center">Quantità (Pz)</th>
+                          <th className="py-3 px-4 w-24 text-right">Azioni</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-200">
+                        {variants.map((v, i) => {
+                          const parts = (v.value || '').split(' - ');
+                          const curSize = v.size || parts[0] || '';
+                          const curColor = v.color || parts[1] || '';
+
+                          return (
+                            <tr key={v.id || i} className="hover:bg-amber-50/20 transition-colors">
+                              <td colSpan={5} className="p-3.5">
+                                <div className="space-y-2.5">
+                                  {/* RIGO 1 (DESKTOP): Indice, Taglia, Colore, Quantità, Azioni */}
+                                  <div className="flex items-center gap-3">
+                                    <span className="w-7 h-7 rounded-lg bg-gray-100 text-gray-700 text-xs font-black flex items-center justify-center flex-shrink-0">
+                                      {i + 1}
+                                    </span>
+
+                                    {/* Taglia */}
+                                    <div className="w-44 flex-shrink-0">
+                                      <input
+                                        type="text"
+                                        value={curSize}
+                                        onChange={e => {
+                                          const newSize = e.target.value;
+                                          const newV = [...variants];
+                                          newV[i].size = newSize;
+                                          newV[i].value = newV[i].color ? `${newSize} - ${newV[i].color}` : newSize;
+                                          newV[i].title = newV[i].value;
+                                          setVariants(newV);
+                                        }}
+                                        placeholder="Taglia (es. M, 42...)"
+                                        className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs font-black uppercase text-neutral-900 focus:bg-white focus:ring-2 focus:ring-amber-400 outline-none"
+                                      />
+                                    </div>
+
+                                    {/* Colore */}
+                                    <div className="flex-1 min-w-0">
+                                      <input
+                                        type="text"
+                                        value={curColor}
+                                        onChange={e => {
+                                          const newColor = e.target.value;
+                                          const newV = [...variants];
+                                          newV[i].color = newColor;
+                                          newV[i].value = newColor ? `${newV[i].size || ''} - ${newColor}` : (newV[i].size || '');
+                                          newV[i].title = newV[i].value;
+                                          setVariants(newV);
+                                        }}
+                                        placeholder="Colore (es. Nero, Bianco, Blu Navy...)"
+                                        className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold text-neutral-900 focus:bg-white focus:ring-2 focus:ring-amber-400 outline-none"
+                                      />
+                                    </div>
+
+                                    {/* Quantità */}
+                                    <div className="w-32 flex-shrink-0">
+                                      <div className="flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-xl px-3 py-1.5 focus-within:bg-white focus-within:ring-2 focus-within:ring-amber-400">
+                                        <span className="text-[10px] font-black uppercase text-gray-400">Pz:</span>
+                                        <input
+                                          type="number"
+                                          min="0"
+                                          value={v.webStock ?? ""}
+                                          onChange={e => {
+                                            const val = e.target.value === "" ? 0 : parseInt(e.target.value, 10) || 0;
+                                            const newV = [...variants];
+                                            newV[i].webStock = val;
+                                            setVariants(newV);
+                                          }}
+                                          className="w-full bg-transparent text-sm font-black text-center text-neutral-900 outline-none p-0"
+                                        />
+                                      </div>
+                                    </div>
+
+                                    {/* Azioni */}
+                                    <div className="flex items-center justify-end gap-1.5 flex-shrink-0">
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          const copy = {
+                                            ...v,
+                                            id: `var-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
+                                            ean: ''
+                                          };
+                                          const newV = [...variants];
+                                          newV.splice(i + 1, 0, copy);
+                                          setVariants(newV);
+                                        }}
+                                        className="p-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition-colors active:scale-95"
+                                        title="Duplica variante"
+                                      >
+                                        <Plus className="w-4 h-4" />
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => setVariants(variants.filter((_, idx) => idx !== i))}
+                                        className="p-2 bg-red-50 hover:bg-red-600 hover:text-white text-red-600 rounded-xl transition-colors active:scale-95"
+                                        title="Elimina variante"
+                                      >
+                                        <Trash2 className="w-4 h-4" />
+                                      </button>
+                                    </div>
+                                  </div>
+
+                                  {/* RIGO 2 (DESKTOP): CODICE A BARRE A TUTTA LARGHEZZA */}
+                                  <div className="flex items-center gap-3 pl-10">
+                                    <span className="text-[10px] font-black uppercase tracking-wider text-brand-blue flex items-center gap-1.5 flex-shrink-0 bg-blue-50/80 px-3 py-1.5 rounded-lg border border-blue-100">
+                                      <span className="font-mono text-xs font-black">|||||</span> Codice a Barre (Barcode / EAN):
+                                    </span>
+                                    <div className="flex-1 relative">
+                                      <input
+                                        type="text"
+                                        value={v.ean ?? ""}
+                                        onChange={e => {
+                                          const newV = [...variants];
+                                          newV[i].ean = e.target.value;
+                                          setVariants(newV);
+                                        }}
+                                        placeholder="Scansiona o digita codice a barre (Barcode / EAN) per intero..."
+                                        className="w-full bg-gray-50/60 border border-gray-200 rounded-xl pl-4 pr-4 py-2 text-xs font-mono font-bold text-neutral-900 focus:bg-white focus:ring-2 focus:ring-amber-400 outline-none placeholder:text-gray-400"
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                  {/* VISTA MOBILE: 2 Righe per ogni voce (Rigo 1: Taglia/Colore/Quantità, Rigo 2: Codice a Barre + Azioni) */}
+                  <div className="md:hidden divide-y divide-gray-100">
+                    {variants.map((v, i) => {
+                      const parts = (v.value || '').split(' - ');
+                      const curSize = v.size || parts[0] || '';
+                      const curColor = v.color || parts[1] || '';
+
+                      return (
+                        <div key={v.id || i} className="p-3.5 space-y-2.5 bg-white hover:bg-amber-50/20 transition-colors">
+                          {/* RIGO 1: Indice, Taglia, Colore, Quantità */}
+                          <div className="flex items-center gap-2">
+                            <span className="w-6 h-6 rounded-full bg-gray-100 text-gray-600 text-[10px] font-black flex items-center justify-center flex-shrink-0">
+                              {i + 1}
+                            </span>
+
+                            {/* Taglia */}
+                            <div className="w-24 flex-shrink-0">
+                              <input
+                                type="text"
+                                value={curSize}
+                                onChange={e => {
+                                  const newSize = e.target.value;
+                                  const newV = [...variants];
+                                  newV[i].size = newSize;
+                                  newV[i].value = newV[i].color ? `${newSize} - ${newV[i].color}` : newSize;
+                                  newV[i].title = newV[i].value;
+                                  setVariants(newV);
                                 }}
-                                className="text-green-500 hover:scale-110"
+                                placeholder="Taglia"
+                                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-2.5 py-2 text-xs font-black uppercase text-neutral-900 focus:bg-white focus:ring-2 focus:ring-amber-400 outline-none text-center"
+                              />
+                            </div>
+
+                            {/* Colore */}
+                            <div className="flex-1 min-w-0">
+                              <input
+                                type="text"
+                                value={curColor}
+                                onChange={e => {
+                                  const newColor = e.target.value;
+                                  const newV = [...variants];
+                                  newV[i].color = newColor;
+                                  newV[i].value = newColor ? `${newV[i].size || ''} - ${newColor}` : (newV[i].size || '');
+                                  newV[i].title = newV[i].value;
+                                  setVariants(newV);
+                                }}
+                                placeholder="Colore..."
+                                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-2.5 py-2 text-xs font-bold text-neutral-900 focus:bg-white focus:ring-2 focus:ring-amber-400 outline-none"
+                              />
+                            </div>
+
+                            {/* Quantità */}
+                            <div className="w-20 flex-shrink-0 flex items-center gap-1 bg-gray-50 border border-gray-200 rounded-xl px-2 py-1.5 focus-within:bg-white focus-within:ring-2 focus-within:ring-amber-400">
+                              <span className="text-[9px] font-black uppercase text-gray-400">Pz:</span>
+                              <input
+                                type="number"
+                                min="0"
+                                value={v.webStock ?? ""}
+                                onChange={e => {
+                                  const val = e.target.value === "" ? 0 : parseInt(e.target.value, 10) || 0;
+                                  const newV = [...variants];
+                                  newV[i].webStock = val;
+                                  setVariants(newV);
+                                }}
+                                className="w-full bg-transparent text-xs font-black text-center text-neutral-900 outline-none p-0"
+                              />
+                            </div>
+                          </div>
+
+                          {/* RIGO 2: Codice a Barre + Tasti Icone Azioni */}
+                          <div className="flex items-center gap-2 pt-0.5">
+                            {/* Input Codice a Barre */}
+                            <div className="flex-1 relative">
+                              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs font-mono font-bold">
+                                |||
+                              </span>
+                              <input
+                                type="text"
+                                value={v.ean ?? ""}
+                                onChange={e => {
+                                  const newV = [...variants];
+                                  newV[i].ean = e.target.value;
+                                  setVariants(newV);
+                                }}
+                                placeholder="Codice a Barre (Barcode / EAN)..."
+                                className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-7 pr-2.5 py-2 text-xs font-mono font-bold text-neutral-900 focus:bg-white focus:ring-2 focus:ring-amber-400 outline-none placeholder:text-gray-400"
+                              />
+                            </div>
+
+                            {/* Tasti Icone Azioni (Duplica ed Elimina) */}
+                            <div className="flex items-center gap-1.5 flex-shrink-0">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const copy = {
+                                    ...v,
+                                    id: `var-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
+                                    ean: ''
+                                  };
+                                  const newV = [...variants];
+                                  newV.splice(i + 1, 0, copy);
+                                  setVariants(newV);
+                                }}
+                                className="p-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition-colors active:scale-95"
+                                title="Duplica variante"
                               >
-                                <Check className="w-4 h-4" />
+                                <Plus className="w-4 h-4" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setVariants(variants.filter((_, idx) => idx !== i))}
+                                className="p-2 bg-red-50 hover:bg-red-600 hover:text-white text-red-600 rounded-xl transition-colors active:scale-95"
+                                title="Elimina variante"
+                              >
+                                <Trash2 className="w-4 h-4" />
                               </button>
                             </div>
-                          ) : (
-                            <>
-                              <span className="text-[10px] font-black uppercase text-brand-dark tracking-tight">{type}</span>
-                              <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                                 <button 
-                                   onClick={() => {
-                                     setEditingVariantType(type);
-                                     setEditingVariantValue(type);
-                                   }}
-                                   className="text-gray-300 hover:text-brand-blue transition-colors"
-                                 >
-                                   <RefreshCw className="w-3 h-3" />
-                                 </button>
-                                 <button 
-                                   onClick={() => setAvailableVariants?.(availableVariants.filter(v => v !== type))}
-                                   className="text-gray-300 hover:text-red-500 transition-colors"
-                                 >
-                                   <X className="w-3 h-3" />
-                                 </button>
-                              </div>
-                            </>
-                          )}
-                       </div>
-                     ))}
-                     
-                     {isAddingVariantType && (
-                       <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-2xl border-2 border-dashed border-brand-blue/30 shadow-sm">
-                          <input 
-                            type="text" 
-                            placeholder="Nome parametro..."
-                            value={newVariantTypeName}
-                            onChange={e => setNewVariantTypeName(e.target.value)}
-                            className="w-32 bg-gray-50 border-none rounded-lg px-3 py-1.5 text-[10px] font-bold focus:ring-1 focus:ring-brand-blue"
-                            autoFocus
-                          />
-                          <button 
-                            onClick={() => {
-                               if (newVariantTypeName && setAvailableVariants) {
-                                 setAvailableVariants([...availableVariants, newVariantTypeName]);
-                                 setNewVariantTypeName("");
-                                 setIsAddingVariantType(false);
-                               }
-                            }}
-                            className="p-1.5 text-green-500 hover:bg-green-50 rounded-lg transition-colors"
-                          >
-                            <Check className="w-4 h-4" />
-                          </button>
-                          <button 
-                            onClick={() => {
-                              setIsAddingVariantType(false);
-                              setNewVariantTypeName("");
-                            }}
-                            className="p-1.5 text-gray-400 hover:bg-gray-100 rounded-lg transition-colors"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                       </div>
-                     )}
-                  </div>
-                  <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-4 flex items-center gap-2 opacity-60">
-                    <Info className="w-3 h-3" /> Questi parametri saranno disponibili per tutti i prodotti dello store.
-                  </p>
-               </div>
-
-               <div className="space-y-4">
-                 {variants.map((v, i) => {
-                 // Dynamic grid columns based on active channels + Total
-                 let gridCols = 1; // Solo Web inizialmente
-                 if (isAmazonActive) gridCols++;
-                 if (isEbayActive) gridCols++;
-
-                  return (
-                     <div key={v.id} className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm transition-all hover:shadow-md">
-                       <div className="flex flex-col lg:flex-row gap-6">
-                         
-                         {/* Col 1+2: Form fields */}
-                         <div className="flex-1 flex flex-col gap-4">
-                           
-                           {/* Row 1: Variante & Valore */}
-                           <div className="grid grid-cols-2 gap-4">
-                             <div className="flex flex-col gap-1">
-                               <span className="text-[9px] font-black uppercase text-gray-400 tracking-widest pl-1">Variante</span>
-                               <select 
-                                 value={v.type}
-                                 onChange={e => { const newV = [...variants]; newV[i].type = e.target.value; setVariants(newV); }}
-                                 className="w-full bg-gray-50 rounded-xl px-4 py-3 text-[11px] font-black uppercase border border-gray-200 outline-none focus:ring-2 focus:ring-brand-blue/30 transition-all"
-                               >
-                                 {availableVariants.map(type => (<option key={type} value={type}>{type}</option>))}
-                               </select>
-                             </div>
-                             <div className="flex flex-col gap-1">
-                               <span className="text-[9px] font-black uppercase text-gray-400 tracking-widest pl-1">Valore</span>
-                               <input 
-                                 type="text" value={v.value ?? ""}
-                                 onChange={e => {
-                                   const val = e.target.value;
-                                   const newV = [...variants]; 
-                                   newV[i].value = val;
-                                   newV[i].sku = `${sku}-${val}`.toUpperCase().replace(/\s+/g, '-');
-                                   setVariants(newV);
-                                 }}
-                                 placeholder="es. XL, Rosso..." 
-                                 className="w-full bg-gray-50 rounded-xl px-4 py-3 text-[11px] font-black uppercase border border-gray-200 outline-none focus:ring-2 focus:ring-brand-blue/30 transition-all" 
-                               />
-                             </div>
-                            </div>
-
-                            {/* Row: Titolo & Nota */}
-                            <div className="grid grid-cols-2 gap-4">
-                              <div className="flex flex-col gap-1">
-                                <span className="text-[9px] font-black uppercase text-gray-400 tracking-widest pl-1">Titolo Variante (Descrizione)</span>
-                                <input 
-                                  type="text" 
-                                  value={v.title ?? ""}
-                                  onChange={e => { const newV = [...variants]; newV[i].title = e.target.value; setVariants(newV); }}
-                                  placeholder="es. Antifurto Bianco con sensore PIR"
-                                  className="w-full bg-gray-50 rounded-xl px-4 py-3 text-[11px] font-bold border border-gray-200 outline-none focus:ring-2 focus:ring-brand-blue/30 transition-all"
-                                />
-                              </div>
-                              <div className="flex flex-col gap-1">
-                                <span className="text-[9px] font-black uppercase text-gray-400 tracking-widest pl-1">Nota Variante (Opzionale)</span>
-                                <input 
-                                  type="text" 
-                                  value={v.note ?? ""}
-                                  onChange={e => { const newV = [...variants]; newV[i].note = e.target.value; setVariants(newV); }}
-                                  placeholder="es. Spedizione rapida 24h"
-                                  className="w-full bg-gray-50 rounded-xl px-4 py-3 text-[11px] font-bold border border-gray-200 outline-none focus:ring-2 focus:ring-brand-blue/30 transition-all"
-                                />
-                              </div>
-                            </div>
-
-                           {/* Row 2: SKU & EAN */}
-                           <div className="grid grid-cols-2 gap-4">
-                             <div className="flex flex-col gap-1">
-                               <span className="text-[9px] font-black uppercase text-gray-400 tracking-widest pl-1">SKU Variante</span>
-                               <input 
-                                 type="text" value={v.sku ?? ""}
-                                 onChange={e => { const newV = [...variants]; newV[i].sku = e.target.value; setVariants(newV); }}
-                                 placeholder="SKU-001"
-                                 className="w-full bg-gray-50 rounded-xl px-4 py-3 text-[11px] font-bold border border-gray-200 outline-none focus:ring-2 focus:ring-brand-blue/30 transition-all"
-                               />
-                             </div>
-                             <div className="flex flex-col gap-1">
-                                <div className="flex justify-between items-center pl-1 w-full">
-                                  <span className="text-[9px] font-black uppercase text-gray-400 tracking-widest">EAN Variante</span>
-                                  <label className="inline-flex items-center cursor-pointer scale-75 origin-right">
-                                    <input 
-                                      type="checkbox" 
-                                      className="sr-only peer" 
-                                      checked={v.showEan !== false} 
-                                      onChange={e => { 
-                                        const newV = [...variants]; 
-                                        newV[i].showEan = e.target.checked; 
-                                        setVariants(newV); 
-                                      }} 
-                                    />
-                                    <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-brand-blue relative"></div>
-                                    <span className="ml-2 text-[8px] font-black uppercase text-gray-400 peer-checked:text-brand-blue">Visibile</span>
-                                  </label>
-                                </div>
-                               <input 
-                                 type="text" value={v.ean ?? ""}
-                                 onChange={e => { const newV = [...variants]; newV[i].ean = e.target.value; setVariants(newV); }}
-                                 placeholder="801234..."
-                                 className="w-full bg-gray-50 rounded-xl px-4 py-3 text-[11px] font-bold border border-gray-200 outline-none focus:ring-2 focus:ring-brand-blue/30 transition-all"
-                               />
-                             </div>
-                           </div>
-
-                           {/* Row 3: Logica Prezzo */}
-                           <div className="flex flex-col gap-1 bg-blue-50/40 p-4 rounded-2xl border border-blue-100/60">
-                             <span className="text-[9px] font-black uppercase text-brand-blue tracking-widest pl-1">Logica Prezzo Variante</span>
-                             <div className="flex items-center gap-2 mt-1">
-                               <select 
-                                 value={v.costType}
-                                 onChange={e => { const newV = [...variants]; newV[i].costType = e.target.value as any; setVariants(newV); }}
-                                 className="flex-1 text-[11px] font-black uppercase bg-white rounded-lg px-3 py-2.5 border border-gray-200 outline-none focus:ring-2 focus:ring-brand-blue/30 shadow-sm"
-                               >
-                                 <option value="fixed">Fisso €</option>
-                                 <option value="delta">Delta €</option>
-                                 <option value="percent">% Su Pubblico</option>
-                               </select>
-                               <input 
-                                 type="number" 
-                                 step="0.01" 
-                                 value={v.costValue === 0 || v.costValue === undefined ? "" : v.costValue}
-                                 placeholder="0.00"
-                                 onChange={e => { 
-                                   const val = e.target.value === "" ? 0 : Number(e.target.value);
-                                   const newV = [...variants]; 
-                                   newV[i].costValue = val; 
-                                   setVariants(newV); 
-                                 }}
-                                 className="w-28 bg-white rounded-lg px-3 py-2.5 text-[12px] font-black text-center border border-gray-200 outline-none focus:ring-2 focus:ring-brand-blue/30 shadow-sm"
-                               />
-                             </div>
-                           </div>
-
-                           {/* Row 4: Stock Canali */}
-                           <div className="grid gap-3 bg-gray-50 p-4 rounded-2xl border border-gray-100" style={{ gridTemplateColumns: `repeat(${gridCols}, minmax(0, 1fr))` }}>
-                             <div className="flex flex-col gap-1">
-                               <div className="flex items-center justify-between px-1">
-                                 <span className="text-[9px] font-black text-indigo-500 uppercase tracking-widest">Webshop</span>
-                                 <Globe className="w-3 h-3 text-indigo-300" />
-                               </div>
-                               <input 
-                                 type="number" value={v.webStock ?? ""}
-                                 onFocus={e => (v.webStock === 0 || v.webStock === ('' as any)) && ( () => { const newV = [...variants]; newV[i].webStock = '' as any; setVariants(newV); } )()}
-                                 onChange={e => {
-                                   const val = Number(e.target.value); const newV = [...variants]; newV[i].webStock = val;
-                                   if (newV.length > 1 && i !== 0) { const otherSum = newV.reduce((acc, curr, idx) => idx === 0 ? acc : acc + Number(curr.webStock || 0), 0); newV[0].webStock = Math.max(0, webStock - otherSum); }
-                                   setVariants(newV);
-                                 }}
-                                 className="w-full h-11 bg-white rounded-xl px-3 text-[14px] font-black text-center text-indigo-700 border border-indigo-100 focus:ring-2 focus:ring-indigo-300 transition-all" 
-                               />
-                             </div>
-                             {isAmazonActive && (
-                               <div className="flex flex-col gap-1">
-                                 <div className="flex items-center justify-between px-1">
-                                   <span className="text-[9px] font-black text-orange-500 uppercase tracking-widest">Amazon</span>
-                                   <ExternalLink className="w-3 h-3 text-orange-300" />
-                                 </div>
-                                 <input 
-                                   type="number" value={v.amazonStock ?? ""}
-                                   onFocus={e => (v.amazonStock === 0 || v.amazonStock === ('' as any)) && ( () => { const newV = [...variants]; newV[i].amazonStock = '' as any; setVariants(newV); } )()}
-                                   onChange={e => {
-                                     const val = Number(e.target.value); const newV = [...variants]; newV[i].amazonStock = val;
-                                     if (newV.length > 1 && i !== 0) { const otherSum = newV.reduce((acc, curr, idx) => idx === 0 ? acc : acc + Number(curr.amazonStock || 0), 0); newV[0].amazonStock = Math.max(0, amazonStock - otherSum); }
-                                     setVariants(newV);
-                                   }}
-                                   className="w-full h-11 bg-white rounded-xl px-3 text-[14px] font-black text-center text-orange-600 border border-orange-100 focus:ring-2 focus:ring-orange-300 transition-all" 
-                                 />
-                               </div>
-                             )}
-                             {isEbayActive && (
-                               <div className="flex flex-col gap-1">
-                                 <div className="flex items-center justify-between px-1">
-                                   <span className="text-[9px] font-black text-blue-500 uppercase tracking-widest">eBay</span>
-                                   <ExternalLink className="w-3 h-3 text-blue-300" />
-                                 </div>
-                                 <input 
-                                   type="number" value={v.ebayStock ?? ""}
-                                   onFocus={e => (v.ebayStock === 0 || v.ebayStock === ('' as any)) && ( () => { const newV = [...variants]; newV[i].ebayStock = '' as any; setVariants(newV); } )()}
-                                   onChange={e => {
-                                     const val = Number(e.target.value); const newV = [...variants]; newV[i].ebayStock = val;
-                                     if (newV.length > 1 && i !== 0) { const otherSum = newV.reduce((acc, curr, idx) => idx === 0 ? acc : acc + Number(curr.ebayStock || 0), 0); newV[0].ebayStock = Math.max(0, ebayStock - otherSum); }
-                                     setVariants(newV);
-                                   }}
-                                   className="w-full h-11 bg-white rounded-xl px-3 text-[14px] font-black text-center text-blue-600 border border-blue-100 focus:ring-2 focus:ring-blue-300 transition-all" 
-                                 />
-                               </div>
-                             )}
-                           </div>
-                         </div>
-
-                         {/* Col 3: Foto + Elimina */}
-                         <div className="lg:w-[150px] flex-shrink-0 flex flex-col items-center gap-4">
-                           <div className="flex flex-col items-center gap-2 w-full">
-                             <span className="text-[9px] font-black uppercase text-gray-400 tracking-widest text-center">Foto Variante</span>
-                             <div
-                               onClick={() => { setVariantImageTargetIndex(i); setIsVariantImageModalOpen(true); }}
-                               className="w-[130px] h-[130px] bg-gray-50 border-2 border-dashed border-gray-200 rounded-[1.5rem] overflow-hidden cursor-pointer hover:border-brand-blue hover:bg-brand-blue/5 transition-all flex items-center justify-center relative group/vimg"
-                             >
-                               {v.image ? (
-                                 <>
-                                   <img src={v.image} className="w-full h-full object-cover" alt="" />
-                                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/vimg:opacity-100 transition-opacity flex items-center justify-center">
-                                     <RefreshCw className="w-5 h-5 text-white" />
-                                   </div>
-                                 </>
-                               ) : (
-                                 <div className="flex flex-col items-center gap-2 text-gray-400 group-hover/vimg:text-brand-blue transition-colors">
-                                   <Camera className="w-6 h-6" />
-                                   <span className="text-[9px] font-black uppercase">Aggiungi</span>
-                                 </div>
-                               )}
-                             </div>
-                             {v.image && (
-                               <button
-                                 onClick={() => { const newV = [...variants]; newV[i].image = ""; setVariants(newV); }}
-                                 className="text-[9px] font-black uppercase text-red-400 hover:text-red-600 transition-colors"
-                               >Rimuovi</button>
-                             )}
-                           </div>
-                           <div className="flex gap-2 w-full justify-center mt-auto">
-                             <button
-                               onClick={() => moveVariant(i, 'up')}
-                               disabled={i === 0}
-                               className="w-10 h-10 flex items-center justify-center bg-gray-50 text-gray-500 hover:bg-brand-blue hover:text-white disabled:opacity-30 disabled:hover:bg-gray-50 disabled:hover:text-gray-500 rounded-xl transition-all"
-                               title="Sposta Su"
-                             >
-                               <ChevronUp className="w-4 h-4" />
-                             </button>
-                             <button
-                               onClick={() => moveVariant(i, 'down')}
-                               disabled={i === variants.length - 1}
-                               className="w-10 h-10 flex items-center justify-center bg-gray-50 text-gray-500 hover:bg-brand-blue hover:text-white disabled:opacity-30 disabled:hover:bg-gray-50 disabled:hover:text-gray-500 rounded-xl transition-all"
-                               title="Sposta Giù"
-                             >
-                               <ChevronDown className="w-4 h-4" />
-                             </button>
-                             <button 
-                               onClick={() => setVariants(variants.filter((_, idx) => idx !== i))}
-                               className="w-10 h-10 flex items-center justify-center bg-red-50 text-red-400 hover:bg-red-500 hover:text-white rounded-xl transition-all"
-                               title="Elimina Variante"
-                             >
-                               <Trash2 className="w-4 h-4" />
-                             </button>
-                           </div>
-                         </div>
-
-                       </div>
-                     </div>
-                 );
-               })}
-               
-               <div className="flex justify-center pt-2">
-                 <button 
-                   onClick={() => setVariants([...variants, {
-                     id: Math.random().toString(36).substr(2, 9),
-                     type: availableVariants[0] || 'Colore', 
-                     value: "", 
-                     sku: sku ? `${sku}-` : "", 
-                     title: "",
-                     note: "",
-                     costType: 'fixed',
-                     costValue: baseCost,
-                     webStock: variants.length === 0 ? webStock : 0,
-                     amazonStock: variants.length === 0 ? amazonStock : 0,
-                     ebayStock: variants.length === 0 ? ebayStock : 0,
-                     ean: ""
-                   }])} 
-                   className="group flex items-center gap-3 px-6 py-4 bg-gray-50 hover:bg-brand-yellow hover:text-brand-dark rounded-3xl border-2 border-dashed border-gray-200 hover:border-brand-yellow transition-all duration-300"
-                 >
-                   <Plus className="w-5 h-5 text-gray-400 group-hover:text-brand-dark" />
-                   <span className="text-xs font-black uppercase tracking-widest text-gray-500 group-hover:text-brand-dark">Aggiungi Nuova Variante Indipendente</span>
-                 </button>
-               </div>
-            </div>
-          </div>
-            {/* Livello 3 e 4 opzionali rimangono in fondo */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-black uppercase tracking-widest text-brand-dark border-b border-gray-100 pb-3 flex items-center gap-2"><Layers className="w-5 h-5 text-gray-400"/> Tassonomia Avanzata Opzionale</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <label className="block">
-                  <span className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-1 block">Livello 3 (Optional)</span>
-                  <input type="text" placeholder="es. Led Integrato" className="w-full bg-white border-gray-200 rounded-xl px-3 py-1.5 text-xs font-bold placeholder:text-gray-300" />
-                </label>
-                <label className="block">
-                   <span className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-1 block">Livello 4 (Deep)</span>
-                   <input type="text" placeholder="N/A" className="w-full bg-white border-gray-200 rounded-xl px-3 py-1.5 text-xs font-bold placeholder:text-gray-300" />
-                </label>
-              </div>
-            </div>
-
-          {/* DOCUMENTAZIONE PRODOTTO */}
-          <div className="space-y-6 pt-4">
-            <h3 className="text-lg font-black uppercase tracking-widest text-brand-dark border-b border-gray-100 pb-3 flex items-center gap-2">
-              <FileText className="w-5 h-5 text-brand-blue"/> Documentazione & Etichette
-            </h3>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Etichetta Energetica */}
-              <div className="bg-gray-50 rounded-2xl p-5 border border-gray-100 flex flex-col gap-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-brand-blue">Etichetta Efficienza</span>
-                  <Zap className="w-4 h-4 text-brand-yellow fill-brand-yellow" />
-                </div>
-                
-                <div className="aspect-[3/4] bg-white rounded-xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center relative overflow-hidden group">
-                  {energyLabel ? (
-                    <div className="w-full h-full flex flex-col items-center justify-center p-4">
-                      {energyLabel.startsWith('data:application/pdf') ? (
-                        <div className="flex flex-col items-center gap-2">
-                          <FileText className="w-12 h-12 text-brand-yellow" />
-                          <span className="text-[10px] font-black text-brand-yellow uppercase">Etichetta PDF</span>
+                          </div>
                         </div>
-                      ) : (
-                        <img src={energyLabel} className="w-full h-full object-contain" alt="Energy Label" />
-                      )}
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                        {energyLabel.startsWith('data:application/pdf') && (
-                          <button onClick={() => window.open(energyLabel)} className="p-2 bg-brand-yellow text-brand-dark rounded-lg"><ExternalLink className="w-4 h-4"/></button>
-                        )}
-                        <button onClick={() => setEnergyLabel("")} className="p-2 bg-red-500 text-white rounded-lg"><Trash2 className="w-4 h-4"/></button>
-                      </div>
-                    </div>
-                  ) : (
-                    <label className="flex flex-col items-center gap-2 cursor-pointer text-gray-400 hover:text-brand-blue transition-colors w-full h-full justify-center">
-                      <Upload className="w-8 h-8" />
-                      <span className="text-[10px] font-black uppercase">Carica JPG/PNG o PDF</span>
-                      <input type="file" accept="image/*,application/pdf" className="hidden" onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) {
-                          const reader = new FileReader();
-                          reader.onload = (re) => setEnergyLabel(re.target?.result as string);
-                          reader.readAsDataURL(file);
-                        }
-                      }} />
-                    </label>
-                  )}
-                </div>
-                <p className="text-[9px] text-gray-400 font-bold uppercase text-center leading-tight">Visibile in scheda prodotto e area cliente</p>
-              </div>
+                      );
+                    })}
+                  </div>
 
-              {/* Scheda Prodotto (PDF) */}
-              <div className="bg-gray-50 rounded-2xl p-5 border border-gray-100 flex flex-col gap-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-brand-blue">Scheda Tecnica (PDF)</span>
-                  <FileSpreadsheet className="w-4 h-4 text-indigo-400" />
-                </div>
-                
-                <div className="flex-1 flex flex-col items-center justify-center min-h-[120px] bg-white rounded-xl border-2 border-dashed border-gray-200 relative group">
-                  {techSheet ? (
-                    <div className="flex flex-col items-center gap-3">
-                      <div className="w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center">
-                        <FileText className="w-6 h-6 text-indigo-600" />
-                      </div>
-                      <span className="text-[10px] font-black text-indigo-600 uppercase">PDF Caricato</span>
-                      <div className="flex gap-2">
-                        <button onClick={() => window.open(techSheet)} className="p-2 bg-indigo-500 text-white rounded-lg"><ExternalLink className="w-4 h-4"/></button>
-                        <button onClick={() => setTechSheet("")} className="p-2 bg-red-500 text-white rounded-lg"><Trash2 className="w-4 h-4"/></button>
-                      </div>
-                    </div>
-                  ) : (
-                    <label className="flex flex-col items-center gap-2 cursor-pointer text-gray-400 hover:text-indigo-600 transition-colors">
-                      <Upload className="w-8 h-8" />
-                      <span className="text-[10px] font-black uppercase">Carica PDF</span>
-                      <input type="file" accept="application/pdf" className="hidden" onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) {
-                          const reader = new FileReader();
-                          reader.onload = (re) => setTechSheet(re.target?.result as string);
-                          reader.readAsDataURL(file);
-                        }
-                      }} />
-                    </label>
-                  )}
-                </div>
-                <p className="text-[9px] text-gray-400 font-bold uppercase text-center leading-tight">Apertura diretta nel browser (No anteprima)</p>
-              </div>
 
-              {/* Manualistica (PDF) */}
-              <div className="bg-gray-50 rounded-2xl p-5 border border-gray-100 flex flex-col gap-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-brand-blue">Manuale d'Uso (PDF)</span>
-                  <Compass className="w-4 h-4 text-teal-400" />
-                </div>
-                
-                <div className="flex-1 flex flex-col items-center justify-center min-h-[120px] bg-white rounded-xl border-2 border-dashed border-gray-200 relative group">
-                  {manual ? (
-                    <div className="flex flex-col items-center gap-3">
-                      <div className="w-12 h-12 bg-teal-50 rounded-xl flex items-center justify-center">
-                        <FileCode className="w-6 h-6 text-teal-600" />
-                      </div>
-                      <span className="text-[10px] font-black text-teal-600 uppercase">Manuale Caricato</span>
-                      <div className="flex gap-2">
-                        <button onClick={() => window.open(manual)} className="p-2 bg-teal-500 text-white rounded-lg"><ExternalLink className="w-4 h-4"/></button>
-                        <button onClick={() => setManual("")} className="p-2 bg-red-500 text-white rounded-lg"><Trash2 className="w-4 h-4"/></button>
-                      </div>
+                  {/* Barra footer tabella */}
+                  <div className="p-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between flex-wrap gap-2 text-xs font-bold text-gray-600">
+                    <div className="flex items-center gap-2">
+                      <span>Totale righe: {variants.length}</span>
+                      <span>•</span>
+                      <button
+                        type="button"
+                        onClick={handleAddSingleRow}
+                        className="text-amber-900 hover:underline font-black uppercase text-[10px]"
+                      >
+                        + Aggiungi un'altra riga
+                      </button>
                     </div>
-                  ) : (
-                    <label className="flex flex-col items-center gap-2 cursor-pointer text-gray-400 hover:text-teal-600 transition-colors">
-                      <Upload className="w-8 h-8" />
-                      <span className="text-[10px] font-black uppercase">Carica PDF</span>
-                      <input type="file" accept="application/pdf" className="hidden" onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) {
-                          const reader = new FileReader();
-                          reader.onload = (re) => setManual(re.target?.result as string);
-                          reader.readAsDataURL(file);
-                        }
-                      }} />
-                    </label>
-                  )}
+
+                    {variants.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (confirm("Vuoi cancellare tutte le varianti generate?")) {
+                            setVariants([]);
+                          }
+                        }}
+                        className="text-red-500 hover:text-red-700 text-[10px] font-black uppercase"
+                      >
+                        Svuota Tabella Varianti
+                      </button>
+                    )}
+                  </div>
                 </div>
-                <p className="text-[9px] text-gray-400 font-bold uppercase text-center leading-tight">Istruzioni tecniche per l'utente</p>
-              </div>
+              )}
             </div>
           </div>
 
-          <div className="space-y-4">
-            <h3 className="text-lg font-black uppercase tracking-widest text-brand-dark border-b border-gray-100 pb-3 flex items-center gap-2"><Globe className="w-5 h-5 text-gray-400"/> Sincronizzazione Marketplace (Overrides)</h3>
-            
-            {/* AI Error Banner */}
-            {aiError && (
-              <div className="bg-red-50 border border-red-200 text-red-700 rounded-2xl px-5 py-3 flex items-start gap-3 text-sm font-medium">
-                <span className="flex-1">{aiError}</span>
-                <button onClick={() => setAiError(null)} className="text-red-400 hover:text-red-600 font-black text-lg leading-none">×</button>
-              </div>
-            )}
+          {/* Sincronizzazione Marketplace (Solo se attivi nel negozio) */}
+          {hasAnyMarketplace && (
+            <div className="space-y-4">
+              <h3 className="text-lg font-black uppercase tracking-widest text-brand-dark border-b border-gray-100 pb-3 flex items-center gap-2">
+                <Globe className="w-5 h-5 text-gray-400"/> Sincronizzazione Marketplace (Overrides)
+              </h3>
+              
+              {/* AI Error Banner */}
+              {aiError && (
+                <div className="bg-red-50 border border-red-200 text-red-700 rounded-2xl px-5 py-3 flex items-start gap-3 text-sm font-medium">
+                  <span className="flex-1">{aiError}</span>
+                  <button onClick={() => setAiError(null)} className="text-red-400 hover:text-red-600 font-black text-lg leading-none">×</button>
+                </div>
+              )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Amazon Block */}
-              <div className="bg-gradient-to-br from-white to-orange-50 rounded-2xl p-6 border border-orange-100 relative overflow-hidden group hover:border-orange-300 transition-all flex flex-col justify-between">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500 rounded-full blur-3xl opacity-10 -mr-10 -mt-10"></div>
-                <div className="flex items-center justify-between mb-4 relative z-10">
-                  <div className="flex items-center gap-3">
-                    <div className="bg-white p-2 text-orange-500 flex items-center justify-center rounded-xl"><Globe className="w-5 h-5" /></div>
-                    <span className="font-black text-brand-dark uppercase tracking-tight">Amazon.it</span>
-                  </div>
-                  <label className="inline-flex items-center cursor-pointer">
-                    <input type="checkbox" className="sr-only peer" checked={isAmazonActive} onChange={e => setIsAmazonActive(e.target.checked)} />
-                    <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500 relative"></div>
-                  </label>
-                </div>
-                <div className="space-y-4 relative z-10">
-                  <label className="block">
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="text-[10px] font-black uppercase tracking-widest text-orange-600 block">Titolo Ottimizzato SEO</span>
-                      <button 
-                        type="button"
-                        onClick={() => generateAIContent('Amazon')}
-                        disabled={isGeneratingAmazon}
-                        className="flex items-center gap-1.5 px-2 py-1 bg-orange-100 text-orange-600 rounded-lg text-[8px] font-black uppercase tracking-widest hover:bg-orange-200 transition-all disabled:opacity-50"
-                      >
-                        {isGeneratingAmazon ? <LoaderIcon className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
-                        Auto-Componi
-                      </button>
-                    </div>
-                    <input type="text" value={amazonTitle} onChange={e => setAmazonTitle(toProperCase(e.target.value))} placeholder="Override per Amazon..." className="w-full bg-white border-orange-200 rounded-xl px-4 py-3 text-sm font-bold focus:ring-orange-500 focus:border-orange-500" />
-                  </label>
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter">Costo riferimento:</span>
-                    <span className="text-[9px] font-black text-brand-dark">€{(Number(baseCost) || 0).toFixed(2)}</span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <label className="block">
-                      <span className="text-[10px] font-black uppercase tracking-widest text-orange-600 mb-1 block">Ricarico (%)</span>
-                      <input type="number" value={amazonMarkup} onFocus={e => amazonMarkup === 0 && setAmazonMarkup('' as any)} onChange={e => setAmazonMarkup(Number(e.target.value))} className="w-full bg-white border-orange-200 rounded-xl px-4 py-3 text-sm font-bold focus:ring-orange-500 focus:border-orange-500" />
-                    </label>
-                    <label className="block relative">
-                      <span className="text-[10px] font-black uppercase tracking-widest text-orange-600 mb-1 block">Prezzo Finale (Manuale)</span>
-                      <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-orange-400 font-bold">€</span>
-                        <input type="number" value={amazonManualPrice || (amazonPrice ? amazonPrice.toFixed(2) : "0.00")} onFocus={e => (amazonManualPrice === "0" || amazonManualPrice === "") && setAmazonManualPrice('')} onChange={e => setAmazonManualPrice(e.target.value)} className={`w-full bg-orange-500 text-white border-none rounded-xl pl-7 pr-2 py-3 text-sm font-black focus:ring-2 focus:ring-orange-300 ${amazonManualPrice ? 'ring-2 ring-orange-200' : ''}`} />
-                        {amazonManualPrice && <button onClick={() => setAmazonManualPrice("")} className="absolute -bottom-4 right-0 text-[8px] font-black text-orange-600 uppercase">Reset</button>}
+              <div className={`grid grid-cols-1 ${isAmazonStoreEnabled && isEbayStoreEnabled ? 'md:grid-cols-2' : ''} gap-6`}>
+                {/* Amazon Block (visibile solo se Amazon è abilitato nel negozio) */}
+                {isAmazonStoreEnabled && (
+                  <div className={`bg-gradient-to-br from-white ${isAmazonActive ? 'to-orange-50 border-orange-200 shadow-sm' : 'to-gray-50 border-gray-200 opacity-90'} rounded-2xl p-6 border relative overflow-hidden transition-all flex flex-col justify-between`}>
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500 rounded-full blur-3xl opacity-10 -mr-10 -mt-10"></div>
+                    <div className="flex items-center justify-between mb-4 relative z-10">
+                      <div className="flex items-center gap-3">
+                        <div className="bg-white p-2 text-orange-500 flex items-center justify-center rounded-xl shadow-xs"><Globe className="w-5 h-5" /></div>
+                        <div>
+                          <span className="font-black text-brand-dark uppercase tracking-tight block">Amazon.it</span>
+                          <span className={`text-[10px] font-bold ${isAmazonActive ? 'text-orange-600' : 'text-gray-400'}`}>
+                            {isAmazonActive ? 'Attivo su questo prodotto' : 'Disattivato per questo prodotto'}
+                          </span>
+                        </div>
                       </div>
-                    </label>
-                  </div>
-                  <label className="block">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-orange-600 mb-1 block">Esenzione GTIN</span>
-                    <select className="w-full bg-white border-orange-200 rounded-xl px-4 py-3 text-sm font-bold focus:ring-orange-500 focus:border-orange-500">
-                      <option>Nessuna (EAN Base)</option>
-                      <option>Sì, approvata su Brand</option>
-                    </select>
-                  </label>
-                  <label className="block">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-orange-600 mb-1 block">Descrizione Ottimizzata Amazon</span>
-                    <textarea 
-                      rows={3} 
-                      value={amazonDescription}
-                      onChange={e => setAmazonDescription(e.target.value)}
-                      placeholder="Descrizione specifica per Amazon (Bullet points ecc)..." 
-                      className="w-full bg-white border-orange-200 rounded-xl px-4 py-3 text-sm font-medium focus:ring-orange-500 focus:border-orange-500 resize-none"
-                    ></textarea>
-                  </label>
-                </div>
-              </div>
+                      <label className="inline-flex items-center cursor-pointer">
+                        <input type="checkbox" className="sr-only peer" checked={isAmazonActive} onChange={e => setIsAmazonActive(e.target.checked)} />
+                        <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500 relative"></div>
+                      </label>
+                    </div>
 
-              {/* eBay Block */}
-              <div className="bg-gradient-to-br from-white to-blue-50 rounded-2xl p-6 border border-blue-100 relative overflow-hidden group hover:border-blue-300 transition-all flex flex-col justify-between">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500 rounded-full blur-3xl opacity-10 -mr-10 -mt-10"></div>
-                <div className="flex items-center justify-between mb-4 relative z-10">
-                  <div className="flex items-center gap-3">
-                    <div className="bg-white p-2 text-blue-500 flex items-center justify-center rounded-xl"><ExternalLink className="w-5 h-5" /></div>
-                    <span className="font-black text-brand-dark uppercase tracking-tight">eBay</span>
-                  </div>
-                  <label className="inline-flex items-center cursor-pointer">
-                    <input type="checkbox" className="sr-only peer" checked={isEbayActive} onChange={e => setIsEbayActive(e.target.checked)} />
-                    <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500 relative"></div>
-                  </label>
-                </div>
-                <div className="space-y-4 relative z-10">
-                  <label className="block">
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="text-[10px] font-black uppercase tracking-widest text-blue-600 block">Titolo + Sottotitolo Store</span>
-                      <button 
-                        type="button"
-                        onClick={() => generateAIContent('eBay')}
-                        disabled={isGeneratingEbay}
-                        className="flex items-center gap-1.5 px-2 py-1 bg-blue-100 text-blue-600 rounded-lg text-[8px] font-black uppercase tracking-widest hover:bg-blue-200 transition-all disabled:opacity-50"
-                      >
-                        {isGeneratingEbay ? <LoaderIcon className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
-                        Auto-Componi
-                      </button>
-                    </div>
-                    <input type="text" value={ebayTitle} onChange={e => setEbayTitle(toProperCase(e.target.value))} placeholder="Titolo per inserzione eBay..." className="w-full bg-white border-blue-200 rounded-xl px-4 py-3 text-sm font-bold focus:ring-blue-500 focus:border-blue-500" />
-                  </label>
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter">Costo riferimento:</span>
-                    <span className="text-[9px] font-black text-brand-dark">€{(Number(baseCost) || 0).toFixed(2)}</span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <label className="block">
-                      <span className="text-[10px] font-black uppercase tracking-widest text-blue-600 mb-1 block">Ricarico (%)</span>
-                      <input type="number" value={ebayMarkup} onFocus={e => ebayMarkup === 0 && setEbayMarkup('' as any)} onChange={e => setEbayMarkup(Number(e.target.value))} className="w-full bg-white border-blue-200 rounded-xl px-4 py-3 text-sm font-bold focus:ring-blue-500 focus:border-blue-500" />
-                    </label>
-                    <label className="block relative">
-                      <span className="text-[10px] font-black uppercase tracking-widest text-blue-600 mb-1 block">Prezzo Finale (Manuale)</span>
-                      <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-400 font-bold">€</span>
-                        <input type="number" value={ebayManualPrice || ebayPrice.toFixed(2)} onFocus={e => (ebayManualPrice === "0" || ebayManualPrice === "") && setEbayManualPrice('')} onChange={e => handleManualPrice(e.target.value, 'ebay')} className={`w-full bg-blue-500 text-white border-none rounded-xl pl-7 pr-2 py-3 text-sm font-black focus:ring-2 focus:ring-blue-300 ${ebayManualPrice ? 'ring-2 ring-blue-200' : ''}`} />
-                        {ebayManualPrice && <button onClick={() => setEbayManualPrice("")} className="absolute -bottom-4 right-0 text-[8px] font-black text-blue-600 uppercase">Reset</button>}
+                    {isAmazonActive && (
+                      <div className="space-y-4 relative z-10 animate-in fade-in duration-300">
+                        <label className="block">
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="text-[10px] font-black uppercase tracking-widest text-orange-600 block">Titolo Ottimizzato SEO</span>
+                            <button 
+                              type="button"
+                              onClick={() => generateAIContent('Amazon')}
+                              disabled={isGeneratingAmazon}
+                              className="flex items-center gap-1.5 px-2 py-1 bg-orange-100 text-orange-600 rounded-lg text-[8px] font-black uppercase tracking-widest hover:bg-orange-200 transition-all disabled:opacity-50"
+                            >
+                              {isGeneratingAmazon ? <LoaderIcon className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                              Auto-Componi
+                            </button>
+                          </div>
+                          <input type="text" value={amazonTitle} onChange={e => setAmazonTitle(toProperCase(e.target.value))} placeholder="Override per Amazon..." className="w-full bg-white border-orange-200 rounded-xl px-4 py-3 text-sm font-bold focus:ring-orange-500 focus:border-orange-500" />
+                        </label>
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter">Costo riferimento:</span>
+                          <span className="text-[9px] font-black text-brand-dark">€{(Number(baseCost) || 0).toFixed(2)}</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <label className="block">
+                            <span className="text-[10px] font-black uppercase tracking-widest text-orange-600 mb-1 block">Ricarico (%)</span>
+                            <input type="number" value={amazonMarkup} onFocus={e => amazonMarkup === 0 && setAmazonMarkup('' as any)} onChange={e => setAmazonMarkup(Number(e.target.value))} className="w-full bg-white border-orange-200 rounded-xl px-4 py-3 text-sm font-bold focus:ring-orange-500 focus:border-orange-500" />
+                          </label>
+                          <label className="block relative">
+                            <span className="text-[10px] font-black uppercase tracking-widest text-orange-600 mb-1 block">Prezzo Finale (Manuale)</span>
+                            <div className="relative">
+                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-orange-400 font-bold">€</span>
+                              <input type="number" value={amazonManualPrice || (amazonPrice ? amazonPrice.toFixed(2) : "0.00")} onFocus={e => (amazonManualPrice === "0" || amazonManualPrice === "") && setAmazonManualPrice('')} onChange={e => setAmazonManualPrice(e.target.value)} className={`w-full bg-orange-500 text-white border-none rounded-xl pl-7 pr-2 py-3 text-sm font-black focus:ring-2 focus:ring-orange-300 ${amazonManualPrice ? 'ring-2 ring-orange-200' : ''}`} />
+                              {amazonManualPrice && <button onClick={() => setAmazonManualPrice("")} className="absolute -bottom-4 right-0 text-[8px] font-black text-orange-600 uppercase">Reset</button>}
+                            </div>
+                          </label>
+                        </div>
+                        <label className="block">
+                          <span className="text-[10px] font-black uppercase tracking-widest text-orange-600 mb-1 block">Esenzione GTIN</span>
+                          <select className="w-full bg-white border-orange-200 rounded-xl px-4 py-3 text-sm font-bold focus:ring-orange-500 focus:border-orange-500">
+                            <option>Nessuna (EAN Base)</option>
+                            <option>Sì, approvata su Brand</option>
+                          </select>
+                        </label>
+                        <label className="block">
+                          <span className="text-[10px] font-black uppercase tracking-widest text-orange-600 mb-1 block">Descrizione Ottimizzata Amazon</span>
+                          <textarea 
+                            rows={3} 
+                            value={amazonDescription}
+                            onChange={e => setAmazonDescription(e.target.value)}
+                            placeholder="Descrizione specifica per Amazon (Bullet points ecc)..." 
+                            className="w-full bg-white border-orange-200 rounded-xl px-4 py-3 text-sm font-medium focus:ring-orange-500 focus:border-orange-500 resize-none"
+                          ></textarea>
+                        </label>
                       </div>
-                    </label>
+                    )}
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <label className="block">
-                      <span className="text-[10px] font-black uppercase tracking-widest text-blue-600 mb-1 block">Comm. (%)</span>
-                      <input type="number" defaultValue="11" className="w-full bg-white border-blue-200 rounded-xl px-4 py-3 text-sm font-bold focus:ring-blue-500 focus:border-blue-500" />
-                    </label>
-                    <label className="block">
-                      <span className="text-[10px] font-black uppercase tracking-widest text-blue-600 mb-1 block">Condizioni</span>
-                      <select className="w-full bg-white border-blue-200 rounded-xl px-4 py-3 text-sm font-bold focus:ring-blue-500 focus:border-blue-500">
-                        <option>Nuovo</option>
-                        <option>Usato</option>
-                      </select>
-                    </label>
+                )}
+
+                {/* eBay Block (visibile solo se eBay è abilitato nel negozio) */}
+                {isEbayStoreEnabled && (
+                  <div className={`bg-gradient-to-br from-white ${isEbayActive ? 'to-blue-50 border-blue-200 shadow-sm' : 'to-gray-50 border-gray-200 opacity-90'} rounded-2xl p-6 border relative overflow-hidden transition-all flex flex-col justify-between`}>
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500 rounded-full blur-3xl opacity-10 -mr-10 -mt-10"></div>
+                    <div className="flex items-center justify-between mb-4 relative z-10">
+                      <div className="flex items-center gap-3">
+                        <div className="bg-white p-2 text-blue-500 flex items-center justify-center rounded-xl shadow-xs"><ExternalLink className="w-5 h-5" /></div>
+                        <div>
+                          <span className="font-black text-brand-dark uppercase tracking-tight block">eBay</span>
+                          <span className={`text-[10px] font-bold ${isEbayActive ? 'text-blue-600' : 'text-gray-400'}`}>
+                            {isEbayActive ? 'Attivo su questo prodotto' : 'Disattivato per questo prodotto'}
+                          </span>
+                        </div>
+                      </div>
+                      <label className="inline-flex items-center cursor-pointer">
+                        <input type="checkbox" className="sr-only peer" checked={isEbayActive} onChange={e => setIsEbayActive(e.target.checked)} />
+                        <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500 relative"></div>
+                      </label>
+                    </div>
+
+                    {isEbayActive && (
+                      <div className="space-y-4 relative z-10 animate-in fade-in duration-300">
+                        <label className="block">
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="text-[10px] font-black uppercase tracking-widest text-blue-600 block">Titolo + Sottotitolo Store</span>
+                            <button 
+                              type="button"
+                              onClick={() => generateAIContent('eBay')}
+                              disabled={isGeneratingEbay}
+                              className="flex items-center gap-1.5 px-2 py-1 bg-blue-100 text-blue-600 rounded-lg text-[8px] font-black uppercase tracking-widest hover:bg-blue-200 transition-all disabled:opacity-50"
+                            >
+                              {isGeneratingEbay ? <LoaderIcon className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                              Auto-Componi
+                            </button>
+                          </div>
+                          <input type="text" value={ebayTitle} onChange={e => setEbayTitle(toProperCase(e.target.value))} placeholder="Titolo per inserzione eBay..." className="w-full bg-white border-blue-200 rounded-xl px-4 py-3 text-sm font-bold focus:ring-blue-500 focus:border-blue-500" />
+                        </label>
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter">Costo riferimento:</span>
+                          <span className="text-[9px] font-black text-brand-dark">€{(Number(baseCost) || 0).toFixed(2)}</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <label className="block">
+                            <span className="text-[10px] font-black uppercase tracking-widest text-blue-600 mb-1 block">Ricarico (%)</span>
+                            <input type="number" value={ebayMarkup} onFocus={e => ebayMarkup === 0 && setEbayMarkup('' as any)} onChange={e => setEbayMarkup(Number(e.target.value))} className="w-full bg-white border-blue-200 rounded-xl px-4 py-3 text-sm font-bold focus:ring-blue-500 focus:border-blue-500" />
+                          </label>
+                          <label className="block relative">
+                            <span className="text-[10px] font-black uppercase tracking-widest text-blue-600 mb-1 block">Prezzo Finale (Manuale)</span>
+                            <div className="relative">
+                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-400 font-bold">€</span>
+                              <input type="number" value={ebayManualPrice || ebayPrice.toFixed(2)} onFocus={e => (ebayManualPrice === "0" || ebayManualPrice === "") && setEbayManualPrice('')} onChange={e => handleManualPrice(e.target.value, 'ebay')} className={`w-full bg-blue-500 text-white border-none rounded-xl pl-7 pr-2 py-3 text-sm font-black focus:ring-2 focus:ring-blue-300 ${ebayManualPrice ? 'ring-2 ring-blue-200' : ''}`} />
+                              {ebayManualPrice && <button onClick={() => setEbayManualPrice("")} className="absolute -bottom-4 right-0 text-[8px] font-black text-blue-600 uppercase">Reset</button>}
+                            </div>
+                          </label>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <label className="block">
+                            <span className="text-[10px] font-black uppercase tracking-widest text-blue-600 mb-1 block">Comm. (%)</span>
+                            <input type="number" defaultValue="11" className="w-full bg-white border-blue-200 rounded-xl px-4 py-3 text-sm font-bold focus:ring-blue-500 focus:border-blue-500" />
+                          </label>
+                          <label className="block">
+                            <span className="text-[10px] font-black uppercase tracking-widest text-blue-600 mb-1 block">Condizioni</span>
+                            <select className="w-full bg-white border-blue-200 rounded-xl px-4 py-3 text-sm font-bold focus:ring-blue-500 focus:border-blue-500">
+                              <option>Nuovo</option>
+                              <option>Usato</option>
+                            </select>
+                          </label>
+                        </div>
+                        <label className="block">
+                          <span className="text-[10px] font-black uppercase tracking-widest text-blue-600 mb-1 block">Descrizione Ottimizzata eBay</span>
+                          <textarea 
+                            rows={3} 
+                            value={ebayDescription}
+                            onChange={e => setEbayDescription(e.target.value)}
+                            placeholder="HTML/Descrizione specifica per eBay..." 
+                            className="w-full bg-white border-blue-200 rounded-xl px-4 py-3 text-sm font-medium focus:ring-blue-500 focus:border-blue-500 resize-none"
+                          ></textarea>
+                        </label>
+                      </div>
+                    )}
                   </div>
-                  <label className="block">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-blue-600 mb-1 block">Descrizione Ottimizzata eBay</span>
-                    <textarea 
-                      rows={3} 
-                      value={ebayDescription}
-                      onChange={e => setEbayDescription(e.target.value)}
-                      placeholder="HTML/Descrizione specifica per eBay..." 
-                      className="w-full bg-white border-blue-200 rounded-xl px-4 py-3 text-sm font-medium focus:ring-blue-500 focus:border-blue-500 resize-none"
-                    ></textarea>
-                  </label>
-                </div>
+                )}
               </div>
             </div>
-          </div>
-
+          )}
           {/* Prodotti Correlati */}
           <div className="space-y-4">
             <h3 className="text-lg font-black uppercase tracking-widest text-brand-dark border-b border-gray-100 pb-3 flex items-center gap-2"><LinkIcon className="w-5 h-5 text-gray-400"/> Upsell & Cross-sell (Correlati)</h3>
@@ -2085,7 +2405,7 @@ Rispondi SOLO con JSON valido, nessun testo extra: { "title": "...", "descriptio
                   <span className="text-[9px] font-black uppercase tracking-widest text-gray-300">Anteprima Risultato Google (Desktop)</span>
                   <div className="space-y-1">
                     <div className="flex items-center gap-1 text-[11px] text-[#202124]">
-                       <span>https://bespoint.it</span>
+                       <span>https://vincentstore.it</span>
                        <ChevronDown className="w-2.5 h-2.5 text-[#5f6368] rotate-270" />
                        <span className="text-[#5f6368]">prodotti</span>
                     </div>
@@ -2210,7 +2530,6 @@ Rispondi SOLO con JSON valido, nessun testo extra: { "title": "...", "descriptio
          </div>
        </div>
      </div>
-   </div>
 
 
 

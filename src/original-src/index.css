@@ -143,3 +143,29 @@
 .rich-content li {
   margin-bottom: 0.5rem;
 }
+
+
+/* ========================================================
+   DROPDOWN & SELECT: Correzione universale contrasto testo
+   Impedisce che il testo delle option o select appaia bianco su bianco
+   ======================================================== */
+select {
+  color: #111111 !important;
+  background-color: #ffffff !important;
+}
+
+select option,
+select optgroup {
+  color: #111111 !important;
+  background-color: #ffffff !important;
+  font-weight: 600 !important;
+}
+
+.admin-panel-root select,
+.admin-panel-root select option,
+.admin-panel-root select optgroup,
+div[class*="admin"] select,
+div[class*="admin"] select option {
+  color: #111111 !important;
+  background-color: #ffffff !important;
+}

@@ -9,6 +9,7 @@ import { ProductCard } from './ProductCard';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Heart, SlidersHorizontal } from 'lucide-react';
 import { DEFAULT_PAGE_SETTINGS } from '@/lib/data';
+import { HomeSlideSection } from '@/components/storefront/HomeSlideSection';
 
 export function ModularStorefront() {
   const {
@@ -32,7 +33,29 @@ export function ModularStorefront() {
     const list = (pageSettings.homeSlides || [])
       .filter((s: any) => s.position === 'home_top' || !s.position)
       .filter((s: any) => s.url);
-    return list.length > 0 ? list : DEFAULT_PAGE_SETTINGS.homeSlides;
+    return list.length > 0 ? list : DEFAULT_PAGE_SETTINGS.homeSlides.filter(
+      (s: any) => s.position === 'home_top' || !s.position
+    );
+  }, [pageSettings.homeSlides]);
+
+  const middleSlides = useMemo(() => {
+    const fromSettings = (pageSettings.homeSlides || []).filter(
+      (s: any) => s.position === 'home_middle' && s.url
+    );
+    if (fromSettings.length > 0) return fromSettings;
+    return DEFAULT_PAGE_SETTINGS.homeSlides.filter(
+      (s: any) => s.position === 'home_middle' && s.url
+    );
+  }, [pageSettings.homeSlides]);
+
+  const bottomSlides = useMemo(() => {
+    const fromSettings = (pageSettings.homeSlides || []).filter(
+      (s: any) => s.position === 'home_bottom' && s.url
+    );
+    if (fromSettings.length > 0) return fromSettings;
+    return DEFAULT_PAGE_SETTINGS.homeSlides.filter(
+      (s: any) => s.position === 'home_bottom' && s.url
+    );
   }, [pageSettings.homeSlides]);
 
   const featuredProducts = useMemo(() => {
@@ -77,8 +100,10 @@ export function ModularStorefront() {
 
   return (
     <div className="flex flex-col gap-10 pt-0 pb-24 font-['Montserrat',sans-serif]">
-      {/* 1. HERO SLIDE: SEMPRE VISIBILE SULLA HOME */}
-      <Hero slides={topSlides} overlayEnabled={pageSettings.slidesOverlayEnabled} />
+      {/* 1. HERO SLIDE */}
+      {pageSettings.isHeroEnabled !== false && (
+        <Hero slides={topSlides} overlayEnabled={pageSettings.slidesOverlayEnabled} />
+      )}
 
       {/* 2. CHOICE BLOCKS: CATEGORIE A INCASTRO SOTTO LA HERO */}
       <ChoiceBlocks 
@@ -86,6 +111,15 @@ export function ModularStorefront() {
           handleCategorySelect(cat, 'Tutti');
         }} 
       />
+
+      {!isFilterActive &&
+        pageSettings.isMiddleSlidesEnabled !== false &&
+        middleSlides.length > 0 && (
+          <HomeSlideSection
+            slides={middleSlides}
+            darken={pageSettings.slidesOverlayEnabled}
+          />
+        )}
 
       {/* 3. VETRINA DELLA HOME: FILTRABILE CON TASTO RAPIDO PER TOGLIERE IL FILTRO */}
       <section className="px-4 sm:px-8" id="vetrina-home">
@@ -271,6 +305,14 @@ export function ModularStorefront() {
                 </div>
               </div>
             )}
+
+            {pageSettings.isBottomSlidesEnabled !== false &&
+              bottomSlides.length > 0 && (
+                <HomeSlideSection
+                  slides={bottomSlides}
+                  darken={pageSettings.slidesOverlayEnabled}
+                />
+              )}
           </div>
         )}
       </section>

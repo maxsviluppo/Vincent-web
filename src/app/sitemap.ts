@@ -2,7 +2,7 @@ import { MetadataRoute } from 'next';
 import { PRODUCTS, CATEGORIES, slugify } from '@/lib/data';
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = 'https://www.bespoint.it';
+  const baseUrl = 'https://www.vincentstore.it';
   const now = new Date();
 
   const staticRoutes: MetadataRoute.Sitemap = [

@@ -16,8 +16,10 @@ const nextConfig: NextConfig = {
     optimizePackageImports: ["lucide-react"],
   },
   turbopack: {
+    root: path.resolve(__dirname),
     resolveAlias: {
       "react-router-dom": "./src/lib/router-shim.tsx",
+      "@vincent-src": "./src/original-src",
     },
   },
 
@@ -35,13 +37,10 @@ const nextConfig: NextConfig = {
   },
 
   webpack(config) {
-    // Path alias: @bespoint-src → original Vite project's src/
     config.resolve.alias = {
       ...config.resolve.alias,
-      "@bespoint-src": path.resolve(
-        __dirname,
-        "./src/original-src"
-      ),
+      "@vincent-src": path.resolve(__dirname, "./src/original-src"),
+      "@bespoint-src": path.resolve(__dirname, "./src/original-src"),
       "react-router-dom": path.resolve(
         __dirname,
         "./src/lib/router-shim.tsx"

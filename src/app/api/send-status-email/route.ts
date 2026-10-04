@@ -12,7 +12,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const effectiveSender = senderEmail || 'noreply@bespoint.it';
+    const effectiveSender = senderEmail || 'noreply@vincentstore.it';
 
     // Traduzione dello stato in italiano
     let statusLabel = status;

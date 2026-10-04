@@ -204,7 +204,7 @@ export const AdminOrders = ({
           // Recuperiamo le impostazioni aziendali per l'email del mittente
           const savedSettings = localStorage.getItem('companySettings');
           const companySettings = savedSettings ? JSON.parse(savedSettings) : {};
-          const senderEmail = companySettings.orderStatusSenderEmail || companySettings.email || 'noreply@bespoint.it';
+          const senderEmail = companySettings.orderStatusSenderEmail || companySettings.email || 'noreply@vincent.it';
 
           const res = await fetch('/api/send-status-email', {
             method: 'POST',
@@ -807,7 +807,7 @@ export const AdminOrders = ({
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.setAttribute('hidden', ''); a.setAttribute('href', url);
-                a.setAttribute('download', `ordini_bespoint_${new Date().toISOString().split('T')[0]}.csv`);
+                a.setAttribute('download', `ordini_vincent_${new Date().toISOString().split('T')[0]}.csv`);
                 document.body.appendChild(a); a.click(); document.body.removeChild(a);
               }} className="px-8 py-5 bg-white border-2 border-brand-dark text-brand-dark rounded-2xl hover:bg-gray-50 active:scale-95 transition-all flex items-center gap-3">
               <FileText className="w-5 h-5 text-green-600" />
