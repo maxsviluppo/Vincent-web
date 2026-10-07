@@ -11,6 +11,11 @@ const AppComponent = React.lazy(() =>
   import('@vincent-src/App').then((mod) => ({ default: mod.default }))
 );
 
+interface Props {
+  onCategorySelect?: (cat: string, sub?: string) => void;
+  onProductSelect?: (p: any) => void;
+}
+
 function OriginalAppInner({ onCategorySelect, onProductSelect }: Props) {
   return (
     <Suspense fallback={null}>

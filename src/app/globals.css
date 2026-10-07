@@ -432,6 +432,58 @@ a[class*="bg-brand-blue"] * {
   color: #525252 !important;
 }
 
+/* Admin categorie — lista minimal stile home */
+.admin-categories-minimal {
+  font-family: 'Montserrat', sans-serif;
+}
+.admin-categories-minimal ul li:first-child {
+  border-top: none;
+}
+
+/* Icone azioni categorie admin — sempre visibili (no ereditarietà bianco storefront) */
+.admin-categories-minimal .admin-cat-btn-delete,
+.admin-categories-minimal .admin-cat-btn-delete svg {
+  color: #b91c1c !important;
+  stroke: currentColor;
+}
+.admin-categories-minimal .admin-cat-btn-edit,
+.admin-categories-minimal .admin-cat-btn-edit svg {
+  color: #404040 !important;
+  stroke: currentColor;
+}
+.admin-categories-minimal .admin-cat-order-btn svg {
+  color: #525252 !important;
+  stroke: currentColor;
+}
+.admin-panel-root .admin-categories-minimal .admin-cat-btn-delete,
+.admin-panel-root .admin-categories-minimal .admin-cat-btn-delete * {
+  color: #b91c1c !important;
+}
+
+/* Admin slide — lista fogli + touch mobile */
+.admin-slides-minimal-list button {
+  -webkit-tap-highlight-color: transparent;
+}
+@media (max-width: 767px) {
+  .admin-slides-block .flex.flex-wrap.items-center.gap-2.bg-gray-50 button,
+  .admin-slides-block .flex.items-center.gap-2.bg-gray-50 button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  .admin-mobile-content .admin-slides-block input,
+  .admin-mobile-content .admin-slides-block textarea {
+    min-height: 48px;
+    font-size: 16px;
+  }
+}
+
+/* Menu laterale — solo mobile: categorie compatte */
+@media (max-width: 767px) {
+  .side-menu-drawer .side-menu-drawer {
+    max-width: 100%;
+  }
+}
+
 /* Admin panel — solo mobile (desktop invariato) */
 @media (max-width: 767px) {
   .admin-mobile-content {
@@ -677,4 +729,59 @@ div[class*="admin"] select,
 div[class*="admin"] select option {
   color: #111111 !important;
   background-color: #ffffff !important;
+}
+
+/* ─── Modale accesso: stile home (Montserrat light, neutral) ─── */
+.auth-modal-home .auth-field-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #737373;
+  margin-left: 0.25rem;
+}
+
+.auth-modal-home .auth-field-input {
+  width: 100%;
+  background: #fff;
+  border: 1px solid #e5e5e5;
+  border-radius: 0.75rem;
+  padding: 0.875rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 300;
+  color: #0a0a0a;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.auth-modal-home .auth-field-input:focus {
+  border-color: #0a0a0a;
+  box-shadow: 0 0 0 1px #0a0a0a;
+}
+
+.auth-modal-home .auth-btn-primary {
+  width: 100%;
+  background: #0a0a0a;
+  color: #fff;
+  padding: 1rem;
+  border-radius: 0.75rem;
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  transition: background 0.2s, transform 0.15s;
+}
+
+.auth-modal-home .auth-btn-primary:hover:not(:disabled) {
+  background: #262626;
+}
+
+.auth-modal-home .auth-btn-primary:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.auth-modal-home .auth-btn-primary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }

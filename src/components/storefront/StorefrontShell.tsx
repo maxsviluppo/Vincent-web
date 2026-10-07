@@ -15,6 +15,9 @@ import { Header } from '@/components/storefront/Header';
 import { Footer } from '@/components/storefront/Footer';
 import { ModularStorefront } from '@/components/storefront/ModularStorefront';
 import { VincentApp } from '@/components/storefront/VincentApp';
+import { ProductSheet } from '@/components/product/ProductSheet';
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
+import { preloadLegacyAppBundle } from '@/lib/preloadLegacyApp';
 
 export function StorefrontShell({ children }: { children?: React.ReactNode }) {
   const router = useRouter();
@@ -25,14 +28,22 @@ export function StorefrontShell({ children }: { children?: React.ReactNode }) {
     setSelectedProduct,
     setSelectedSubcategory,
     selectedCategory,
+    selectedSubcategory,
     selectedProduct,
     pageSettings,
     isAdminOpen,
     isCartOpen,
+    isCheckoutOpen,
+    isAuthOpen,
     setIsCartOpen,
+    isSideMenuOpen,
     cartCount,
     cartTrigger,
     handleCategorySelect,
+    addToCart,
+    favorites,
+    toggleFavorite,
+    productReviews,
   } = useApp();
 
   // Stato per mostrare il carrello mobile:
@@ -59,32 +70,69 @@ export function StorefrontShell({ children }: { children?: React.ReactNode }) {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const shouldShowFloatingCart = areBarsHidden;
+  const showProductSheet = Boolean(
+    selectedProduct &&
+      !isCartOpen &&
+      !isSideMenuOpen &&
+      !isAdminOpen &&
+      !isCheckoutOpen &&
+      !isAuthOpen
+  );
+  const shouldShowFloatingCart = areBarsHidden || cartCount > 0;
 
-  // ── Sync state with URL automatically ──────────────────────────────────────
+  // Sync solo con le route Next reali (overlay home usa pushState senza cambiare pathname)
   useEffect(() => {
-    const parts = pathname.split('/').filter(Boolean);
-    
-    if (parts[0] === 'prodotto' && parts[1]) {
-      const productId = parts[1];
+    if (pathname.startsWith('/prodotto/')) {
+      const productId = pathname.split('/')[2];
       const product = products.find((p) => p.id === productId);
-      if (product) {
-        setSelectedProduct(product);
-      }
-    } else if (parts[0] === 'categoria' && parts[1]) {
-      const matchedCat = CATEGORIES.find(
-        (c) => slugify(c) === parts[1].toLowerCase()
-      );
+      if (product) setSelectedProduct(product);
+      return;
+    }
+
+    if (pathname.startsWith('/categoria/')) {
+      const slug = pathname.split('/')[2]?.toLowerCase();
+      const matchedCat = CATEGORIES.find((c) => slugify(c) === slug);
       if (matchedCat && matchedCat !== selectedCategory) {
         setSelectedCategory(matchedCat);
         setSelectedSubcategory('Tutti');
       }
-    } else if (pathname === '/') {
       setSelectedProduct(null);
+      return;
     }
-  }, [pathname, products, selectedCategory, setSelectedCategory, setSelectedProduct, setSelectedSubcategory]);
 
-  const isProductPage = pathname.startsWith('/prodotto/');
+    if (pathname === '/') {
+      const browserPath =
+        typeof window !== 'undefined' ? window.location.pathname : '/';
+      const categoryFilterActive =
+        selectedCategory !== 'Tutti' || selectedSubcategory !== 'Tutti';
+
+      if (categoryFilterActive) {
+        if (browserPath.startsWith('/prodotto/')) {
+          window.history.replaceState(null, '', '/');
+        }
+        setSelectedProduct(null);
+        return;
+      }
+
+      if (browserPath.startsWith('/prodotto/')) {
+        const productId = browserPath.split('/')[2];
+        const product = products.find((p) => p.id === productId);
+        if (product) setSelectedProduct(product);
+      } else {
+        setSelectedProduct(null);
+      }
+    }
+  }, [
+    pathname,
+    products,
+    selectedCategory,
+    selectedSubcategory,
+    setSelectedCategory,
+    setSelectedProduct,
+    setSelectedSubcategory,
+  ]);
+
+  useBodyScrollLock(showProductSheet || isCartOpen || isSideMenuOpen);
 
   const wasAdminOpen = useRef(isAdminOpen);
   useEffect(() => {
@@ -101,7 +149,7 @@ export function StorefrontShell({ children }: { children?: React.ReactNode }) {
       
       <main className="flex-grow">
         <ModularStorefront />
-        {isProductPage && children}
+        {children}
       </main>
       
       <Footer />
@@ -133,7 +181,10 @@ export function StorefrontShell({ children }: { children?: React.ReactNode }) {
                 rotate: [0, -8, 8, -4, 0]
               } : {}}
               transition={{ duration: 0.5, ease: "easeOut" }}
-              onClick={() => setIsCartOpen(true)}
+              onClick={() => {
+                preloadLegacyAppBundle();
+                setIsCartOpen(true);
+              }}
               className="relative w-14 h-14 rounded-full bg-neutral-950 text-white shadow-2xl flex items-center justify-center border-2 border-white/40 active:scale-90 transition-transform cursor-pointer"
               aria-label="Carrello"
               title="Apri Carrello"
@@ -149,7 +200,47 @@ export function StorefrontShell({ children }: { children?: React.ReactNode }) {
         )}
       </AnimatePresence>
 
-      {/* Headless Layer (Legacy Modals & Admin) */}
+      {/* Scheda Dettaglio Prodotto Standalone — Apertura Istantanea (0ms) */}
+      {showProductSheet && selectedProduct && (
+        <ProductSheet
+          key={`product-sheet-${selectedProduct.id}`}
+          product={selectedProduct}
+          onClose={() => {
+            setSelectedProduct(null);
+            if (typeof window !== 'undefined') {
+              const browserPath = window.location.pathname;
+              if (browserPath.startsWith('/prodotto/')) {
+                if (pathname.startsWith('/prodotto/')) {
+                  router.replace('/');
+                } else {
+                  window.history.replaceState(null, '', '/');
+                }
+              }
+            }
+          }}
+          onAddToCart={addToCart}
+          reviews={productReviews}
+          favorites={favorites}
+          toggleFavorite={toggleFavorite}
+          onShare={(p) => {
+            if (typeof navigator !== 'undefined' && navigator.share) {
+              navigator.share({
+                title: p.name,
+                url: window.location.href,
+              }).catch(() => {});
+            }
+          }}
+          onSelectProduct={(p) => {
+            setSelectedProduct(p);
+            if (typeof window !== 'undefined') {
+              window.history.pushState({ productId: p.id }, '', `/prodotto/${p.id}/${slugify(p.name)}`);
+            }
+          }}
+          allProducts={products}
+        />
+      )}
+
+      {/* Headless Layer (Legacy Modals & Admin: Cart, Checkout, Auth, Admin) */}
       <VincentApp />
     </div>
   );

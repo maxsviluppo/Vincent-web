@@ -1,7 +1,6 @@
 'use client';
 
-import React from 'react';
-import { motion } from 'motion/react';
+import React, { memo } from 'react';
 import { Heart, ShoppingCart } from 'lucide-react';
 import { Product } from '@/lib/types';
 
@@ -16,9 +15,10 @@ interface ProductCardProps {
   onShare?: (p: Product) => void;
 }
 
-const FALLBACK_IMG = "https://images.unsplash.com/photo-1594938298603-c8148c4dae35?auto=format&fit=crop&w=1000&q=80";
+const FALLBACK_IMG =
+  'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?auto=format&fit=crop&w=1000&q=80';
 
-export function ProductCard({
+export const ProductCard = memo(function ProductCard({
   product,
   onClick,
   onAddToCart,
@@ -27,11 +27,25 @@ export function ProductCard({
   onToggleFavorite,
 }: ProductCardProps) {
   const displayPrice = product.price || 0;
-  const imageSrc = (product.image && product.image.trim().length > 10) ? product.image : FALLBACK_IMG;
+  const imageSrc =
+    product.image && product.image.trim().length > 10 ? product.image : FALLBACK_IMG;
+
+  // Precarica le immagini della galleria in background all'hover per renderle istantanee al click
+  const handleMouseEnter = () => {
+    if (product.gallery && product.gallery.length > 0) {
+      product.gallery.slice(0, 2).forEach((url) => {
+        if (url) {
+          const img = new Image();
+          img.src = url;
+        }
+      });
+    }
+  };
 
   return (
     <div
       onClick={onClick}
+      onMouseEnter={handleMouseEnter}
       className="bg-white rounded-2xl border border-neutral-200/80 overflow-hidden flex flex-col h-full hover:-translate-y-1 hover:shadow-xl transition-all duration-300 relative group cursor-pointer font-['Montserrat',sans-serif]"
     >
       {/* Immagine con dimensione uniforme identica per tutti i prodotti */}
@@ -39,13 +53,15 @@ export function ProductCard({
         <img
           src={imageSrc}
           alt={product.name}
+          loading={index < 4 ? 'eager' : 'lazy'}
+          decoding="async"
           className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-700 ease-out"
           referrerPolicy="no-referrer"
           onError={(e) => {
             e.currentTarget.src = FALLBACK_IMG;
           }}
         />
-        
+
         {/* Pulsante preferiti in alto a destra */}
         <div className="absolute top-2.5 right-2.5 z-10">
           <button
@@ -92,7 +108,7 @@ export function ProductCard({
               {displayPrice.toFixed(2)}
             </span>
           </div>
-          
+
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -108,4 +124,4 @@ export function ProductCard({
       </div>
     </div>
   );
-}
+});

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Truck, 
   Plus, 
@@ -26,6 +26,7 @@ import {
   Box
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
+import { useApp } from "@/context/AppProvider";
 
 interface CourierApiConfig {
   id: string;
@@ -153,7 +154,11 @@ const INITIAL_COURIERS: Courier[] = [
 ];
 
 export const AdminCouriers = () => {
-  const [couriers, setCouriers] = useState<Courier[]>(INITIAL_COURIERS);
+  const { couriers, setCouriers } = useApp();
+  useEffect(() => {
+    if (couriers.length === 0) setCouriers(INITIAL_COURIERS);
+  }, [couriers.length, setCouriers]);
+  const courierList = couriers.length > 0 ? couriers : INITIAL_COURIERS;
   const [isAdding, setIsAdding] = useState(false);
   const [isEditingApi, setIsEditingApi] = useState<string | null>(null);
   const [isEditingDetails, setIsEditingDetails] = useState<Courier | null>(null);
@@ -179,14 +184,14 @@ export const AdminCouriers = () => {
     }
   });
 
-  const filteredCouriers = couriers.filter(c => 
+  const filteredCouriers = courierList.filter(c => 
     c.name.toLowerCase().includes(search.toLowerCase())
   );
 
   const addCourier = () => {
     if (newCourier.name) {
       const id = newCourier.name.toLowerCase().replace(/\s+/g, '-');
-      setCouriers([...couriers, { 
+      setCouriers([...courierList, { 
         ...newCourier as Courier, 
         id: id + Date.now() 
       }]);
@@ -200,7 +205,7 @@ export const AdminCouriers = () => {
   };
 
   const updateCourier = (updated: Courier) => {
-    let newCouriers = couriers.map(c => c.id === updated.id ? updated : c);
+    let newCouriers = courierList.map(c => c.id === updated.id ? updated : c);
     
     // If this one is now default, others shouldn't be
     if (updated.isDefault) {
@@ -212,21 +217,21 @@ export const AdminCouriers = () => {
   };
 
   const updateCourierApi = (id: string, apiConfig: CourierApiConfig) => {
-    setCouriers(couriers.map(c => c.id === id ? { ...c, apiConfig } : c));
+    setCouriers(courierList.map(c => c.id === id ? { ...c, apiConfig } : c));
   };
 
   const deleteCourier = (id: string) => {
     if (window.confirm("Sei sicuro di voler eliminare questo corriere?")) {
-      setCouriers(couriers.filter(c => c.id !== id));
+      setCouriers(courierList.filter(c => c.id !== id));
     }
   };
 
   const toggleStatus = (id: string) => {
-    setCouriers(couriers.map(c => c.id === id ? { ...c, isActive: !c.isActive } : c));
+    setCouriers(courierList.map(c => c.id === id ? { ...c, isActive: !c.isActive } : c));
   };
 
   const setDefaultCourier = (id: string) => {
-    setCouriers(couriers.map(c => ({
+    setCouriers(courierList.map(c => ({
       ...c,
       isDefault: c.id === id
     })));

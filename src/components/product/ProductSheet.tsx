@@ -1,0 +1,678 @@
+'use client';
+
+import React, { useState, useRef, useMemo, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import {
+  Heart,
+  Share2,
+  Maximize,
+  Box,
+  Zap,
+  FileText,
+  ExternalLink,
+  FileSpreadsheet,
+  Compass,
+  Play,
+  Minus,
+  Plus,
+  ShoppingCart,
+  X,
+  ChevronLeft,
+  ChevronRight,
+  Shield
+} from 'lucide-react';
+import { Product } from '@/lib/types';
+import { PRODUCTS } from '@/lib/data';
+
+interface ProductSheetProps {
+  product: Product;
+  onClose: () => void;
+  onAddToCart: (p: Product) => void;
+  isDesktop?: boolean;
+  reviews?: any[];
+  favorites?: string[];
+  toggleFavorite?: (id: string) => void;
+  onShare?: (p: Product) => void;
+  onSelectProduct?: (p: Product) => void;
+  allProducts?: Product[];
+}
+
+export const PdfViewerModal = ({ url, title, onClose }: { url: string; title: string; onClose: () => void }) => {
+  const [blobUrl, setBlobUrl] = useState<string>('');
+
+  useEffect(() => {
+    if (url && url.startsWith('data:application/pdf')) {
+      const fetchBlob = async () => {
+        try {
+          const response = await fetch(url);
+          const blob = await response.blob();
+          const bUrl = URL.createObjectURL(blob);
+          setBlobUrl(bUrl);
+        } catch (err) {
+          console.error('Error creating PDF blob:', err);
+          setBlobUrl(url);
+        }
+      };
+      fetchBlob();
+    } else {
+      setBlobUrl(url);
+    }
+
+    return () => {
+      if (blobUrl && blobUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(blobUrl);
+      }
+    };
+  }, [url]);
+
+  if (!url) return null;
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onClose}
+        className="fixed inset-0 bg-black/60 backdrop-blur-md z-[1000]"
+      />
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+        className="fixed inset-4 md:inset-10 bg-white rounded-[2rem] shadow-2xl z-[1001] overflow-hidden flex flex-col"
+      >
+        <div className="flex items-center justify-between p-5 border-b border-gray-100 bg-white/80 backdrop-blur-xl">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-neutral-100 rounded-xl flex items-center justify-center">
+              <FileText className="w-5 h-5 text-neutral-800" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-neutral-900 uppercase tracking-widest">{title}</h3>
+              <p className="text-[10px] text-neutral-400 font-medium uppercase tracking-wider">Documento</p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-10 h-10 flex items-center justify-center bg-gray-100 hover:bg-neutral-900 hover:text-white rounded-xl transition-all cursor-pointer"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        <div className="flex-1 bg-gray-50 relative">
+          <iframe src={blobUrl} className="w-full h-full border-none" title={title} />
+        </div>
+      </motion.div>
+    </AnimatePresence>
+  );
+};
+
+export function ProductSheet({
+  product,
+  onClose,
+  onAddToCart,
+  reviews = [],
+  favorites = [],
+  toggleFavorite,
+  onShare,
+  onSelectProduct,
+  allProducts = [],
+}: ProductSheetProps) {
+  const [quantity, setQuantity] = useState(1);
+  const [selectedVariants, setSelectedVariants] = useState<Record<string, string>>(() => {
+    const initial: Record<string, string> = {};
+    product.variants?.forEach((v) => {
+      if (!initial[v.type]) initial[v.type] = v.value;
+    });
+    return initial;
+  });
+  const [activeImage, setActiveImage] = useState(product.image);
+  const isFavorite = favorites.includes(product.id);
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const [activePdf, setActivePdf] = useState<{ url: string; title: string } | null>(null);
+
+  const carouselRef = useRef<HTMLDivElement>(null);
+  const [corniceTouchStartY, setCorniceTouchStartY] = useState<number | null>(null);
+  const [corniceDragOffset, setCorniceDragOffset] = useState<number>(0);
+
+  const handleCorniceTouchStart = (e: React.TouchEvent) => {
+    setCorniceTouchStartY(e.touches[0].clientY);
+  };
+
+  const handleCorniceTouchMove = (e: React.TouchEvent) => {
+    if (corniceTouchStartY === null) return;
+    const diff = e.touches[0].clientY - corniceTouchStartY;
+    if (diff > 0) {
+      setCorniceDragOffset(diff);
+      if (diff > 60) {
+        setCorniceTouchStartY(null);
+        setCorniceDragOffset(0);
+        onClose();
+      }
+    }
+  };
+
+  const handleCorniceTouchEnd = () => {
+    if (corniceDragOffset > 35) {
+      onClose();
+    }
+    setCorniceTouchStartY(null);
+    setCorniceDragOffset(0);
+  };
+
+  const variantsByType = useMemo(() => {
+    const groups: Record<string, any[]> = {};
+    product.variants?.forEach((v) => {
+      if (!groups[v.type]) groups[v.type] = [];
+      if (!groups[v.type].some((item) => item.value === v.value)) {
+        groups[v.type].push(v);
+      }
+    });
+    return groups;
+  }, [product.variants]);
+
+  const selectedVariantObject = useMemo(() => {
+    if (!product.variants || product.variants.length === 0) return null;
+    const firstType = Object.keys(variantsByType)[0];
+    if (!firstType || !selectedVariants[firstType]) return null;
+    return product.variants.find((v) => v.type === firstType && v.value === selectedVariants[firstType]) || null;
+  }, [product.variants, selectedVariants, variantsByType]);
+
+  useEffect(() => {
+    if (selectedVariantObject?.image) {
+      setActiveImage(selectedVariantObject.image);
+    } else {
+      setActiveImage(product.image);
+    }
+  }, [selectedVariantObject, product.image]);
+
+  const displayPrice = useMemo(() => {
+    const basePrice = product.price || 0;
+    if (selectedVariantObject) {
+      if (selectedVariantObject.costType === 'fixed') return selectedVariantObject.costValue || basePrice;
+      if (selectedVariantObject.costType === 'delta') return basePrice + (selectedVariantObject.costValue || 0);
+      if (selectedVariantObject.costType === 'percent')
+        return basePrice * (1 + (selectedVariantObject.costValue || 0) / 100);
+    }
+    return basePrice;
+  }, [product.price, selectedVariantObject]);
+
+  const scroll = (direction: 'left' | 'right') => {
+    if (carouselRef.current) {
+      const scrollAmount = carouselRef.current.offsetWidth * 0.8;
+      carouselRef.current.scrollBy({
+        left: direction === 'left' ? -scrollAmount : scrollAmount,
+        behavior: 'smooth',
+      });
+    }
+  };
+
+  const relatedProducts = useMemo(() => {
+    if (product.relatedProductIds && product.relatedProductIds.length > 0) {
+      return allProducts.filter((p) => product.relatedProductIds?.includes(p.id));
+    }
+    const pool = allProducts.length > 0 ? allProducts : PRODUCTS;
+    return pool.filter((p) => p.category === product.category && p.id !== product.id).slice(0, 8);
+  }, [product, allProducts]);
+
+  return (
+    <>
+      {/* Sfondo scuro semitrasparente */}
+      <div
+        onClick={onClose}
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[95] transition-opacity cursor-pointer"
+      />
+
+      {/* Box modale perfettamente centrato sia su desktop che su mobile */}
+      <div
+        style={{
+          transform: corniceDragOffset > 0 ? `translateY(${corniceDragOffset}px)` : undefined,
+          transition: corniceDragOffset === 0 ? 'transform 0.25s ease-out' : 'none',
+        }}
+        className="fixed inset-x-0 bottom-0 md:inset-0 md:m-auto z-[100] bg-white rounded-t-[28px] md:rounded-[36px] shadow-2xl flex flex-col h-[92vh] md:h-[86vh] w-full md:w-[92vw] md:max-w-5xl lg:max-w-6xl overflow-hidden transition-all duration-300 ease-out font-['Montserrat',sans-serif]"
+      >
+        {/* Maniglia trascinamento per mobile e chiusura */}
+        <div
+          onTouchStart={handleCorniceTouchStart}
+          onTouchMove={handleCorniceTouchMove}
+          onTouchEnd={handleCorniceTouchEnd}
+          onClick={onClose}
+          className="w-full pt-3 pb-2 flex-shrink-0 cursor-grab active:cursor-grabbing flex flex-col items-center justify-center touch-none select-none hover:bg-neutral-50 transition-colors"
+          title="Trascina verso il basso per chiudere"
+          aria-label="Chiudi finestra dettaglio"
+        >
+          <div className="w-14 h-1.5 bg-neutral-300 hover:bg-neutral-400 rounded-full transition-colors shadow-sm" />
+          <span className="text-[9px] uppercase tracking-widest text-neutral-400 mt-1 font-light">
+            Trascina verso il basso per chiudere
+          </span>
+        </div>
+
+        <div className="overflow-y-auto pb-32 px-5 sm:px-8 lg:p-10 flex-1">
+          <div className="lg:grid lg:grid-cols-12 lg:gap-12 items-start">
+            {/* COLUMN 1: PHOTOS (5/12) */}
+            <div className="lg:col-span-5 lg:sticky lg:top-0">
+              <div
+                className="relative aspect-square rounded-3xl overflow-hidden mb-4 bg-gray-50 border border-gray-100 cursor-pointer group"
+                onClick={() => setIsLightboxOpen(true)}
+              >
+                <img
+                  src={activeImage || product.image}
+                  alt={product.name}
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  referrerPolicy="no-referrer"
+                />
+
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/15 transition-colors flex items-center justify-center">
+                  <div className="bg-white/90 backdrop-blur-md p-3 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg">
+                    <Maximize className="w-5 h-5 text-neutral-900" />
+                  </div>
+                </div>
+
+                <div className="absolute top-4 left-4 flex flex-col gap-3 z-10">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleFavorite?.(product.id);
+                    }}
+                    className={`p-2.5 rounded-full backdrop-blur-md transition-all hover:scale-110 active:scale-95 ${
+                      isFavorite ? 'bg-red-50 text-red-500' : 'bg-white/80 text-neutral-700 hover:text-red-500'
+                    }`}
+                  >
+                    <Heart className={`w-4 h-4 ${isFavorite ? 'fill-current' : ''}`} />
+                  </button>
+                  {onShare && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onShare(product);
+                      }}
+                      className="p-2.5 rounded-full bg-white/80 backdrop-blur-md text-neutral-700 hover:text-neutral-950 transition-all hover:scale-110 active:scale-95"
+                    >
+                      <Share2 className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Thumbnails con scroll */}
+              <div className="relative mb-6">
+                <div
+                  className="flex gap-2.5 overflow-x-auto pb-2 scroll-smooth"
+                  style={{ scrollbarWidth: 'thin', scrollbarColor: '#e5e7eb transparent' }}
+                >
+                  <button
+                    onClick={() => setActiveImage(product.image)}
+                    className={`w-14 h-14 sm:w-16 sm:h-16 rounded-xl overflow-hidden flex-shrink-0 border-2 transition-all cursor-pointer ${
+                      activeImage === product.image ? 'border-neutral-950 shadow-sm' : 'border-transparent hover:border-gray-300'
+                    }`}
+                  >
+                    {product.image && (
+                      <img src={product.image} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                    )}
+                  </button>
+                  {(product?.gallery || [])
+                    .filter((img) => img !== product.image)
+                    .map((img, idx) => (
+                      <button
+                        key={`gallery-${idx}`}
+                        onClick={() => setActiveImage(img)}
+                        className={`w-14 h-14 sm:w-16 sm:h-16 rounded-xl overflow-hidden flex-shrink-0 border-2 transition-all cursor-pointer ${
+                          activeImage === img ? 'border-neutral-950 shadow-sm' : 'border-transparent hover:border-gray-300'
+                        }`}
+                      >
+                        {img && <img src={img} className="w-full h-full object-cover" referrerPolicy="no-referrer" />}
+                      </button>
+                    ))}
+                  {product.has3D && (
+                    <button className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-neutral-900 flex flex-col items-center justify-center text-white flex-shrink-0 hover:bg-black transition-colors cursor-pointer">
+                      <Box className="w-5 h-5 mb-0.5" />
+                      <span className="text-[8px] font-bold uppercase tracking-wider">3D</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* COLUMN 2: DESCRIPTION & TECH SPECS (4/12) */}
+            <div className="lg:col-span-4 space-y-8">
+              <div className="mb-4">
+                <div className="flex items-center gap-2 mb-1.5">
+                  <p className="text-[10px] font-semibold text-neutral-500 uppercase tracking-[0.2em]">
+                    {product.category}
+                  </p>
+                  {product.brand && (
+                    <>
+                      <span className="w-1 h-1 bg-gray-300 rounded-full" />
+                      <p className="text-[10px] font-bold text-neutral-900 uppercase tracking-[0.2em]">
+                        {product.brand}
+                      </p>
+                    </>
+                  )}
+                </div>
+                <h2 className="text-xl lg:text-2xl font-bold text-neutral-950 leading-snug">
+                  {selectedVariantObject?.title || product.name}
+                </h2>
+                {selectedVariantObject?.note && (
+                  <div className="mt-3 p-3 bg-neutral-50 border border-neutral-200 rounded-xl">
+                    <p className="text-[9px] font-bold uppercase text-neutral-500 tracking-wider">NOTA</p>
+                    <p className="text-xs text-neutral-800 mt-0.5">{selectedVariantObject.note}</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Description */}
+              <div className="space-y-3">
+                <h4 className="font-semibold text-xs uppercase tracking-[0.18em] text-neutral-900 border-l-3 border-neutral-950 pl-3">
+                  Descrizione
+                </h4>
+                <div className="text-neutral-600 text-xs sm:text-sm leading-relaxed space-y-3">
+                  <div dangerouslySetInnerHTML={{ __html: product.description }} className="rich-content" />
+                </div>
+              </div>
+
+              {/* Technical Specs */}
+              {product?.specs && Object.keys(product.specs).length > 0 && (
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-xs uppercase tracking-[0.18em] text-neutral-900 border-l-3 border-neutral-950 pl-3">
+                    Caratteristiche
+                  </h4>
+                  <div className="grid grid-cols-2 gap-2.5">
+                    {((selectedVariantObject && selectedVariantObject.showEan !== false && selectedVariantObject.ean) ||
+                      (!selectedVariantObject && product.showEan && product.ean)) && (
+                      <div className="bg-neutral-950 text-white p-3 rounded-xl border border-neutral-800 shadow-sm col-span-2">
+                        <p className="text-[9px] text-white/60 uppercase font-semibold mb-0.5">Codice EAN</p>
+                        <p className="text-xs font-mono tracking-widest">{selectedVariantObject?.ean || product.ean}</p>
+                      </div>
+                    )}
+                    {Object.entries(product.specs).map(([key, value]) => (
+                      <div key={key} className="bg-neutral-50 p-3 rounded-xl border border-neutral-100">
+                        <p className="text-[9px] text-neutral-400 uppercase font-medium mb-0.5">{key}</p>
+                        <p className="text-xs font-semibold text-neutral-900">{value}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Documents */}
+              {(product.techSheet || product.manual) && (
+                <div className="space-y-3">
+                  <h4 className="font-semibold text-xs uppercase tracking-[0.18em] text-neutral-900 border-l-3 border-neutral-950 pl-3">
+                    Documentazione
+                  </h4>
+                  <div className="grid grid-cols-1 gap-2.5">
+                    {product.techSheet && (
+                      <button
+                        onClick={() => setActivePdf({ url: product.techSheet!, title: 'Scheda Tecnica' })}
+                        className="flex items-center justify-between p-3.5 bg-neutral-50 hover:bg-neutral-100 border border-neutral-200/80 rounded-xl transition-all cursor-pointer group"
+                      >
+                        <div className="flex items-center gap-3">
+                          <FileSpreadsheet className="w-4 h-4 text-neutral-700" />
+                          <span className="text-xs font-medium text-neutral-900 uppercase tracking-tight">
+                            Scheda Tecnica
+                          </span>
+                        </div>
+                        <ExternalLink className="w-3.5 h-3.5 text-neutral-400 group-hover:translate-x-0.5 transition-transform" />
+                      </button>
+                    )}
+                    {product.manual && (
+                      <button
+                        onClick={() => setActivePdf({ url: product.manual!, title: "Manuale d'Uso" })}
+                        className="flex items-center justify-between p-3.5 bg-neutral-50 hover:bg-neutral-100 border border-neutral-200/80 rounded-xl transition-all cursor-pointer group"
+                      >
+                        <div className="flex items-center gap-3">
+                          <Compass className="w-4 h-4 text-neutral-700" />
+                          <span className="text-xs font-medium text-neutral-900 uppercase tracking-tight">
+                            Manuale d'Uso (PDF)
+                          </span>
+                        </div>
+                        <ExternalLink className="w-3.5 h-3.5 text-neutral-400 group-hover:translate-x-0.5 transition-transform" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* COLUMN 3: PRICE & VARIANTS (3/12) */}
+            <div className="lg:col-span-3 lg:bg-neutral-50/70 lg:p-7 lg:rounded-3xl lg:border lg:border-neutral-200/70 space-y-6">
+              <div className="space-y-4">
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-neutral-400 line-through">
+                      €{((displayPrice || 0) * 1.2).toFixed(2)}
+                    </span>
+                    <span className="bg-red-600 text-white text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                      Promo
+                    </span>
+                  </div>
+                  <span className="text-3xl font-extrabold text-neutral-950 tracking-tight">
+                    €{(displayPrice || 0).toFixed(2)}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-semibold text-neutral-400 uppercase tracking-wider">SKU:</span>
+                  <span className="text-[10px] font-mono text-neutral-700">
+                    {selectedVariantObject?.sku || product.sku || 'N/A'}
+                  </span>
+                </div>
+
+                {/* Variant Selection UI */}
+                {Object.entries(variantsByType).map(([type, options]) => (
+                  <div key={type} className="space-y-2 pt-2">
+                    <h4 className="font-semibold text-[10px] uppercase tracking-wider text-neutral-900 flex items-center gap-2">
+                      {type}
+                      {selectedVariants[type] && (
+                        <span className="text-neutral-500 font-normal">— {selectedVariants[type]}</span>
+                      )}
+                    </h4>
+                    <div className="flex flex-wrap gap-2">
+                      {options.map((opt) => (
+                        <button
+                          key={opt.id || opt.value}
+                          onClick={() => setSelectedVariants({ ...selectedVariants, [type]: opt.value })}
+                          className={`px-3 py-1.5 rounded-lg text-xs uppercase tracking-tight transition-all border cursor-pointer ${
+                            selectedVariants[type] === opt.value
+                              ? 'border-neutral-950 bg-neutral-950 text-white font-semibold shadow-xs'
+                              : 'border-neutral-200 hover:border-neutral-400 text-neutral-600 bg-white font-normal'
+                          }`}
+                        >
+                          {opt.value}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+
+                {(() => {
+                  const isAvailable = selectedVariantObject
+                    ? selectedVariantObject.webStock > 0
+                    : (product.stock ?? 1) > 0;
+
+                  return isAvailable ? (
+                    <div className="flex items-center gap-2 text-xs text-emerald-700 font-semibold bg-emerald-50/80 p-2.5 rounded-xl border border-emerald-200">
+                      <Shield className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Disponibile in pronta consegna</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 text-xs text-red-600 font-semibold bg-red-50 p-2.5 rounded-xl border border-red-200">
+                      <X className="w-3.5 h-3.5 text-red-500" />
+                      <span>Esaurito momentaneamente</span>
+                    </div>
+                  );
+                })()}
+              </div>
+            </div>
+          </div>
+
+          {/* Related Products Carousel */}
+          {relatedProducts.length > 0 && (
+            <div className="mt-16 pt-8 border-t border-neutral-200/80">
+              <div className="flex items-center justify-between mb-5">
+                <h4 className="font-semibold text-xs uppercase tracking-[0.18em] text-neutral-900 border-l-3 border-neutral-950 pl-3">
+                  Potrebbe interessarti anche
+                </h4>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => scroll('left')}
+                    className="w-7 h-7 rounded-full bg-neutral-100 flex items-center justify-center text-neutral-700 hover:bg-neutral-950 hover:text-white transition-colors cursor-pointer"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => scroll('right')}
+                    className="w-7 h-7 rounded-full bg-neutral-100 flex items-center justify-center text-neutral-700 hover:bg-neutral-950 hover:text-white transition-colors cursor-pointer"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+              <div
+                ref={carouselRef}
+                className="flex overflow-x-auto no-scrollbar gap-4 pb-3 snap-x snap-mandatory scroll-smooth"
+              >
+                {relatedProducts.map((p) => (
+                  <div
+                    key={p.id}
+                    onClick={() => onSelectProduct?.(p)}
+                    className="flex-shrink-0 w-40 sm:w-48 snap-start bg-white border border-neutral-200/80 rounded-2xl p-3 shadow-xs group cursor-pointer hover:shadow-md transition-all active:scale-95"
+                  >
+                    <div className="aspect-[3/4] rounded-xl overflow-hidden mb-2.5 bg-neutral-100">
+                      {p.image && (
+                        <img
+                          src={p.image}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          referrerPolicy="no-referrer"
+                        />
+                      )}
+                    </div>
+                    <h5 className="text-[11px] font-medium text-neutral-900 line-clamp-1">{p.name}</h5>
+                    <p className="text-xs font-semibold text-neutral-950 mt-1">€{(p.price || 0).toFixed(2)}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Action Bar Inferiore */}
+        <div className="bg-white/95 backdrop-blur-xl border-t border-neutral-200/80 p-4 sm:p-5 lg:px-10 flex items-center justify-between gap-3 sm:gap-6 z-20">
+          <div className="flex items-center bg-neutral-100 rounded-xl p-1 gap-1">
+            <button
+              onClick={() => setQuantity(Math.max(1, quantity - 1))}
+              className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-lg bg-white shadow-xs hover:bg-neutral-50 active:scale-90 transition-all cursor-pointer"
+            >
+              <Minus className="w-3.5 h-3.5" />
+            </button>
+            <span className="w-8 sm:w-10 text-center font-bold text-sm sm:text-base">{quantity}</span>
+            <button
+              onClick={() => setQuantity(quantity + 1)}
+              className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-lg bg-white shadow-xs hover:bg-neutral-50 active:scale-90 transition-all cursor-pointer"
+            >
+              <Plus className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          <div className="flex-1 flex items-center gap-3 sm:gap-4">
+            <div className="hidden sm:flex flex-col items-end flex-1 pr-4 border-r border-neutral-200">
+              <span className="text-[10px] text-neutral-400 font-semibold uppercase tracking-wider">Totale</span>
+              <span className="text-xl font-bold text-neutral-950">€{(displayPrice * quantity).toFixed(2)}</span>
+            </div>
+
+            <button
+              onClick={() => {
+                const itemToAddToCart = {
+                  ...product,
+                  price: displayPrice,
+                  sku: selectedVariantObject?.sku || product.sku,
+                  name: selectedVariantObject ? `${product.name} - ${selectedVariantObject.value}` : product.name,
+                };
+                for (let i = 0; i < quantity; i++) onAddToCart(itemToAddToCart);
+                onClose();
+              }}
+              className="flex-1 sm:flex-[2] bg-neutral-950 hover:bg-black text-white h-12 sm:h-14 rounded-xl font-bold flex items-center justify-center gap-2 sm:gap-3 active:scale-95 transition-all uppercase text-xs tracking-widest shadow-lg cursor-pointer"
+            >
+              <ShoppingCart className="w-4 h-4" />
+              <span>Aggiungi al carrello</span>
+            </button>
+
+            {/* Piccolo pulsante icona con la X dello stesso stile che chiude la scheda del dettaglio */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onClose();
+              }}
+              className="w-12 h-12 sm:w-14 sm:h-14 bg-neutral-950 hover:bg-black text-white rounded-xl flex items-center justify-center transition-all active:scale-95 shadow-lg cursor-pointer flex-shrink-0"
+              aria-label="Chiudi scheda prodotto"
+              title="Chiudi scheda prodotto"
+            >
+              <X className="w-5 h-5 stroke-[2.2]" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Fullscreen Lightbox */}
+      <AnimatePresence>
+        {isLightboxOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/95 z-[200] flex flex-col items-center justify-center p-4 backdrop-blur-md"
+          >
+            <div className="absolute top-6 right-6 flex gap-4">
+              <button
+                onClick={() => setIsLightboxOpen(false)}
+                className="p-3 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors cursor-pointer"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="w-full max-w-4xl aspect-square sm:aspect-video rounded-2xl overflow-hidden shadow-2xl"
+            >
+              {activeImage && (
+                <img
+                  src={activeImage}
+                  alt={product.name}
+                  className="w-full h-full object-contain bg-black"
+                  referrerPolicy="no-referrer"
+                />
+              )}
+            </motion.div>
+
+            <div className="mt-6 flex gap-3 overflow-x-auto no-scrollbar max-w-full px-4">
+              {[product.image, ...(product.gallery || [])].map((img, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setActiveImage(img)}
+                  className={`w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 border-2 transition-all cursor-pointer ${
+                    activeImage === img ? 'border-white shadow-md' : 'border-white/20'
+                  }`}
+                >
+                  {img && <img src={img} className="w-full h-full object-cover" referrerPolicy="no-referrer" />}
+                </button>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* PDF Viewer Modal */}
+      {activePdf && (
+        <PdfViewerModal
+          url={activePdf.url}
+          title={activePdf.title}
+          onClose={() => setActivePdf(null)}
+        />
+      )}
+    </>
+  );
+}

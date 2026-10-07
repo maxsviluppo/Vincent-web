@@ -87,6 +87,8 @@ import { PRODUCTS, CATEGORIES, SUBCATEGORIES } from "./data";
 import { Product, CartItem } from "./types";
 import { useNavigate, useLocation } from "react-router-dom";
 import { AdminSingleProduct } from "./AdminSingleProduct";
+import { AdminCategoriesSection } from "../components/admin/AdminCategoriesSection";
+import { AdminSlidePickerList } from "../components/admin/AdminSlidePickerList";
 import { AdminMassiveImport } from "./AdminMassiveImport";
 import { AdminImageLinker } from "./AdminImageLinker";
 import { AdminOrders, INITIAL_ORDERS } from "./AdminOrders";
@@ -95,6 +97,12 @@ import { AdminReturns } from "./AdminReturns";
 import { AdminUsers } from "./AdminUsers";
 import { AdminReviews } from "./AdminReviews";
 import { useApp } from "@/context/AppProvider";
+import {
+  authDeleteAccount,
+  authLogin,
+  authRegister,
+  authUpdateProfile,
+} from "@/lib/auth-client";
 
 // --- Components ---
 
@@ -2126,10 +2134,10 @@ const SideMenu = ({ isOpen, onClose, onSelectCategory, companySettings, pageSett
             animate={{ x: 0 }}
             exit={{ x: "-100%" }}
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className="fixed top-0 left-0 bottom-0 w-80 sm:w-88 bg-white text-neutral-900 z-[70] shadow-2xl flex flex-col p-6 font-['Montserrat',sans-serif] border-r border-neutral-200"
+            className="side-menu-drawer fixed top-0 left-0 bottom-0 w-[min(100vw-0.75rem,17.5rem)] md:w-80 bg-white text-neutral-900 z-[70] shadow-2xl flex flex-col p-4 md:p-6 font-['Montserrat',sans-serif] border-r border-neutral-200"
           >
             {/* Header del Menu laterale */}
-            <div className="flex items-center justify-between mb-6 pb-4 border-b border-neutral-100">
+            <div className="flex items-center justify-between mb-4 md:mb-6 pb-3 md:pb-4 border-b border-neutral-100">
               <div className="flex items-baseline gap-2">
                 <span className="text-xl font-light tracking-[0.28em] text-neutral-950 uppercase">
                   VINCENT
@@ -2147,30 +2155,30 @@ const SideMenu = ({ isOpen, onClose, onSelectCategory, companySettings, pageSett
               </button>
             </div>
 
-            <div className="space-y-6 overflow-y-auto no-scrollbar flex-1 pr-1">
-              {/* Sezione Account */}
-              <div className="space-y-2">
-                <h3 className="text-[10px] font-normal text-neutral-400 uppercase tracking-[0.25em] mb-2">Account</h3>
+            <div className="space-y-4 md:space-y-6 overflow-y-auto no-scrollbar flex-1 pr-0.5">
+              {/* Sezione Account — desktop: card; mobile: compatto */}
+              <div className="space-y-0 md:space-y-2 border-b md:border-b-0 border-neutral-100 pb-3 md:pb-0">
+                <h3 className="text-[9px] md:text-[10px] font-normal text-neutral-400 uppercase tracking-[0.22em] mb-2 px-0.5">Account</h3>
                 <button 
                   onClick={() => { if (onOpenProfile) onOpenProfile(); onClose(); }}
-                  className="flex items-center gap-3 w-full p-3 bg-neutral-50 hover:bg-neutral-100 border border-neutral-100 rounded-xl transition-colors text-left"
+                  className="flex items-center gap-3 w-full min-h-[44px] md:min-h-0 p-2.5 md:p-3 md:bg-neutral-50 hover:bg-neutral-50 md:hover:bg-neutral-100 md:border md:border-neutral-100 rounded-lg md:rounded-xl transition-colors text-left"
                 >
                   <User className="w-4 h-4 text-neutral-900 stroke-[1.4]" />
-                  <span className="text-xs font-normal tracking-wide text-neutral-900">Il mio profilo</span>
+                  <span className="text-[11px] md:text-xs font-light md:font-normal tracking-[0.08em] md:tracking-wide text-neutral-900 uppercase md:normal-case">Il mio profilo</span>
                 </button>
                 <button 
                   onClick={() => { if (onOpenOrders) onOpenOrders(); onClose(); }}
-                  className="flex items-center gap-3 w-full p-3 bg-neutral-50 hover:bg-neutral-100 border border-neutral-100 rounded-xl transition-colors text-left"
+                  className="flex items-center gap-3 w-full min-h-[44px] md:min-h-0 p-2.5 md:p-3 md:bg-neutral-50 hover:bg-neutral-50 md:hover:bg-neutral-100 md:border md:border-neutral-100 rounded-lg md:rounded-xl transition-colors text-left"
                 >
                   <ShoppingCart className="w-4 h-4 text-neutral-900 stroke-[1.4]" />
-                  <span className="text-xs font-normal tracking-wide text-neutral-900">I miei ordini</span>
+                  <span className="text-[11px] md:text-xs font-light md:font-normal tracking-[0.08em] md:tracking-wide text-neutral-900 uppercase md:normal-case">I miei ordini</span>
                 </button>
               </div>
 
-              {/* Sezione Categorie con Filtro Vetrina e Sottocategorie */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-[10px] font-normal text-neutral-400 uppercase tracking-[0.25em]">Filtra Vetrina</h3>
+              {/* Sezione Categorie — mobile: lista minimal come admin categorie */}
+              <div className="space-y-0 md:space-y-2">
+                <div className="flex items-center justify-between mb-1 md:mb-2 px-0.5">
+                  <h3 className="text-[9px] md:text-[10px] font-normal text-neutral-400 uppercase tracking-[0.22em]">Categorie</h3>
                   <button 
                     onClick={() => { onSelectCategory("Tutti"); onClose(); }}
                     className="text-[10px] font-semibold text-neutral-900 uppercase tracking-wider hover:underline"
@@ -2179,32 +2187,23 @@ const SideMenu = ({ isOpen, onClose, onSelectCategory, companySettings, pageSett
                   </button>
                 </div>
                 
-                {/* Tutti i capi */}
-                <button
-                  onClick={() => {
-                    onSelectCategory("Tutti");
-                    onClose();
-                  }}
-                  className="flex items-center justify-between w-full p-3 hover:bg-neutral-100 rounded-xl transition-colors text-left"
-                >
-                  <span className="text-xs font-bold uppercase tracking-[0.16em] text-neutral-950">Tutti i capi</span>
-                  <ChevronRight className="w-4 h-4 text-neutral-400 stroke-[1.4]" />
-                </button>
-
+                <ul className="md:space-y-1 border-t border-neutral-200/80 md:border-t-0 divide-y divide-neutral-200/80 md:divide-y-0">
                 {/* I Tuoi Preferiti */}
+                <li>
                 <button
                   onClick={() => {
                     onSelectCategory("Preferiti");
                     onClose();
                   }}
-                  className="flex items-center justify-between w-full p-3 hover:bg-neutral-50 rounded-xl transition-colors text-left group"
+                  className="flex items-center justify-between w-full min-h-[48px] md:min-h-0 py-3 md:p-3 px-0.5 hover:bg-neutral-50 md:rounded-xl transition-colors text-left group"
                 >
                   <div className="flex items-center gap-2.5">
-                    <Heart className="w-4 h-4 text-red-500 fill-red-500 stroke-[1.4]" />
-                    <span className="text-xs font-medium uppercase tracking-[0.16em] text-neutral-900">I Tuoi Preferiti</span>
+                    <Heart className="w-3.5 h-3.5 md:w-4 md:h-4 text-red-500 fill-red-500 stroke-[1.4]" />
+                    <span className="text-[11px] md:text-xs font-light md:font-medium uppercase tracking-[0.14em] md:tracking-[0.16em] text-neutral-900">Preferiti</span>
                   </div>
-                  <ChevronRight className="w-4 h-4 text-neutral-300 stroke-[1.3]" />
+                  <ChevronRight className="w-3.5 h-3.5 md:w-4 md:h-4 text-neutral-300 stroke-[1.3]" />
                 </button>
+                </li>
 
                 {/* Lista Categorie e Sottocategorie Espandibili */}
                 {pageSettings.categories.filter((cat: string) => cat !== "Tutti").map((cat: string) => {
@@ -2213,65 +2212,72 @@ const SideMenu = ({ isOpen, onClose, onSelectCategory, companySettings, pageSett
                   const isExpanded = expandedCat === cat;
 
                   return (
-                    <div key={cat} className="space-y-1">
-                      <div className="flex items-center justify-between w-full p-2.5 hover:bg-neutral-50 rounded-xl transition-colors group">
+                    <li key={cat}>
+                      <div className="flex items-center gap-0.5 w-full min-h-[48px] md:min-h-0 py-2 md:p-2.5 hover:bg-neutral-50 md:rounded-xl transition-colors group">
+                        {subcategories.length > 0 ? (
+                          <button
+                            type="button"
+                            onClick={() => setExpandedCat(isExpanded ? null : cat)}
+                            className="w-8 h-8 md:w-7 md:h-7 shrink-0 flex items-center justify-center text-neutral-400 hover:text-neutral-900"
+                            aria-label="Espandi sottocategorie"
+                          >
+                            {isExpanded ? (
+                              <ChevronDown className="w-3.5 h-3.5 stroke-[1.5]" />
+                            ) : (
+                              <ChevronRight className="w-3.5 h-3.5 stroke-[1.5]" />
+                            )}
+                          </button>
+                        ) : (
+                          <span className="w-8 shrink-0" aria-hidden />
+                        )}
                         <button
+                          type="button"
                           onClick={() => {
                             onSelectCategory(cat, 'Tutti');
                             onClose();
                           }}
-                          className="flex-1 flex items-center text-left"
+                          className="flex-1 min-w-0 text-left py-1"
                         >
-                          <span className="text-xs font-light uppercase tracking-[0.16em] text-neutral-800 group-hover:text-black group-hover:font-normal transition-all">{cat}</span>
-                          {count > 0 && (
-                            <span className="text-[10px] font-light text-neutral-500 bg-neutral-100 px-2 py-0.5 rounded-full ml-2">{count}</span>
-                          )}
+                          <span className="text-[11px] md:text-xs font-light uppercase tracking-[0.14em] text-neutral-900">{cat}</span>
+                          <span className="block md:inline text-[10px] text-neutral-400 md:ml-2">{count} prodotti</span>
                         </button>
-                        
-                        {subcategories.length > 0 && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setExpandedCat(isExpanded ? null : cat);
-                            }}
-                            className="p-1 text-neutral-400 hover:text-black transition-colors"
-                            aria-label="Espandi sottocategorie"
-                          >
-                            <ChevronDown className={"w-4 h-4 transition-transform duration-300 stroke-[1.4] " + (isExpanded ? "rotate-180 text-black" : "")} />
-                          </button>
-                        )}
                       </div>
 
-                      {/* Sottocategorie selezionabili direttamente */}
                       {isExpanded && subcategories.length > 0 && (
-                        <div className="pl-4 pr-1 py-1 space-y-1 bg-neutral-50/70 rounded-xl border border-neutral-100 mb-2">
-                          <button
-                            onClick={() => {
-                              onSelectCategory(cat, 'Tutti');
-                              onClose();
-                            }}
-                            className="w-full text-left py-1.5 px-2 text-[11px] font-medium uppercase tracking-wider text-neutral-600 hover:text-black hover:bg-white rounded-lg transition-colors"
-                          >
-                            Tutti i {cat}
-                          </button>
-                          {subcategories.map((sub: string) => (
+                        <ul className="pb-2 pl-9 md:pl-4 border-l border-neutral-200 ml-3 md:ml-2 space-y-0 divide-y divide-neutral-100 md:divide-y-0 md:space-y-0.5">
+                          <li>
                             <button
-                              key={sub}
+                              type="button"
                               onClick={() => {
-                                onSelectCategory(cat, sub);
+                                onSelectCategory(cat, 'Tutti');
                                 onClose();
                               }}
-                              className="w-full text-left py-1.5 px-2 text-[11px] font-light uppercase tracking-wider text-neutral-500 hover:text-black hover:bg-white rounded-lg transition-colors flex items-center justify-between"
+                              className="w-full text-left py-2.5 md:py-1.5 px-1 text-[10px] font-light uppercase tracking-[0.12em] text-neutral-600 hover:text-black"
                             >
-                              <span>{sub}</span>
-                              <ChevronRight className="w-3 h-3 text-neutral-300 stroke-[1.4]" />
+                              Tutte
                             </button>
+                          </li>
+                          {subcategories.map((sub: string) => (
+                            <li key={sub}>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  onSelectCategory(cat, sub);
+                                  onClose();
+                                }}
+                                className="w-full text-left py-2.5 md:py-1.5 px-1 text-[10px] font-light uppercase tracking-[0.12em] text-neutral-500 hover:text-black flex items-center justify-between"
+                              >
+                                <span>{sub}</span>
+                                <ChevronRight className="w-3 h-3 text-neutral-300 md:hidden" />
+                              </button>
+                            </li>
                           ))}
-                        </div>
+                        </ul>
                       )}
-                    </div>
+                    </li>
                   );
                 })}
+                </ul>
               </div>
 
               {/* Supporto */}
@@ -2448,17 +2454,21 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
     toasts, addToast, dismissToast,
     isDesktop,
     adminActiveTab, setAdminActiveTab,
-    isSideMenuOpen, setIsSideMenuOpen
+    isSideMenuOpen, setIsSideMenuOpen,
+    logout,
+    syncProductToSupabase,
+    deleteProductFromSupabase,
   } = useApp();
 
   useEffect(() => {
-    if (hideStorefront) {
-      setIsAdminOpen(true);
-    }
-  }, [hideStorefront, setIsAdminOpen]);
+    // hideStorefront indicates Next.js StorefrontShell is hosting App.
+    // Modals (ProductSheet, CartDrawer, etc.) are rendered by App without forcing admin mode.
+  }, [hideStorefront]);
 
-  // --- Sincronizzazione URL -> Stato ---
+  // --- Sincronizzazione URL -> Stato (solo storefront legacy; Next.js usa StorefrontShell) ---
   useEffect(() => {
+    if (hideStorefront) return;
+
     const path = location.pathname;
     const parts = path.split('/').filter(Boolean);
 
@@ -2486,7 +2496,7 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
       if (selectedCategory !== "Tutti") setSelectedCategory("Tutti");
       if (selectedProduct) setSelectedProduct(null);
     }
-  }, [location.pathname, products]);
+  }, [location.pathname, products, hideStorefront]);
 
   const handleCategorySelect = (cat: string) => {
     if (cat === "Tutti") {
@@ -2521,6 +2531,9 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   
   const [authEmail, setAuthEmail] = useState('');
+  const [authUsername, setAuthUsername] = useState('');
+  const [authLoginId, setAuthLoginId] = useState('');
+  const [authSubmitting, setAuthSubmitting] = useState(false);
   const [authPassword, setAuthPassword] = useState('');
   const [authName, setAuthName] = useState('');
   const [authFirstName, setAuthFirstName] = useState('');
@@ -2646,28 +2659,6 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
 
   const adminUniqueBrands = useMemo(() => Array.from(new Set(products.map(p => p.brand).filter(Boolean))).sort() as string[], [products]);
   const [adminConfirmAction, setAdminConfirmAction] = useState<{ active: boolean, title: string, message: string, onConfirm: () => void, color: string } | null>(null);
-
-  const hardReset = () => {
-    // Clear localStorage
-    Object.keys(localStorage).forEach(key => {
-      if (key.startsWith('vincent_') || key === 'companySettings' || key === 'paymentSettings' || key === 'pageSettings' || key === 'vincent_users') {
-        localStorage.removeItem(key);
-      }
-    });
-    window.location.reload(); 
-  };
-
-  const populateDemoData = () => {
-    setProducts(prev => [...prev, ...PRODUCTS.map(p => ({ ...p, id: (products.length + Math.random() * 1000).toString() }))]);
-    setOrders(prev => [...prev, ...INITIAL_ORDERS.map(o => ({ ...o, id: `BP-DEMO-${Math.floor(Math.random() * 1000)}` }))]);
-    
-    const demoReviews = [
-      { id: "rev-d1", productId: "3", customerName: "Marco Rossi", rating: 5, comment: "Ottimo prodotto!", date: new Date().toLocaleDateString(), status: 'approved' },
-      { id: "rev-d2", productId: "1", customerName: "Luca Bianchi", rating: 4, comment: "Spedizione veloce.", date: new Date().toLocaleDateString(), status: 'approved' }
-    ];
-    setProductReviews(prev => [...prev, ...demoReviews]);
-    addToast("Dati dimostrativi pre-caricati con successo.", "success");
-  };
 
   const handleUserReturnMessage = (requestId: string, text: string) => {
     if (!text.trim()) return;
@@ -2907,17 +2898,18 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
   }, [topSlides.length]);
 
   useEffect(() => {
+    if (hideStorefront) return;
     if (isAdminOpen) {
       document.body.style.overflow = 'hidden';
       setIsMobileAdminMenuOpen(false);
     } else {
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = '';
       setIsMobileAdminMenuOpen(false);
     }
     return () => {
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = '';
     };
-  }, [isAdminOpen]);
+  }, [isAdminOpen, hideStorefront]);
 
   useEffect(() => {
     setSelectedSubcategory("Tutti");
@@ -2954,98 +2946,15 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
     });
   }, [products, selectedCategory, selectedSubcategory, selectedBrand, searchQuery, sortBy, cartTrigger]);
 
-  // --- Simulated Backend Auth Methods ---
-  const getUsers = () => JSON.parse(localStorage.getItem('vincent_users') || '[]');
-  
-  const handleAuthEmailContinue = (e: React.FormEvent) => {
-    e.preventDefault();
-    setAuthError('');
-    if (!authEmail.includes('@')) {
-      setAuthError('Email non valida');
-      return;
-    }
-    const users = getUsers();
-    const existing = users.find((u: any) => u.email === authEmail.toLowerCase());
-    if (existing) {
-      setAuthStep('login');
-    } else {
-      setAuthStep('register');
-    }
-  };
+  const mapSessionUser = (user: { id: string; username: string; email: string; name?: string; [k: string]: unknown }) => ({
+    ...user,
+    name: user.name || user.username,
+  });
 
-  const handleAuthLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    setAuthError('');
-    const users = getUsers();
-    const existing = users.find((u: any) => u.email === authEmail.toLowerCase() && u.password === authPassword);
-    if (existing) {
-      setCurrentUser(existing);
-      localStorage.setItem('vincent_current_user', JSON.stringify(existing));
-      setIsAuthOpen(false);
-      setAuthEmail('');
-      setAuthPassword('');
-      setAuthStep('email');
-    } else {
-      setAuthError('Password non corretta');
-    }
-  };
-
-  const handleSaveProfile = () => {
-    if (!currentUser) return;
-    
-    const updatedName = `${profileEditForm.nameFirst} ${profileEditForm.nameLast}`.trim();
-    
-    // Create updated user object
-    const updatedUser = { 
-      ...currentUser, 
-      name: updatedName || currentUser.name,
-      phone: profileEditForm.phone,
-      addressStreet: profileEditForm.addressStreet,
-      addressCity: profileEditForm.addressCity,
-      addressZip: profileEditForm.addressZip,
-      addressProvince: profileEditForm.addressProvince,
-      taxCode: profileEditForm.taxCode
-    };
-    
-    // Update local state (persisting layout)
-    setCurrentUser(updatedUser);
-    localStorage.setItem('vincent_current_user', JSON.stringify(updatedUser)); // Keep session updated
-    
-    // Update user in DB simulation
-    const users = getUsers();
-    const updatedUsers = users.map((u: any) => u.email === updatedUser.email ? updatedUser : u);
-    localStorage.setItem('vincent_users', JSON.stringify(updatedUsers));
-    
-    // Switch view back to profile dashboard
-    setAuthStep('profile');
-  };
-
-  const handleAuthRegister = (e: React.FormEvent) => {
-    e.preventDefault();
-    setAuthError('');
-    if (authFirstName.length < 2 || authLastName.length < 2) {
-      setAuthError('Nome e cognome devono essere di almeno 2 caratteri');
-      return;
-    }
-    if (authPassword.length < 6) {
-      setAuthError('La password deve contenere almeno 6 caratteri');
-      return;
-    }
-    const fullName = `${authFirstName} ${authLastName}`.trim();
-    const users = getUsers();
-    const newUser = { 
-      name: fullName, 
-      email: authEmail.toLowerCase(), 
-      password: authPassword,
-      addressCity: authCity,
-      addressProvince: authProvince
-    };
-    users.push(newUser);
-    localStorage.setItem('vincent_users', JSON.stringify(users));
-    setCurrentUser(newUser);
-    localStorage.setItem('vincent_current_user', JSON.stringify(newUser));
-    setIsAuthOpen(false);
+  const resetAuthFields = () => {
     setAuthEmail('');
+    setAuthUsername('');
+    setAuthLoginId('');
     setAuthPassword('');
     setAuthName('');
     setAuthFirstName('');
@@ -3055,28 +2964,143 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
     setAuthStep('email');
   };
 
-  const handleGoogleLogin = () => {
+  const handleAuthEmailContinue = async (e: React.FormEvent) => {
+    e.preventDefault();
     setAuthError('');
-    // Simulazione Google OAuth Login
-    const mockGoogleEmail = "utente.google@gmail.com";
-    const mockGoogleName = "Utente Google";
-    const users = getUsers();
-    const existing = users.find((u: any) => u.email === mockGoogleEmail);
-    if (existing) {
-      setCurrentUser(existing);
-      localStorage.setItem('vincent_current_user', JSON.stringify(existing));
-      setIsAuthOpen(false);
-    } else {
-      setAuthEmail(mockGoogleEmail);
-      setAuthName(mockGoogleName);
-      setAuthStep('register');
+    if (!authEmail.includes('@')) {
+      setAuthError('Email non valida');
+      return;
+    }
+    setAuthSubmitting(true);
+    try {
+      const res = await fetch('/api/auth/check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ email: authEmail.toLowerCase() }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setAuthError(data.error || 'Verifica email non riuscita');
+        return;
+      }
+      setAuthLoginId(authEmail.toLowerCase());
+      setAuthStep(data.exists ? 'login' : 'register');
+    } finally {
+      setAuthSubmitting(false);
     }
   };
 
-  const logout = () => {
-    setCurrentUser(null);
-    localStorage.removeItem('vincent_current_user');
-    setAuthStep('email');
+  const handleAuthLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError('');
+    const login = (authLoginId || authEmail).trim();
+    if (!login || authPassword.length < 1) {
+      setAuthError('Inserisci username/email e password');
+      return;
+    }
+    setAuthSubmitting(true);
+    try {
+      const { user, error } = await authLogin(login, authPassword);
+      if (error || !user) {
+        setAuthError(error || 'Accesso non riuscito');
+        return;
+      }
+      const mapped = mapSessionUser(user);
+      setCurrentUser(mapped);
+      localStorage.setItem('vincent_current_user', JSON.stringify(mapped));
+      setIsAuthOpen(false);
+      resetAuthFields();
+    } finally {
+      setAuthSubmitting(false);
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    if (!currentUser) return;
+    const updatedName = `${profileEditForm.nameFirst} ${profileEditForm.nameLast}`.trim();
+    const payload = {
+      name: updatedName || currentUser.name,
+      phone: profileEditForm.phone,
+      addressStreet: profileEditForm.addressStreet,
+      addressCity: profileEditForm.addressCity,
+      addressZip: profileEditForm.addressZip,
+      addressProvince: profileEditForm.addressProvince,
+      taxCode: profileEditForm.taxCode,
+    };
+    setAuthSubmitting(true);
+    try {
+      const { user, error } = await authUpdateProfile(payload);
+      if (error || !user) {
+        setAuthError(error || 'Salvataggio profilo non riuscito');
+        return;
+      }
+      const mapped = mapSessionUser(user);
+      setCurrentUser(mapped);
+      localStorage.setItem('vincent_current_user', JSON.stringify(mapped));
+      setAuthStep('profile');
+    } finally {
+      setAuthSubmitting(false);
+    }
+  };
+
+  const handleAuthRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError('');
+    const username = authUsername.trim().toLowerCase();
+    if (username.length < 3) {
+      setAuthError('Username: minimo 3 caratteri');
+      return;
+    }
+    if (authPassword.length < 6) {
+      setAuthError('La password deve contenere almeno 6 caratteri');
+      return;
+    }
+    setAuthSubmitting(true);
+    try {
+      const { user, error } = await authRegister({
+        username,
+        email: authEmail.toLowerCase(),
+        password: authPassword,
+        firstName: authFirstName,
+        lastName: authLastName,
+        addressCity: authCity,
+        addressProvince: authProvince,
+      });
+      if (error || !user) {
+        setAuthError(error || 'Registrazione non riuscita');
+        return;
+      }
+      const mapped = mapSessionUser(user);
+      setCurrentUser(mapped);
+      localStorage.setItem('vincent_current_user', JSON.stringify(mapped));
+      setIsAuthOpen(false);
+      resetAuthFields();
+    } finally {
+      setAuthSubmitting(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!currentUser) return;
+    const ok = window.confirm(
+      'Eliminare definitivamente il tuo account? Perderai accesso a ordini e preferiti associati.'
+    );
+    if (!ok) return;
+    setAuthSubmitting(true);
+    try {
+      const { ok: deleted, error } = await authDeleteAccount();
+      if (!deleted) {
+        setAuthError(error || 'Eliminazione non riuscita');
+        return;
+      }
+      logout();
+      setIsAuthOpen(false);
+      resetAuthFields();
+      addToast('Account eliminato correttamente', 'success');
+    } finally {
+      setAuthSubmitting(false);
+    }
   };
 
   const addToCart = (product: Product) => {
@@ -3906,8 +3930,8 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
         </>
       )}
 
-      {/* Modals & Sheets */}
-      {selectedProduct && (
+      {/* Modals & Sheets — scheda prodotto solo nel storefront legacy (Next: StorefrontShell) */}
+      {!hideStorefront && selectedProduct && (
         <ProductSheet 
           key={`product-sheet-${selectedProduct.id}`}
           product={selectedProduct} 
@@ -4496,71 +4520,6 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                       <h2 className="text-3xl font-black text-brand-dark uppercase tracking-tighter">Configurazione Azienda</h2>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
-                       <div className="flex flex-col md:flex-row justify-between items-center bg-white p-8 rounded-[3rem] border border-gray-100 relative overflow-hidden">
-                          <div className="absolute right-0 top-0 w-64 h-64 bg-red-500 rounded-full blur-[100px] opacity-10"></div>
-                          <div className="relative z-10 pr-4">
-                            <h3 className="text-xl font-black text-brand-dark uppercase tracking-tighter mb-2">Hard Reset: Restart</h3>
-                            <p className="text-[10px] font-black uppercase text-gray-400 max-w-xs leading-relaxed">Rendi l'applicazione nuova di zecca. Cancella TUTTO e riparti da zero.</p>
-                          </div>
-                          <button 
-                             onClick={() => setAdminConfirmAction({
-                               active: true,
-                               title: "Restart: Reset Totale",
-                               message: "Vuoi formattare TUTTO l'e-commerce? Perderai prodotti, ordini, clienti e impostazioni. Non potrai tornare indietro.",
-                               onConfirm: hardReset,
-                               color: "bg-red-500"
-                             })}
-                             className="relative z-10 bg-red-500 hover:bg-red-600 text-white px-8 py-4 rounded-2xl font-black uppercase text-xs tracking-widest transition-all h-fit mt-4 md:mt-0 active:scale-95"
-                           >
-                             Reset Totale
-                           </button>
-                       </div>
-
-                       <div className="flex flex-col md:flex-row justify-between items-center bg-white p-8 rounded-[3rem] border border-gray-100 relative overflow-hidden">
-                          <div className="absolute left-0 top-0 w-64 h-64 bg-brand-yellow rounded-full blur-[100px] opacity-10"></div>
-                          <div className="relative z-10 pr-4">
-                            <h3 className="text-xl font-black text-brand-dark uppercase tracking-tighter mb-2">Prodotti: Wipe</h3>
-                            <p className="text-[10px] font-black uppercase text-gray-400 max-w-xs leading-relaxed">Elimina istantaneamente SOLO tutti i prodotti dal catalogo corrente.</p>
-                          </div>
-                          <button 
-                             onClick={() => setAdminConfirmAction({
-                              active: true,
-                              title: "Elimina Prodotti?",
-                              message: "Vuoi davvero ripulire SOLO il catalogo prodotti? Le altre impostazioni rimarranno intatte.",
-                              onConfirm: () => {
-                                setProducts([]);
-                                addToast("Catalogo prodotti svuotato.", "info");
-                              },
-                              color: "bg-orange-500"
-                            })}
-                             className="relative z-10 bg-orange-500 hover:bg-orange-600 text-white px-8 py-4 rounded-2xl font-black uppercase text-xs tracking-widest transition-all h-fit mt-4 md:mt-0 active:scale-95"
-                           >
-                             Elimina Prodotti
-                           </button>
-                       </div>
-
-                       <div className="flex flex-col md:flex-row justify-between items-center bg-white p-8 rounded-[3rem] border border-gray-100 relative overflow-hidden">
-                          <div className="absolute left-0 top-0 w-64 h-64 bg-brand-yellow rounded-full blur-[100px] opacity-10"></div>
-                          <div className="relative z-10 pr-4">
-                            <h3 className="text-xl font-black text-brand-dark uppercase tracking-tighter mb-2">Demo: Populate</h3>
-                            <p className="text-[10px] font-black uppercase text-gray-400 max-w-xs leading-relaxed">Carica istantaneamente prodotti, ordini e recensioni di prova.</p>
-                          </div>
-                          <button 
-                             onClick={() => setAdminConfirmAction({
-                              active: true,
-                              title: "Popola Dati Demo",
-                              message: "Verranno aggiunti prodotti, ordini e recensioni dimostrative per testare l'interfaccia. I tuoi dati attuali non verranno toccati.",
-                              onConfirm: populateDemoData,
-                              color: "bg-neutral-950 text-white"
-                            })}
-                             className="relative z-10 bg-brand-yellow hover:bg-brand-dark hover:text-brand-yellow text-brand-dark px-8 py-4 rounded-2xl font-black uppercase text-xs tracking-widest transition-all h-fit mt-4 md:mt-0 active:scale-95"
-                           >
-                             Dati Demo
-                           </button>
-                       </div>
-                    </div>
-                    
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                       {/* Basic Info */}
                       <div className="space-y-4">
@@ -5087,11 +5046,11 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
 
                     {/* Home Slides Management */}
                     <div className="space-y-6">
-                                    <div className="bg-white p-5 rounded-3xl border border-gray-100 space-y-4">
+                                    <div className="admin-slides-block bg-white p-4 md:p-5 rounded-2xl md:rounded-3xl border border-gray-100 space-y-4">
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-100 pb-4">
-                          <h3 className="text-lg font-black text-brand-dark uppercase tracking-tighter flex items-center gap-2">
-                            <span className="w-1.5 h-6 bg-brand-yellow rounded-full"></span>
-                            Slide Top (Hero) <span className="text-brand-blue text-xs ml-2 opacity-50 underline decoration-brand-yellow">1920x1080px</span>
+                          <h3 className="text-sm md:text-lg font-light md:font-black text-neutral-900 md:text-brand-dark uppercase tracking-[0.14em] md:tracking-tighter flex items-center gap-2">
+                            <span className="w-1 h-5 md:w-1.5 md:h-6 bg-brand-yellow rounded-full"></span>
+                            Slide Top (Hero) <span className="text-neutral-400 md:text-brand-blue text-[10px] md:text-xs ml-2">1920×1080</span>
                           </h3>
                           
                           <div className="flex flex-wrap items-center gap-2 bg-gray-50 p-1.5 rounded-2xl border border-gray-100">
@@ -5144,17 +5103,17 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                               <Plus className="w-4 h-4" />
                             </button>
                             
-                            {adminTopSlides.length > 0 && (
-                              <button 
-                                onClick={() => setSlideToDelete({ id: adminTopSlides[adminTopIdx].id, type: 'Slide Top', position: 'home_top' })}
-                                className="p-2 bg-red-50 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all active:scale-90"
-                                title="Elimina Slide Corrente"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            )}
                           </div>
                         </div>
+
+                        <AdminSlidePickerList
+                          slides={adminTopSlides}
+                          activeIdx={adminTopIdx}
+                          setActiveIdx={setAdminTopIdx}
+                          deleteTypeLabel="Hero"
+                          position="home_top"
+                          setSlideToDelete={setSlideToDelete}
+                        />
                         
                         <div className="grid grid-cols-1 gap-4">
                           {adminTopSlides.length === 0 ? (
@@ -5276,11 +5235,11 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                     </div>
 
                     {/* MIDDLE SLIDES */}
-                      <div className="bg-white p-5 rounded-3xl border border-gray-100 space-y-4">
+                      <div className="admin-slides-block bg-white p-4 md:p-5 rounded-2xl md:rounded-3xl border border-gray-100 space-y-4">
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-100 pb-4">
-                          <h3 className="text-lg font-black text-brand-dark uppercase tracking-tighter flex items-center gap-2">
-                            <span className="w-1.5 h-6 bg-brand-blue rounded-full"></span>
-                            Slide Middle <span className="text-brand-dark text-xs ml-2 opacity-50 underline decoration-brand-blue">1920x600px</span>
+                          <h3 className="text-sm md:text-lg font-light md:font-black text-neutral-900 md:text-brand-dark uppercase tracking-[0.14em] md:tracking-tighter flex items-center gap-2">
+                            <span className="w-1 h-5 md:w-1.5 md:h-6 bg-brand-blue rounded-full"></span>
+                            Slide Middle <span className="text-neutral-400 md:text-brand-dark text-[10px] md:text-xs ml-2">1920×600</span>
                           </h3>
                           
                           <div className="flex items-center gap-2 bg-gray-50 p-1.5 rounded-2xl border border-gray-100">
@@ -5336,17 +5295,17 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                               <Plus className="w-4 h-4" />
                             </button>
                             
-                            {adminMidSlides.length > 0 && (
-                              <button 
-                                onClick={() => setSlideToDelete({ id: adminMidSlides[adminMidIdx].id, type: 'Slide Middle', position: 'home_middle' })}
-                                className="p-2 bg-red-50 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all active:scale-90"
-                                title="Elimina Slide Corrente"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            )}
                           </div>
                         </div>
+
+                        <AdminSlidePickerList
+                          slides={adminMidSlides}
+                          activeIdx={adminMidIdx}
+                          setActiveIdx={setAdminMidIdx}
+                          deleteTypeLabel="Middle"
+                          position="home_middle"
+                          setSlideToDelete={setSlideToDelete}
+                        />
                         
                         <div className="grid grid-cols-1 gap-4">
                           {adminMidSlides.length === 0 ? (
@@ -5455,11 +5414,11 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                       </div>
 
                       {/* BOTTOM SLIDES */}
-                      <div className="bg-white p-5 rounded-3xl border border-gray-100 space-y-4">
+                      <div className="admin-slides-block bg-white p-4 md:p-5 rounded-2xl md:rounded-3xl border border-gray-100 space-y-4">
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-100 pb-4">
-                          <h3 className="text-lg font-black text-brand-dark uppercase tracking-tighter flex items-center gap-2">
-                            <span className="w-1.5 h-6 bg-red-500 rounded-full"></span>
-                            Slide Bottom <span className="text-red-500 text-xs ml-2 opacity-50 underline decoration-red-200">1920x600px</span>
+                          <h3 className="text-sm md:text-lg font-light md:font-black text-neutral-900 md:text-brand-dark uppercase tracking-[0.14em] md:tracking-tighter flex items-center gap-2">
+                            <span className="w-1 h-5 md:w-1.5 md:h-6 bg-red-500 rounded-full"></span>
+                            Slide Bottom <span className="text-neutral-400 md:text-red-500 text-[10px] md:text-xs ml-2">1920×600</span>
                           </h3>
                           
                           <div className="flex items-center gap-2 bg-gray-50 p-1.5 rounded-2xl border border-gray-100">
@@ -5515,17 +5474,17 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                               <Plus className="w-4 h-4" />
                             </button>
                             
-                            {adminBotSlides.length > 0 && (
-                              <button 
-                                onClick={() => setSlideToDelete({ id: adminBotSlides[adminBotIdx].id, type: 'Slide Bottom', position: 'home_bottom' })}
-                                className="p-2 bg-red-50 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all active:scale-90"
-                                title="Elimina Slide Corrente"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            )}
                           </div>
                         </div>
+
+                        <AdminSlidePickerList
+                          slides={adminBotSlides}
+                          activeIdx={adminBotIdx}
+                          setActiveIdx={setAdminBotIdx}
+                          deleteTypeLabel="Bottom"
+                          position="home_bottom"
+                          setSlideToDelete={setSlideToDelete}
+                        />
                         
                         <div className="grid grid-cols-1 gap-4">
                           {adminBotSlides.length === 0 ? (
@@ -5775,656 +5734,35 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                 )}
 
               {adminActiveTab === 'categories' && (
-                  <div className="space-y-6 md:space-y-8 animate-in fade-in duration-500 max-w-5xl mx-auto pb-12">
-                    {/* Header Card with Mobile-First Action Bar */}
-                    <div className="bg-white p-5 sm:p-7 md:p-8 rounded-[2.5rem] border border-gray-100 shadow-sm relative overflow-hidden">
-                      <div className="flex flex-col gap-4 lg:flex-row lg:justify-between lg:items-center relative z-10">
-                        <div className="flex items-center gap-3.5">
-                          <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-amber-400 text-neutral-950 flex items-center justify-center shadow-lg shadow-amber-400/25 shrink-0">
-                            <Compass className="w-6 h-6 sm:w-7 sm:h-7" />
-                          </div>
-                          <div>
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-brand-dark uppercase tracking-tight">Gestione Categorie</h2>
-                              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-100 text-amber-900 border border-amber-300">
-                                Alberatura Store
-                              </span>
-                            </div>
-                            <p className="text-xs sm:text-sm font-semibold text-gray-400 mt-0.5">
-                              Organizza le categorie principali, le sottocategorie e il loro ordine visibile
-                            </p>
-                          </div>
-                        </div>
-
-                        {/* Top Action Buttons (Mobile Sized: min 48px) */}
-                        <div className="flex flex-wrap items-center gap-2.5">
-                          <button 
-                            type="button"
-                            onClick={handleAiSuggest}
-                            disabled={isAiSuggesting}
-                            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-950 border border-amber-300/80 font-black text-xs uppercase tracking-wider transition-all active:scale-95 disabled:opacity-50 min-h-[48px]"
-                          >
-                            {isAiSuggesting ? <RefreshCw className="w-4 h-4 animate-spin text-amber-700" /> : <Sparkles className="w-4 h-4 text-amber-700" />} 
-                            <span>Suggerimento AI</span>
-                          </button>
-                          
-                          <button 
-                            type="button"
-                            onClick={() => setIsAddingCategory(true)}
-                            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-brand-dark hover:bg-black text-brand-yellow font-black text-xs uppercase tracking-wider transition-all shadow-md active:scale-95 min-h-[48px]"
-                          >
-                            <Plus className="w-5 h-5 text-brand-yellow" />
-                            <span>+ Nuova Categoria</span>
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Filter Search Bar & Fast Stats */}
-                      <div className="mt-6 pt-5 border-t border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
-                        <div className="flex items-center gap-2 flex-wrap text-xs font-bold text-gray-500">
-                          <span className="px-3 py-1.5 rounded-xl bg-gray-100 text-brand-dark font-black">
-                            {pageSettings.categories.filter((c: string) => c !== "Tutti").length} Categorie
-                          </span>
-                          <span className="px-3 py-1.5 rounded-xl bg-indigo-50 text-indigo-900 font-black border border-indigo-100">
-                            {Object.values(pageSettings.subcategories || {}).reduce((acc: number, arr: any) => acc + (arr?.length || 0), 0)} Sottocategorie
-                          </span>
-                        </div>
-
-                        {/* Search on Phone */}
-                        <div className="relative w-full md:w-80">
-                          <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                          <input 
-                            type="text"
-                            placeholder="Cerca categoria o sottocategoria..."
-                            value={categoryFilterSearch}
-                            onChange={(e) => setCategoryFilterSearch(e.target.value)}
-                            className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-9.5 pr-8 py-2.5 text-xs sm:text-sm font-bold text-brand-dark placeholder:text-gray-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-400 transition-all min-h-[44px]"
-                          />
-                          {categoryFilterSearch && (
-                            <button 
-                              type="button"
-                              onClick={() => setCategoryFilterSearch("")}
-                              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-brand-dark p-1"
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* New Category Inline Creator Panel */}
-                    {isAddingCategory && (
-                      <motion.div 
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="bg-amber-50/90 border-2 border-amber-300 rounded-[2.5rem] p-5 sm:p-7 shadow-lg space-y-4"
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2.5">
-                            <div className="w-9 h-9 rounded-xl bg-amber-400 flex items-center justify-center text-neutral-950 font-black">
-                              <Plus className="w-5 h-5" />
-                            </div>
-                            <h3 className="text-base sm:text-lg font-black text-brand-dark uppercase tracking-tight">Crea Nuova Categoria Principale</h3>
-                          </div>
-                          <button 
-                            type="button"
-                            onClick={() => { setIsAddingCategory(false); setNewCategoryName(""); }}
-                            className="w-9 h-9 rounded-xl bg-white/80 hover:bg-white flex items-center justify-center text-gray-500 hover:text-brand-dark border border-gray-200"
-                          >
-                            <X className="w-5 h-5" />
-                          </button>
-                        </div>
-
-                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                          <input 
-                            type="text"
-                            placeholder="Nome categoria (es. Accessori, Scarpe, Giacche...)"
-                            value={newCategoryName}
-                            onChange={(e) => setNewCategoryName(e.target.value)}
-                            className="bg-white border-2 border-amber-200 rounded-xl px-4 py-3 text-sm sm:text-base font-bold text-brand-dark focus:ring-2 focus:ring-amber-400 focus:border-amber-400 flex-1 min-h-[48px]"
-                            autoFocus
-                          />
-                          <div className="flex items-center gap-2">
-                            <button 
-                              type="button"
-                              onClick={() => {
-                                const trimmed = newCategoryName.trim();
-                                if (trimmed && !pageSettings.categories.includes(trimmed)) {
-                                  setPageSettings({
-                                    ...pageSettings,
-                                    categories: [...pageSettings.categories, trimmed],
-                                    subcategories: { ...pageSettings.subcategories, [trimmed]: [] },
-                                    categorySeo: { 
-                                      ...pageSettings.categorySeo, 
-                                      [trimmed]: { 
-                                        metaTitle: `${trimmed} di Alta Qualità - Vincent Store`, 
-                                        metaDescription: `Scopri la nostra selezione esclusiva di ${trimmed}. Qualità garantita e spedizione veloce su Vincent Store.` 
-                                      } 
-                                    },
-                                    categoryBanners: { ...pageSettings.categoryBanners, [trimmed]: { url: '', alt: '', title: '', link: '' } }
-                                  });
-                                  setNewCategoryName("");
-                                  setIsAddingCategory(false);
-                                  addToast(`Categoria "${trimmed}" creata con successo!`, "success");
-                                }
-                              }}
-                              className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-brand-dark hover:bg-black text-brand-yellow font-black text-xs uppercase tracking-wider transition-all min-h-[48px] shadow-md"
-                            >
-                              <Check className="w-4 h-4" />
-                              <span>Salva Categoria</span>
-                            </button>
-                            <button 
-                              type="button"
-                              onClick={() => { setIsAddingCategory(false); setNewCategoryName(""); }}
-                              className="px-4 py-3.5 rounded-xl bg-white hover:bg-gray-100 text-gray-600 font-black text-xs uppercase tracking-wider border border-gray-200 min-h-[48px]"
-                            >
-                              Annulla
-                            </button>
-                          </div>
-                        </div>
-                      </motion.div>
-                    )}
-
-                    {/* AI Suggestions Box */}
-                    {aiSuggestions && (
-                      <motion.div 
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="bg-amber-50/70 p-6 rounded-[2rem] border-2 border-amber-300 space-y-4"
-                      >
-                        <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center">
-                          <div className="flex items-center gap-2">
-                            <Sparkles className="w-5 h-5 text-amber-600" />
-                            <h3 className="font-black text-brand-dark uppercase tracking-tight">Suggerimenti AI Pronti</h3>
-                          </div>
-                          <div className="flex gap-2">
-                            <button 
-                              type="button"
-                              onClick={() => {
-                                setPageSettings({
-                                  ...pageSettings,
-                                  categories: aiSuggestions.categories,
-                                  subcategories: aiSuggestions.subcategories,
-                                  categoryBanners: aiSuggestions.categories.filter((c: string) => c !== "Tutti").reduce((acc: any, cat: string) => ({
-                                    ...acc,
-                                    [cat]: pageSettings.categoryBanners[cat] || { url: '', alt: '', title: '', link: '' }
-                                  }), {})
-                                });
-                                setAiSuggestions(null);
-                                addToast("Alberatura AI applicata con successo!", "success");
-                              }}
-                              className="px-4 py-2.5 rounded-xl bg-brand-dark text-brand-yellow font-black text-xs uppercase tracking-wider shadow-sm min-h-[44px]"
-                            >
-                              Applica Tutto
-                            </button>
-                            <button 
-                              type="button"
-                              onClick={() => setAiSuggestions(null)}
-                              className="px-4 py-2.5 rounded-xl bg-white text-gray-700 font-bold text-xs uppercase border border-gray-200 min-h-[44px]"
-                            >
-                              Ignora
-                            </button>
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
-                          {aiSuggestions.categories.filter((c: string) => c !== "Tutti").map(cat => (
-                            <div key={cat} className="bg-white p-3 rounded-xl border border-amber-200">
-                              <p className="font-black text-xs text-brand-dark uppercase">{cat}</p>
-                              <p className="text-[10px] text-gray-500 font-bold mt-1">
-                                {(aiSuggestions.subcategories[cat] || []).join(", ") || "Nessuna sottocategoria"}
-                              </p>
-                            </div>
-                          ))}
-                        </div>
-                      </motion.div>
-                    )}
-
-                    {/* Master Categories List (Clear Hierarchical Cards) */}
-                    <div className="space-y-4">
-                      {pageSettings.categories
-                        .filter((c: string) => c !== "Tutti")
-                        .filter((cat: string) => {
-                          if (!categoryFilterSearch.trim()) return true;
-                          const q = categoryFilterSearch.toLowerCase();
-                          if (cat.toLowerCase().includes(q)) return true;
-                          const subs = pageSettings.subcategories[cat] || [];
-                          return subs.some((s: string) => s.toLowerCase().includes(q));
-                        })
-                        .map((cat: string, fIdx: number, fArr: any[]) => {
-                          const originalIdx = pageSettings.categories.indexOf(cat);
-                          const subcategories = pageSettings.subcategories[cat] || [];
-                          const isCollapsed = !categoryFilterSearch.trim() && Boolean(collapsedCategories[cat]);
-
-                          return (
-                            <div 
-                              key={cat} 
-                              className="bg-white rounded-[2rem] border border-gray-200/90 shadow-sm hover:shadow-md transition-all overflow-hidden"
-                            >
-                              {/* Level 1: Category Header Card */}
-                              <div className="p-4 sm:p-5 bg-gradient-to-r from-gray-50/90 via-white to-gray-50/90 border-b border-gray-100">
-                                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                                  {/* Left: Reorder + Icon + Title + Counts */}
-                                  <div className="flex items-start sm:items-center gap-3 min-w-0 flex-1">
-                                    {/* Tactile Large Reorder Buttons for Smartphone */}
-                                    <div className="flex flex-row md:flex-col gap-1.5 shrink-0 bg-white p-1 rounded-xl border border-gray-200 shadow-xs">
-                                      <button 
-                                        type="button"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          if (originalIdx > 1) {
-                                            const newCats = [...pageSettings.categories];
-                                            [newCats[originalIdx - 1], newCats[originalIdx]] = [newCats[originalIdx], newCats[originalIdx - 1]];
-                                            setPageSettings({...pageSettings, categories: newCats});
-                                          }
-                                        }}
-                                        disabled={fIdx === 0}
-                                        className="w-10 h-10 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center text-brand-dark hover:bg-amber-100 disabled:opacity-20 disabled:pointer-events-none transition-colors"
-                                        title="Sposta Categoria in Alto"
-                                      >
-                                        <ChevronUp className="w-5 h-5 sm:w-4 sm:h-4" />
-                                      </button>
-                                      <button 
-                                        type="button"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          if (originalIdx < pageSettings.categories.length - 1) {
-                                            const newCats = [...pageSettings.categories];
-                                            [newCats[originalIdx], newCats[originalIdx + 1]] = [newCats[originalIdx + 1], newCats[originalIdx]];
-                                            setPageSettings({...pageSettings, categories: newCats});
-                                          }
-                                        }}
-                                        disabled={fIdx === fArr.length - 1}
-                                        className="w-10 h-10 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center text-brand-dark hover:bg-amber-100 disabled:opacity-20 disabled:pointer-events-none transition-colors"
-                                        title="Sposta Categoria in Basso"
-                                      >
-                                        <ChevronDown className="w-5 h-5 sm:w-4 sm:h-4" />
-                                      </button>
-                                    </div>
-
-                                    {/* Category Number Badge */}
-                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-400 to-yellow-300 text-neutral-950 flex items-center justify-center font-black text-sm shadow-md shadow-amber-400/20 shrink-0">
-                                      #{fIdx + 1}
-                                    </div>
-
-                                    {/* Title and Editing */}
-                                    <div className="min-w-0 flex-1">
-                                      <div className="flex items-center gap-2">
-                                        <span className="text-[10px] font-black uppercase tracking-widest text-amber-900/70 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
-                                          Categoria Principale
-                                        </span>
-                                      </div>
-
-                                      {editingCategory === cat ? (
-                                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 mt-2 w-full">
-                                          <input
-                                            type="text"
-                                            value={editCategoryValue}
-                                            onChange={(e) => setEditCategoryValue(e.target.value)}
-                                            className="bg-white border-2 border-amber-300 rounded-xl px-3.5 py-2.5 text-base font-black text-brand-dark focus:ring-2 focus:ring-amber-400 w-full sm:w-60 min-h-[44px]"
-                                            autoFocus
-                                          />
-                                          <div className="flex gap-2">
-                                            <button
-                                              type="button"
-                                              onClick={() => {
-                                                if (editCategoryValue.trim() && editCategoryValue.trim() !== cat) {
-                                                  const oldCat = cat;
-                                                  const newCat = editCategoryValue.trim();
-                                                  const newCats = pageSettings.categories.map((c: string) => c === oldCat ? newCat : c);
-                                                  const { [oldCat]: subs, ...restSubs } = pageSettings.subcategories;
-                                                  const newSubs = { ...restSubs, [newCat]: subs || [] };
-                                                  const { [oldCat]: banner, ...restBanners } = pageSettings.categoryBanners;
-                                                  const newBanners = banner ? { ...restBanners, [newCat]: banner } : pageSettings.categoryBanners;
-                                                  
-                                                  setPageSettings({
-                                                    ...pageSettings,
-                                                    categories: newCats,
-                                                    subcategories: newSubs,
-                                                    categoryBanners: newBanners
-                                                  });
-                                                  setProducts(products.map((p: any) => p.category === oldCat ? { ...p, category: newCat } : p));
-                                                }
-                                                setEditingCategory(null);
-                                              }}
-                                              className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-brand-dark text-brand-yellow font-black text-xs uppercase min-h-[44px] flex items-center justify-center gap-1.5 shadow-sm"
-                                            >
-                                              <Check className="w-4 h-4" />
-                                              <span>Salva</span>
-                                            </button>
-                                            <button
-                                              type="button"
-                                              onClick={() => setEditingCategory(null)}
-                                              className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs uppercase min-h-[44px]"
-                                            >
-                                              Annulla
-                                            </button>
-                                          </div>
-                                        </div>
-                                      ) : (
-                                        <h3 className="text-lg sm:text-xl font-black text-brand-dark tracking-tight uppercase break-words mt-1">
-                                          {cat}
-                                        </h3>
-                                      )}
-
-                                      {/* Subcategory & Product Counts */}
-                                      <div className="flex items-center gap-2 mt-2 flex-wrap">
-                                        <span className="text-[11px] font-bold text-indigo-900 bg-indigo-50 border border-indigo-100 px-2.5 py-0.5 rounded-lg flex items-center gap-1">
-                                          <Layers className="w-3.5 h-3.5 text-indigo-600" />
-                                          {subcategories.length} {subcategories.length === 1 ? 'Sottocategoria' : 'Sottocategorie'}
-                                        </span>
-                                        <span className="text-[11px] font-bold text-amber-950 bg-amber-100/70 border border-amber-300 px-2.5 py-0.5 rounded-lg flex items-center gap-1">
-                                          <Package className="w-3.5 h-3.5 text-amber-700" />
-                                          {getProductCount(cat)} Prodotti nel Catalogo
-                                        </span>
-                                      </div>
-                                    </div>
-                                  </div>
-
-                                  {/* Right: Actions Row (Touch-Friendly Buttons) */}
-                                  <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 w-full md:w-auto pt-3 md:pt-0 border-t md:border-t-0 border-gray-100">
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        setEditingCategory(cat);
-                                        setEditCategoryValue(cat);
-                                      }}
-                                      className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-brand-dark font-bold text-xs uppercase tracking-wider transition-colors min-h-[44px]"
-                                    >
-                                      <Edit2 className="w-4 h-4 text-gray-600" />
-                                      <span>Rinomina</span>
-                                    </button>
-
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        setAddingSubcategoryTo(cat);
-                                        setCollapsedCategories(prev => ({ ...prev, [cat]: false }));
-                                      }}
-                                      className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-500 text-neutral-950 font-black text-xs uppercase tracking-wider transition-colors min-h-[44px] shadow-sm"
-                                    >
-                                      <Plus className="w-4 h-4" />
-                                      <span>+ Sotto-cat</span>
-                                    </button>
-
-                                    {categoryToDelete === cat ? (
-                                      <div className="flex items-center gap-1.5 w-full sm:w-auto p-2 bg-red-50 rounded-xl border border-red-200">
-                                        <span className="text-[11px] font-black text-red-700 ml-1">Confermi eliminazione?</span>
-                                        <button
-                                          type="button"
-                                          onClick={() => {
-                                            const { [cat]: removedSub, ...remainingSubs } = pageSettings.subcategories;
-                                            const { [cat]: removedBanner, ...remainingBanners } = pageSettings.categoryBanners;
-                                            setPageSettings({
-                                              ...pageSettings,
-                                              categories: pageSettings.categories.filter((c: string) => c !== cat),
-                                              subcategories: remainingSubs,
-                                              categoryBanners: remainingBanners
-                                            });
-                                            setCategoryToDelete(null);
-                                            addToast(`Categoria "${cat}" eliminata.`, "info");
-                                          }}
-                                          className="px-3 py-1.5 rounded-lg bg-red-600 text-white font-black text-xs uppercase"
-                                        >
-                                          Sì
-                                        </button>
-                                        <button
-                                          type="button"
-                                          onClick={() => setCategoryToDelete(null)}
-                                          className="px-3 py-1.5 rounded-lg bg-white border border-gray-300 text-gray-700 font-bold text-xs"
-                                        >
-                                          No
-                                        </button>
-                                      </div>
-                                    ) : (
-                                      <button
-                                        type="button"
-                                        onClick={() => setCategoryToDelete(cat)}
-                                        className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold text-xs uppercase tracking-wider transition-colors min-h-[44px]"
-                                        title="Elimina Categoria"
-                                      >
-                                        <Trash2 className="w-4 h-4" />
-                                        <span>Elimina</span>
-                                      </button>
-                                    )}
-
-                                    {/* Expand / Collapse Button */}
-                                    <button
-                                      type="button"
-                                      onClick={() => setCollapsedCategories(prev => ({ ...prev, [cat]: !prev[cat] }))}
-                                      className="w-11 h-11 rounded-xl bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-brand-dark transition-colors shrink-0 ml-auto sm:ml-0"
-                                      title={isCollapsed ? "Espandi Sottocategorie" : "Comprimi Sottocategorie"}
-                                    >
-                                      {isCollapsed ? <ChevronDown className="w-5 h-5 text-gray-700" /> : <ChevronUp className="w-5 h-5 text-gray-700" />}
-                                    </button>
-                                  </div>
-                                </div>
-                              </div>
-
-                              {/* Level 2: Subcategories Tree (Indented, Clearly Framed) */}
-                              {!isCollapsed && (
-                                <div className="p-4 sm:p-6 bg-slate-50/70 border-t border-gray-100 space-y-4">
-                                  {/* Subcategory Tree Title */}
-                                  <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                      <div className="w-2.5 h-2.5 rounded-full bg-amber-400"></div>
-                                      <h4 className="text-xs font-black uppercase tracking-wider text-gray-500">
-                                        Albero Sottocategorie • <span className="text-brand-dark font-black">{cat}</span>
-                                      </h4>
-                                    </div>
-                                    <button
-                                      type="button"
-                                      onClick={() => setAddingSubcategoryTo(cat)}
-                                      className="text-xs font-black text-amber-800 hover:text-amber-900 flex items-center gap-1"
-                                    >
-                                      <Plus className="w-3.5 h-3.5" />
-                                      <span>Nuova Sottocategoria</span>
-                                    </button>
-                                  </div>
-
-                                  {/* Add Subcategory Inline Box */}
-                                  {addingSubcategoryTo === cat && (
-                                    <div className="p-4 bg-white rounded-2xl border-2 border-amber-300 shadow-md space-y-3 animate-in fade-in">
-                                      <p className="text-xs font-black text-brand-dark uppercase">Aggiungi nuova sottocategoria a {cat}:</p>
-                                      <div className="flex flex-col sm:flex-row gap-2">
-                                        <input 
-                                          type="text"
-                                          placeholder="Es. Slim Fit, Regular, Vintage..."
-                                          value={newSubcategoryName}
-                                          onChange={(e) => setNewSubcategoryName(e.target.value)}
-                                          className="bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-3 text-sm font-bold text-brand-dark focus:bg-white focus:ring-2 focus:ring-amber-400 flex-1 min-h-[44px]"
-                                          autoFocus
-                                        />
-                                        <div className="flex gap-2">
-                                          <button 
-                                            type="button"
-                                            onClick={() => {
-                                              const trimmed = newSubcategoryName.trim();
-                                              if (trimmed && !pageSettings.subcategories[cat]?.includes(trimmed)) {
-                                                setPageSettings({
-                                                  ...pageSettings,
-                                                  subcategories: {
-                                                    ...pageSettings.subcategories,
-                                                    [cat]: [...(pageSettings.subcategories[cat] || []), trimmed]
-                                                  }
-                                                });
-                                                setNewSubcategoryName("");
-                                                setAddingSubcategoryTo(null);
-                                                addToast(`Sottocategoria "${trimmed}" aggiunta a ${cat}!`, "success");
-                                              }
-                                            }}
-                                            className="flex-1 sm:flex-none px-5 py-3 rounded-xl bg-brand-dark text-brand-yellow font-black text-xs uppercase min-h-[44px] shadow-sm"
-                                          >
-                                            Conferma
-                                          </button>
-                                          <button 
-                                            type="button"
-                                            onClick={() => { setAddingSubcategoryTo(null); setNewSubcategoryName(""); }}
-                                            className="px-4 py-3 rounded-xl bg-gray-100 text-gray-600 font-bold text-xs uppercase min-h-[44px]"
-                                          >
-                                            Annulla
-                                          </button>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  )}
-
-                                  {/* Subcategories List with Visual Tree Guide */}
-                                  <div className="space-y-2.5 border-l-4 border-amber-300 pl-3 sm:pl-4 ml-1">
-                                    {subcategories.map((sub: string, sIdx: number, sArr: any[]) => (
-                                      <div 
-                                        key={sub} 
-                                        className="bg-white p-3.5 sm:p-4 rounded-2xl border border-gray-200 shadow-xs hover:border-amber-300 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3"
-                                      >
-                                        {editingSubcategory?.category === cat && editingSubcategory?.subcategory === sub ? (
-                                          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full">
-                                            <input
-                                              type="text"
-                                              value={editSubcategoryValue}
-                                              onChange={(e) => setEditSubcategoryValue(e.target.value)}
-                                              className="bg-white border-2 border-amber-300 rounded-xl px-3 py-2.5 text-sm font-bold text-brand-dark flex-1 min-h-[44px]"
-                                              autoFocus
-                                            />
-                                            <div className="flex gap-2">
-                                              <button
-                                                type="button"
-                                                onClick={() => {
-                                                  if (editSubcategoryValue.trim() && editSubcategoryValue.trim() !== sub) {
-                                                    const oldSub = sub;
-                                                    const newSub = editSubcategoryValue.trim();
-                                                    const newSubs = pageSettings.subcategories[cat].map((s: string) => s === oldSub ? newSub : s);
-                                                    setPageSettings({
-                                                      ...pageSettings,
-                                                      subcategories: {
-                                                        ...pageSettings.subcategories,
-                                                        [cat]: newSubs
-                                                      }
-                                                    });
-                                                    setProducts(products.map((p: any) => p.category === cat && p.subcategory === oldSub ? { ...p, subcategory: newSub } : p));
-                                                  }
-                                                  setEditingSubcategory(null);
-                                                }}
-                                                className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-brand-dark text-brand-yellow font-black text-xs uppercase min-h-[44px]"
-                                              >
-                                                Salva
-                                              </button>
-                                              <button
-                                                type="button"
-                                                onClick={() => setEditingSubcategory(null)}
-                                                className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-gray-100 text-gray-700 font-bold text-xs uppercase min-h-[44px]"
-                                              >
-                                                Annulla
-                                              </button>
-                                            </div>
-                                          </div>
-                                        ) : (
-                                          <>
-                                            <div className="flex items-center gap-3 min-w-0">
-                                              <div className="w-8 h-8 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-700 font-black text-xs shrink-0">
-                                                {sIdx + 1}
-                                              </div>
-                                              <div className="min-w-0">
-                                                <p className="text-sm font-black text-brand-dark break-words">{sub}</p>
-                                                <p className="text-[11px] font-bold text-gray-400 mt-0.5">
-                                                  {getProductCount(cat, sub)} prodotti associati
-                                                </p>
-                                              </div>
-                                            </div>
-
-                                            {/* Subcategory Touch Actions */}
-                                            <div className="flex items-center gap-2 self-end sm:self-auto w-full sm:w-auto justify-between sm:justify-end border-t sm:border-t-0 pt-2 sm:pt-0 border-gray-100">
-                                              {/* Reorder subcategory buttons */}
-                                              <div className="flex items-center gap-1 bg-gray-50 p-1 rounded-xl border border-gray-200">
-                                                <button 
-                                                  type="button"
-                                                  onClick={() => {
-                                                    if (sIdx > 0) {
-                                                      const newSubs = [...pageSettings.subcategories[cat]];
-                                                      [newSubs[sIdx - 1], newSubs[sIdx]] = [newSubs[sIdx], newSubs[sIdx - 1]];
-                                                      setPageSettings({...pageSettings, subcategories: {...pageSettings.subcategories, [cat]: newSubs}});
-                                                    }
-                                                  }}
-                                                  disabled={sIdx === 0}
-                                                  className="w-9 h-9 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center text-gray-700 hover:bg-white disabled:opacity-20 transition-colors"
-                                                  title="Sposta Su"
-                                                >
-                                                  <ChevronUp className="w-4 h-4" />
-                                                </button>
-                                                <button 
-                                                  type="button"
-                                                  onClick={() => {
-                                                    if (sIdx < sArr.length - 1) {
-                                                      const newSubs = [...pageSettings.subcategories[cat]];
-                                                      [newSubs[sIdx], newSubs[sIdx + 1]] = [newSubs[sIdx + 1], newSubs[sIdx]];
-                                                      setPageSettings({...pageSettings, subcategories: {...pageSettings.subcategories, [cat]: newSubs}});
-                                                    }
-                                                  }}
-                                                  disabled={sIdx === sArr.length - 1}
-                                                  className="w-9 h-9 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center text-gray-700 hover:bg-white disabled:opacity-20 transition-colors"
-                                                  title="Sposta Giù"
-                                                >
-                                                  <ChevronDown className="w-4 h-4" />
-                                                </button>
-                                              </div>
-
-                                              <button
-                                                type="button"
-                                                onClick={() => {
-                                                  setEditingSubcategory({ category: cat, subcategory: sub });
-                                                  setEditSubcategoryValue(sub);
-                                                }}
-                                                className="px-3.5 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs flex items-center gap-1.5 transition-colors min-h-[38px]"
-                                                title="Rinomina sottocategoria"
-                                              >
-                                                <Edit2 className="w-3.5 h-3.5" />
-                                                <span className="hidden sm:inline">Rinomina</span>
-                                              </button>
-
-                                              <button 
-                                                type="button"
-                                                onClick={() => {
-                                                  setPageSettings({
-                                                    ...pageSettings,
-                                                    subcategories: {
-                                                      ...pageSettings.subcategories,
-                                                      [cat]: pageSettings.subcategories[cat].filter((s: string) => s !== sub)
-                                                    }
-                                                  });
-                                                  addToast(`Sottocategoria "${sub}" eliminata.`, "info");
-                                                }}
-                                                className="px-3.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 font-bold text-xs flex items-center gap-1.5 transition-colors min-h-[38px]"
-                                                title="Elimina sottocategoria"
-                                              >
-                                                <Trash2 className="w-3.5 h-3.5" />
-                                                <span className="hidden sm:inline">Elimina</span>
-                                              </button>
-                                            </div>
-                                          </>
-                                        )}
-                                      </div>
-                                    ))}
-
-                                    {subcategories.length === 0 && (
-                                      <div className="p-6 bg-white rounded-2xl border-2 border-dashed border-gray-200 text-center space-y-2">
-                                        <p className="text-xs font-bold text-gray-400">Nessuna sottocategoria in questa categoria.</p>
-                                        <button
-                                          type="button"
-                                          onClick={() => setAddingSubcategoryTo(cat)}
-                                          className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-amber-100 text-amber-900 font-black text-xs uppercase"
-                                        >
-                                          <Plus className="w-4 h-4" />
-                                          <span>Aggiungi la prima sottocategoria</span>
-                                        </button>
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
-                    </div>
-                  </div>
+                  <AdminCategoriesSection
+                    pageSettings={pageSettings}
+                    setPageSettings={setPageSettings}
+                    products={products}
+                    setProducts={setProducts}
+                    categoryFilterSearch={categoryFilterSearch}
+                    setCategoryFilterSearch={setCategoryFilterSearch}
+                    isAddingCategory={isAddingCategory}
+                    setIsAddingCategory={setIsAddingCategory}
+                    newCategoryName={newCategoryName}
+                    setNewCategoryName={setNewCategoryName}
+                    collapsedCategories={collapsedCategories}
+                    setCollapsedCategories={setCollapsedCategories}
+                    editingCategory={editingCategory}
+                    setEditingCategory={setEditingCategory}
+                    editCategoryValue={editCategoryValue}
+                    setEditCategoryValue={setEditCategoryValue}
+                    addingSubcategoryTo={addingSubcategoryTo}
+                    setAddingSubcategoryTo={setAddingSubcategoryTo}
+                    newSubcategoryName={newSubcategoryName}
+                    setNewSubcategoryName={setNewSubcategoryName}
+                    editingSubcategory={editingSubcategory}
+                    setEditingSubcategory={setEditingSubcategory}
+                    editSubcategoryValue={editSubcategoryValue}
+                    setEditSubcategoryValue={setEditSubcategoryValue}
+                    addToast={addToast}
+                    getProductCount={getProductCount}
+                    setAdminConfirmAction={setAdminConfirmAction}
+                  />
                 )}
                 {adminActiveTab === ('link_rapidi' as any) && (
                    <div className="space-y-8 animate-in fade-in slide-in-from-right-8">
@@ -7620,6 +6958,7 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                                             color: 'bg-red-500',
                                             onConfirm: () => {
                                               setProducts(prev => prev.filter(prod => prod.id !== p.id));
+                                              void deleteProductFromSupabase(p.id);
                                               addToast('Prodotto eliminato dal catalogo.', 'success');
                                             },
                                           });
@@ -7833,6 +7172,7 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                                               color: "bg-red-500",
                                               onConfirm: () => {
                                                 setProducts(prev => prev.filter(prod => prod.id !== p.id));
+                                                void deleteProductFromSupabase(p.id);
                                                 addToast("Prodotto eliminato con successo!", "success");
                                               }
                                             });
@@ -8019,6 +7359,7 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                             color: "bg-red-500",
                             onConfirm: () => {
                               setProducts(prev => prev.filter(prod => prod.id !== id));
+                              void deleteProductFromSupabase(id);
                               setEditingAdminProduct(null);
                               setAdminProductView('list');
                               addToast("Prodotto eliminato con successo!", "success");
@@ -8057,6 +7398,7 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                             }
                           });
                           setCartTrigger(c => c + 1);
+                          void syncProductToSupabase(newProduct);
                           addToast("Prodotto salvato con successo!", "success");
                         }}
                       />
@@ -8498,14 +7840,30 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                             </button>
                             <button 
                               onClick={() => {
-                                setPageSettings({
-                                  ...pageSettings,
-                                  homeSlides: pageSettings.homeSlides.filter((s: any) => s.id !== slideToDelete.id)
-                                });
-                                // Reset indices based on position
-                                if (slideToDelete.position === 'home_top') setAdminTopIdx(0);
-                                if (slideToDelete.position === 'home_middle') setAdminMidIdx(0);
-                                if (slideToDelete.position === 'home_bottom') setAdminBotIdx(0);
+                                const nextSlides = pageSettings.homeSlides.filter(
+                                  (s: any) => s.id !== slideToDelete.id
+                                );
+                                setPageSettings({ ...pageSettings, homeSlides: nextSlides });
+                                const clampIdx = (
+                                  prev: number,
+                                  position: string
+                                ) => {
+                                  const len = nextSlides.filter(
+                                    (s: any) =>
+                                      s.position === position ||
+                                      (position === 'home_top' && !s.position)
+                                  ).length;
+                                  return len === 0 ? 0 : Math.min(prev, len - 1);
+                                };
+                                if (slideToDelete.position === 'home_top') {
+                                  setAdminTopIdx((i) => clampIdx(i, 'home_top'));
+                                }
+                                if (slideToDelete.position === 'home_middle') {
+                                  setAdminMidIdx((i) => clampIdx(i, 'home_middle'));
+                                }
+                                if (slideToDelete.position === 'home_bottom') {
+                                  setAdminBotIdx((i) => clampIdx(i, 'home_bottom'));
+                                }
                                 setSlideToDelete(null);
                               }}
                               className="px-6 py-4 rounded-2xl bg-red-500 text-white font-black uppercase text-[10px] tracking-widest hover:bg-red-600 transition-all shadow-lg shadow-red-500/30 active:scale-95"
@@ -8531,13 +7889,13 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[110] flex items-start justify-center pt-[5.5rem] pb-4 px-4 bg-brand-dark/80 backdrop-blur-md overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+            className="auth-modal-home fixed inset-0 z-[110] flex items-start justify-center pt-[5.5rem] pb-4 px-4 bg-neutral-950/40 backdrop-blur-md overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
           >
             <motion.div 
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className={`bg-white rounded-[2rem] shadow-2xl w-full ${['profile', 'edit_profile', 'orders', 'support'].includes(authStep) ? 'max-w-4xl' : 'max-w-md'} max-h-[90vh] overflow-y-auto overflow-x-hidden relative transition-all duration-300 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]`}
+              className={`auth-modal-panel bg-[#fafafa] rounded-2xl border border-neutral-200/80 shadow-2xl w-full ${['profile', 'edit_profile', 'orders', 'support'].includes(authStep) ? 'max-w-4xl' : 'max-w-md'} max-h-[90vh] overflow-y-auto overflow-x-hidden relative transition-all duration-300 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]`}
             >
               <button 
                 onClick={() => setIsAuthOpen(false)}
@@ -8548,10 +7906,10 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
 
               <div className="p-6 md:p-10">
                 <div className="text-center mb-8">
-                  <div className="w-16 h-16 bg-brand-yellow rounded-2xl mx-auto flex items-center justify-center mb-4 rotate-3 shadow-inner">
-                    <User className="w-8 h-8 text-brand-dark -rotate-3" />
+                  <div className="w-14 h-14 bg-neutral-950 rounded-xl mx-auto flex items-center justify-center mb-4">
+                    <User className="w-7 h-7 text-white" strokeWidth={1.5} />
                   </div>
-                  <h2 className="text-2xl font-black text-brand-dark uppercase tracking-tighter">
+                  <h2 className="text-xl font-light text-neutral-950 tracking-wide uppercase">
                     {authStep === 'profile' ? `Ciao, ${currentUser?.name.split(' ')[0] || 'Utente'}!` : 
                      authStep === 'orders' ? 'I Miei Ordini' : 
                      authStep === 'edit_profile' ? 'Il Mio Profilo' : 
@@ -8560,7 +7918,7 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                      authStep === 'login' ? 'Inserisci Password' : 
                      'Crea Account'}
                   </h2>
-                  <p className="text-gray-500 font-bold text-sm mt-1">
+                  <p className="text-neutral-500 font-light text-sm mt-2">
                     {authStep === 'profile' ? 'Gestisci la tua Area Personale' : 
                      authStep === 'orders' ? 'Lo storico dei tuoi acquisti' : 
                      authStep === 'edit_profile' ? 'Aggiorna i dettagli demografici e di fatturazione' : 
@@ -8589,8 +7947,8 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                                 {currentUser?.name?.charAt(0) || 'U'}
                               </div>
                               <div className="text-left">
-                                <p className="text-xl font-black text-brand-dark leading-tight">{currentUser?.name}</p>
-                                <p className="text-[11px] font-bold text-gray-500 uppercase tracking-widest mt-1">{currentUser?.email}</p>
+                                <p className="text-lg font-normal text-neutral-950 leading-tight">{currentUser?.name}</p>
+                                <p className="text-[11px] font-light text-neutral-500 tracking-wide mt-1">@{currentUser?.username || 'utente'} · {currentUser?.email}</p>
                               </div>
                             </div>
 
@@ -9485,60 +8843,110 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                       </div>
 
                       <button 
-                        onClick={() => { logout(); setIsAuthOpen(false); }}
-                        className="w-full mt-4 bg-red-50 hover:bg-red-500 text-red-600 hover:text-white p-3.5 rounded-xl font-black uppercase text-[10px] tracking-widest transition-all"
+                        onClick={() => { logout(); setIsAuthOpen(false); setAuthStep('email'); }}
+                        disabled={authSubmitting}
+                        className="w-full mt-4 bg-neutral-100 hover:bg-neutral-950 text-neutral-700 hover:text-white p-3.5 rounded-xl font-normal uppercase text-[10px] tracking-[0.2em] transition-all disabled:opacity-50"
                       >
-                        Disconnetti Dalla Sessione
+                        Esci
+                      </button>
+                      <button 
+                        type="button"
+                        onClick={handleDeleteAccount}
+                        disabled={authSubmitting}
+                        className="w-full mt-2 border border-red-200 text-red-600 hover:bg-red-600 hover:text-white hover:border-red-600 p-3 rounded-xl font-light text-[10px] uppercase tracking-[0.15em] transition-all disabled:opacity-50"
+                      >
+                        Elimina account
                       </button>
                     </div>
                   </div>
                 )}
 
                 {authStep === 'email' && (
-                  <div className="space-y-4">
+                  <div className="space-y-6">
                     <form onSubmit={handleAuthEmailContinue} className="space-y-4">
                       <div className="space-y-1.5 text-left">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Email</label>
+                        <label className="auth-field-label">Email</label>
                         <input 
                           type="email" 
                           required
                           value={authEmail}
                           onChange={(e) => setAuthEmail(e.target.value)}
-                          className="w-full bg-gray-50 border-gray-200 border rounded-xl px-4 py-4 text-sm font-bold focus:ring-2 focus:ring-brand-blue focus:bg-white transition-all shadow-inner placeholder:text-gray-300 outline-none"
+                          className="auth-field-input"
                           placeholder="tu@email.com"
                         />
                       </div>
                       <button 
                         type="submit"
-                        className="w-full bg-brand-dark hover:bg-brand-blue text-white p-4 rounded-xl font-black uppercase text-xs tracking-widest transition-all hover:shadow-lg shadow-brand-dark/30 active:scale-95"
+                        disabled={authSubmitting}
+                        className="auth-btn-primary"
                       >
-                        Continua
+                        {authSubmitting ? 'Attendere…' : 'Continua'}
                       </button>
                     </form>
 
-                    <div className="relative py-4">
+                    <div className="relative py-2">
                       <div className="absolute inset-0 flex items-center">
-                        <div className="w-full border-t border-gray-100"></div>
+                        <div className="w-full border-t border-neutral-200"></div>
                       </div>
                       <div className="relative flex justify-center">
-                        <span className="bg-white px-4 text-[10px] font-black uppercase tracking-widest text-gray-300">oppure usa</span>
+                        <span className="bg-[#fafafa] px-4 text-[10px] font-light uppercase tracking-[0.2em] text-neutral-400">oppure accedi</span>
                       </div>
                     </div>
 
-                    <button 
-                      onClick={handleGoogleLogin}
-                      className="w-full bg-white border-2 border-gray-100 hover:border-gray-200 text-brand-dark p-4 rounded-xl font-black text-sm transition-all hover:shadow-md active:scale-95 flex justify-center items-center gap-3"
-                    >
-                      <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="w-5 h-5 block" />
-                      Continua con Google
-                    </button>
+                    <form onSubmit={handleAuthLogin} className="space-y-4 text-left">
+                      <div className="space-y-1.5">
+                        <label className="auth-field-label">Username o email</label>
+                        <input
+                          type="text"
+                          required
+                          value={authLoginId}
+                          onChange={(e) => setAuthLoginId(e.target.value)}
+                          className="auth-field-input"
+                          placeholder="username o tu@email.com"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="auth-field-label">Password</label>
+                        <div className="relative">
+                          <input
+                            type={showLoginPassword ? 'text' : 'password'}
+                            required
+                            value={authPassword}
+                            onChange={(e) => setAuthPassword(e.target.value)}
+                            className="auth-field-input pr-12"
+                            placeholder="••••••••"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowLoginPassword(!showLoginPassword)}
+                            className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600"
+                          >
+                            {showLoginPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                          </button>
+                        </div>
+                      </div>
+                      <button type="submit" disabled={authSubmitting} className="auth-btn-primary">
+                        {authSubmitting ? 'Accesso…' : 'Accedi'}
+                      </button>
+                    </form>
                   </div>
                 )}
 
                 {authStep === 'login' && (
                   <form onSubmit={handleAuthLogin} className="space-y-4 text-left">
                     <div className="space-y-1.5">
-                      <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Password</label>
+                      <label className="auth-field-label">Username o email</label>
+                      <input
+                        type="text"
+                        required
+                        autoFocus
+                        value={authLoginId || authEmail}
+                        onChange={(e) => setAuthLoginId(e.target.value)}
+                        className="auth-field-input"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="auth-field-label">Password</label>
                       <div className="relative">
                         <input 
                           type={showLoginPassword ? "text" : "password"} 
@@ -9546,13 +8954,13 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                           autoFocus
                           value={authPassword}
                           onChange={(e) => setAuthPassword(e.target.value)}
-                          className="w-full bg-gray-50 border-gray-200 border rounded-xl pl-4 pr-12 py-4 text-sm font-bold focus:ring-2 focus:ring-brand-yellow focus:bg-white transition-all shadow-inner outline-none"
+                          className="auth-field-input pr-12"
                           placeholder="••••••••"
                         />
                         <button
                           type="button"
                           onClick={() => setShowLoginPassword(!showLoginPassword)}
-                          className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
+                          className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 focus:outline-none"
                         >
                           {showLoginPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                         </button>
@@ -9560,9 +8968,10 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                     </div>
                     <button 
                       type="submit"
-                      className="w-full bg-neutral-950 hover:bg-neutral-800 text-white p-4 rounded-xl font-black uppercase text-xs tracking-widest transition-all hover:shadow-lg shadow-brand-yellow/30 active:scale-95"
+                      disabled={authSubmitting}
+                      className="auth-btn-primary"
                     >
-                      Accedi
+                      {authSubmitting ? 'Accesso…' : 'Accedi'}
                     </button>
                     <button 
                       type="button"
@@ -9576,14 +8985,25 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
 
                 {authStep === 'register' && (
                   <form onSubmit={handleAuthRegister} className="space-y-4 text-left">
+                    <div className="space-y-1.5">
+                      <label className="auth-field-label">Username *</label>
+                      <input
+                        type="text"
+                        required
+                        autoFocus
+                        value={authUsername}
+                        onChange={(e) => setAuthUsername(e.target.value)}
+                        className="auth-field-input"
+                        placeholder="es. mario_rossi"
+                      />
+                    </div>
+                    <p className="text-[10px] font-light text-neutral-400 -mt-2">Email: {authEmail}</p>
                     {/* Grid per Nome e Cognome */}
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-1.5">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Nome *</label>
+                        <label className="auth-field-label">Nome</label>
                         <input 
                           type="text" 
-                          required
-                          autoFocus
                           value={authFirstName}
                           onChange={(e) => setAuthFirstName(e.target.value)}
                           className="w-full bg-gray-50 border-gray-200 border rounded-xl px-4 py-4 text-sm font-bold focus:ring-2 focus:ring-brand-blue focus:bg-white transition-all shadow-inner outline-none"
@@ -9591,10 +9011,9 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                         />
                       </div>
                       <div className="space-y-1.5">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Cognome *</label>
+                        <label className="auth-field-label">Cognome</label>
                         <input 
                           type="text" 
-                          required
                           value={authLastName}
                           onChange={(e) => setAuthLastName(e.target.value)}
                           className="w-full bg-gray-50 border-gray-200 border rounded-xl px-4 py-4 text-sm font-bold focus:ring-2 focus:ring-brand-blue focus:bg-white transition-all shadow-inner outline-none"
@@ -9674,9 +9093,10 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                     
                     <button 
                       type="submit"
-                      className="w-full bg-brand-blue hover:bg-brand-dark text-white p-4 rounded-xl font-black uppercase text-xs tracking-widest transition-all hover:shadow-lg shadow-brand-blue/30 active:scale-95 mt-2"
+                      disabled={authSubmitting}
+                      className="auth-btn-primary mt-2"
                     >
-                      Crea Account
+                      {authSubmitting ? 'Registrazione…' : 'Crea account'}
                     </button>
                     <button 
                       type="button"

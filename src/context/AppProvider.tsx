@@ -13,14 +13,25 @@ import React, {
 import { useRouter } from 'next/navigation';
 import { Product, CartItem, Review, Order, CompanySettings } from '@/lib/types';
 import { PRODUCTS, DEFAULT_COMPANY_SETTINGS, DEFAULT_PAGE_SETTINGS, slugify } from '@/lib/data';
+import {
+  getSupabaseProducts,
+  getSupabaseOrders,
+  getSupabaseReviews,
+  syncProductToSupabase,
+  deleteProductFromSupabase,
+  createSupabaseOrder,
+  createSupabaseReview,
+} from '@/lib/supabase';
+import { fetchStoreConfig, pushStoreConfig } from '@/lib/store-client';
+import { authLogout, authMe } from '@/lib/auth-client';
 
 // ─── Helper: read/write localStorage safely ───────────────────────────────────
 function getLS<T>(key: string, fallback: T): T {
-  if (typeof window === 'undefined') return fallback;
+  if (typeof window === 'undefined' || !window.localStorage || typeof window.localStorage.getItem !== 'function') return fallback;
   try {
-    let raw = localStorage.getItem(key);
+    let raw = window.localStorage.getItem(key);
     if (raw === null && key.startsWith('vincent_')) {
-      raw = localStorage.getItem(key.replace(/^vincent_/, 'bespoint_'));
+      raw = window.localStorage.getItem(key.replace(/^vincent_/, 'bespoint_'));
     }
     return raw ? (JSON.parse(raw) as T) : fallback;
   } catch {
@@ -29,9 +40,9 @@ function getLS<T>(key: string, fallback: T): T {
 }
 
 function setLS(key: string, value: unknown) {
-  if (typeof window === 'undefined') return;
+  if (typeof window === 'undefined' || !window.localStorage || typeof window.localStorage.setItem !== 'function') return;
   try {
-    localStorage.setItem(key, JSON.stringify(value));
+    window.localStorage.setItem(key, JSON.stringify(value));
   } catch {
     console.warn('[Vincent Store] localStorage write failed for key:', key);
   }
@@ -121,6 +132,9 @@ interface AppContextValue {
   paymentSettings: any;
   setPaymentSettings: React.Dispatch<React.SetStateAction<any>>;
 
+  couriers: any[];
+  setCouriers: React.Dispatch<React.SetStateAction<any[]>>;
+
   // Global filters
   sortBy: string;
   setSortBy: (s: string) => void;
@@ -142,6 +156,13 @@ interface AppContextValue {
   isDesktop: boolean;
   cartTrigger: number;
 
+  // Supabase sync
+  isSupabaseSyncing: boolean;
+  syncProductToSupabase: (p: Product) => Promise<boolean>;
+  deleteProductFromSupabase: (id: string) => Promise<boolean>;
+  createSupabaseOrder: (o: Order) => Promise<boolean>;
+  createSupabaseReview: (r: Review) => Promise<boolean>;
+
   // Navigation helpers
   handleProductSelect: (p: Product | null) => void;
   handleCategorySelect: (cat: string, sub?: string) => void;
@@ -152,15 +173,31 @@ const AppContext = createContext<AppContextValue | null>(null);
 export function AppProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
 
-  // — products: auto-heals any missing or broken product images —
   const [products, setProducts] = useState<Product[]>(() => {
-    const saved = getLS<Product[]>('vincent_products_v4', []);
-    if (!saved || saved.length === 0 || saved.some((p) => !p.image || p.image.length < 10)) {
-      return PRODUCTS;
-    }
-    return saved;
+    return getLS<Product[]>('vincent_products_v4', []);
   });
-  useEffect(() => setLS('vincent_products_v4', products), [products]);
+  useEffect(() => {
+    setLS('vincent_products_v4', products);
+  }, [products]);
+
+  // — Supabase Sync State & Remote Hydration —
+  const [isSupabaseSyncing, setIsSupabaseSyncing] = useState(false);
+
+  const handleSyncProduct = useCallback(async (p: Product) => {
+    return await syncProductToSupabase(p);
+  }, []);
+
+  const handleDeleteProduct = useCallback(async (id: string) => {
+    return await deleteProductFromSupabase(id);
+  }, []);
+
+  const handleCreateOrder = useCallback(async (o: Order) => {
+    return await createSupabaseOrder(o);
+  }, []);
+
+  const handleCreateReview = useCallback(async (r: Review) => {
+    return await createSupabaseReview(r);
+  }, []);
 
   // — auth —
   const [currentUser, setCurrentUser] = useState<any>(() =>
@@ -171,6 +208,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [authStep, setAuthStep] = useState<AppContextValue['authStep']>('email');
 
   const logout = useCallback(() => {
+    void authLogout();
     setCurrentUser(null);
     setLS('vincent_current_user', null);
   }, []);
@@ -231,14 +269,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   // — favorites (memorizzati con l'account utente) —
   const [favorites, setFavorites] = useState<string[]>(() => {
-    if (typeof window === 'undefined') return [];
+    if (typeof window === 'undefined' || !window.localStorage || typeof window.localStorage.getItem !== 'function') return [];
     try {
       const savedUser =
-        localStorage.getItem('vincent_current_user') ??
-        localStorage.getItem('bespoint_current_user');
+        window.localStorage.getItem('vincent_current_user') ??
+        window.localStorage.getItem('bespoint_current_user');
       if (savedUser) {
         const u = JSON.parse(savedUser);
-        const userFavs = localStorage.getItem(`vincent_favs_${u.id || u.email}`);
+        const userFavs = window.localStorage.getItem(`vincent_favs_${u.id || u.email}`);
         if (userFavs) return JSON.parse(userFavs);
       }
     } catch {}
@@ -325,13 +363,33 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [orders, setOrders] = useState<Order[]>(() =>
     getLS('vincent_orders', [])
   );
-  useEffect(() => setLS('vincent_orders', orders), [orders]);
+  const prevOrdersCount = useRef(orders.length);
+  useEffect(() => {
+    setLS('vincent_orders', orders);
+    if (orders.length > prevOrdersCount.current) {
+      const latestOrder = orders[orders.length - 1];
+      if (latestOrder && latestOrder.id) {
+        createSupabaseOrder(latestOrder);
+      }
+    }
+    prevOrdersCount.current = orders.length;
+  }, [orders]);
 
   // — reviews —
   const [productReviews, setProductReviews] = useState<Review[]>(() =>
     getLS('vincent_reviews_v2', [])
   );
-  useEffect(() => setLS('vincent_reviews_v2', productReviews), [productReviews]);
+  const prevReviewsCount = useRef(productReviews.length);
+  useEffect(() => {
+    setLS('vincent_reviews_v2', productReviews);
+    if (productReviews.length > prevReviewsCount.current) {
+      const latestReview = productReviews[productReviews.length - 1];
+      if (latestReview) {
+        createSupabaseReview(latestReview);
+      }
+    }
+    prevReviewsCount.current = productReviews.length;
+  }, [productReviews]);
 
   // — return requests —
   const [returnRequests, setReturnRequests] = useState<any[]>(() =>
@@ -379,6 +437,109 @@ export function AppProvider({ children }: { children: ReactNode }) {
   );
   useEffect(() => setLS('paymentSettings', paymentSettings), [paymentSettings]);
 
+  const [couriers, setCouriers] = useState<any[]>(() => getLS('vincent_couriers', []));
+  useEffect(() => setLS('vincent_couriers', couriers), [couriers]);
+
+  const storeHydratedRef = useRef(false);
+  const storeSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    setIsSupabaseSyncing(true);
+
+    Promise.all([
+      getSupabaseProducts(),
+      getSupabaseOrders(),
+      getSupabaseReviews(),
+      fetchStoreConfig(),
+      authMe(),
+    ])
+      .then(([remoteProducts, remoteOrders, remoteReviews, storeConfig, sessionUser]) => {
+        if (!mounted) return;
+        if (remoteProducts && remoteProducts.length > 0) {
+          setProducts(remoteProducts);
+          setLS('vincent_products_v4', remoteProducts);
+        }
+        if (remoteOrders && remoteOrders.length > 0) {
+          setOrders(remoteOrders);
+          setLS('vincent_orders', remoteOrders);
+        }
+        if (remoteReviews && remoteReviews.length > 0) {
+          setProductReviews(remoteReviews);
+          setLS('vincent_reviews_v2', remoteReviews);
+        }
+        if (storeConfig) {
+          if (storeConfig.company_settings && Object.keys(storeConfig.company_settings).length > 0) {
+            setCompanySettings((prev) => ({ ...prev, ...storeConfig.company_settings }));
+          }
+          if (storeConfig.page_settings && Object.keys(storeConfig.page_settings).length > 0) {
+            setPageSettings((prev) => ({
+              ...prev,
+              ...storeConfig.page_settings,
+              homeSlides: mergeHomeSlidesWithDefaults(
+                (storeConfig.page_settings as { homeSlides?: any[] }).homeSlides ?? prev.homeSlides
+              ),
+            }));
+          }
+          if (storeConfig.payment_settings && Object.keys(storeConfig.payment_settings).length > 0) {
+            setPaymentSettings((prev) => ({ ...prev, ...storeConfig.payment_settings }));
+          }
+          if (Array.isArray(storeConfig.return_requests) && storeConfig.return_requests.length > 0) {
+            setReturnRequests(storeConfig.return_requests);
+          }
+          if (Array.isArray(storeConfig.couriers) && storeConfig.couriers.length > 0) {
+            setCouriers(storeConfig.couriers);
+          }
+        }
+        if (sessionUser) {
+          setCurrentUser({ ...sessionUser, name: sessionUser.name || sessionUser.username });
+          setLS('vincent_current_user', { ...sessionUser, name: sessionUser.name || sessionUser.username });
+        }
+        storeHydratedRef.current = true;
+        setIsSupabaseSyncing(false);
+      })
+      .catch((err) => {
+        console.warn('[Supabase Sync Warning]:', err);
+        storeHydratedRef.current = true;
+        if (mounted) setIsSupabaseSyncing(false);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!storeHydratedRef.current) return;
+    if (storeSyncTimerRef.current) clearTimeout(storeSyncTimerRef.current);
+    storeSyncTimerRef.current = setTimeout(() => {
+      void pushStoreConfig({
+        company_settings: companySettings,
+        page_settings: pageSettings,
+        payment_settings: paymentSettings,
+        return_requests: returnRequests,
+        couriers,
+      });
+    }, 1200);
+    return () => {
+      if (storeSyncTimerRef.current) clearTimeout(storeSyncTimerRef.current);
+    };
+  }, [companySettings, pageSettings, paymentSettings, returnRequests, couriers]);
+
+  const ordersSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (!storeHydratedRef.current) return;
+    if (ordersSyncTimerRef.current) clearTimeout(ordersSyncTimerRef.current);
+    ordersSyncTimerRef.current = setTimeout(() => {
+      orders.forEach((o) => {
+        void createSupabaseOrder(o);
+      });
+    }, 1500);
+    return () => {
+      if (ordersSyncTimerRef.current) clearTimeout(ordersSyncTimerRef.current);
+    };
+  }, [orders]);
+
   // — toasts —
   const [toasts, setToasts] = useState<{ id: string; message: string; type: 'success' | 'error' | 'info' }[]>([]);
 
@@ -392,23 +553,55 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
-  const handleProductSelect = useCallback((p: any | null) => {
+  const handleProductSelect = useCallback((p: Product | null) => {
     setSelectedProduct(p);
-    if (p) {
-      router.push(`/prodotto/${p.id}/${slugify(p.name)}`);
-    } else {
-      router.push('/');
+    if (typeof window !== 'undefined') {
+      if (p) {
+        window.history.pushState(
+          { productId: p.id, overlay: true },
+          '',
+          `/prodotto/${p.id}/${slugify(p.name)}`
+        );
+      } else if (window.location.pathname.startsWith('/prodotto')) {
+        window.history.replaceState(null, '', '/');
+      }
     }
-  }, [router]);
+  }, []);
 
-  // Filtra direttamente nella home senza abbandonare la pagina home
+  // Listen to popstate (browser back / forward button) to sync selectedProduct instantly
+  useEffect(() => {
+    const handlePopState = () => {
+      const path = window.location.pathname;
+      const parts = path.split('/').filter(Boolean);
+      if (parts[0] === 'prodotto' && parts[1]) {
+        const prod = products.find((x) => x.id === parts[1]);
+        if (prod) setSelectedProduct(prod);
+      } else {
+        setSelectedProduct(null);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [products]);
+
+  // Filtra direttamente nella home senza abbandonare la pagina home - Comportamento a interruttore (toggle switch)
   const handleCategorySelect = useCallback((cat: string, sub: string = 'Tutti') => {
-    setSelectedCategory(cat);
-    setSelectedSubcategory(sub);
+    setSelectedProduct(null);
     if (typeof window !== 'undefined' && window.location.pathname.startsWith('/prodotto')) {
-      router.push('/');
+      window.history.replaceState(null, '', '/');
     }
-  }, [router]);
+
+    setSelectedCategory((prev) => {
+      // Se si clicca sulla stessa categoria già attiva -> secondo clic la disattiva (torna a 'Tutti')
+      if (prev === cat) {
+        setSelectedSubcategory('Tutti');
+        return 'Tutti';
+      }
+      // Primo clic -> la attiva
+      setSelectedSubcategory(sub);
+      return cat;
+    });
+  }, []);
 
   const value: AppContextValue = {
     products, setProducts,
@@ -433,12 +626,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
     companySettings, setCompanySettings,
     pageSettings, setPageSettings,
     paymentSettings, setPaymentSettings,
+    couriers, setCouriers,
     sortBy, setSortBy,
     selectedBrand, setSelectedBrand,
     isGlobalFiltersExpanded, setIsGlobalFiltersExpanded,
     toasts, addToast, dismissToast,
     adminActiveTab, setAdminActiveTab,
     isDesktop, cartTrigger,
+    isSupabaseSyncing,
+    syncProductToSupabase: handleSyncProduct,
+    deleteProductFromSupabase: handleDeleteProduct,
+    createSupabaseOrder: handleCreateOrder,
+    createSupabaseReview: handleCreateReview,
     handleProductSelect,
     handleCategorySelect,
   };

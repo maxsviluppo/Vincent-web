@@ -1,5 +1,26 @@
 'use client';
 
+// Polyfill globalThis.localStorage for Node 22 SSR environments
+if (typeof globalThis !== 'undefined') {
+  try {
+    if (!globalThis.localStorage || typeof globalThis.localStorage.getItem !== 'function') {
+      const store = new Map<string, string>();
+      Object.defineProperty(globalThis, 'localStorage', {
+        value: {
+          getItem: (k: string) => store.get(String(k)) ?? null,
+          setItem: (k: string, v: string) => store.set(String(k), String(v)),
+          removeItem: (k: string) => store.delete(String(k)),
+          clear: () => store.clear(),
+          key: (i: number) => Array.from(store.keys())[i] ?? null,
+          get length() { return store.size; },
+        },
+        configurable: true,
+        writable: true,
+      });
+    }
+  } catch {}
+}
+
 import React from "react";
 import "./globals.css";
 import Script from "next/script";

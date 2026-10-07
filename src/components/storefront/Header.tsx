@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { 
   Menu, 
   Search, 
@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useApp } from '@/context/AppProvider';
 import { TopBarStrip } from '@/components/storefront/TopBarStrip';
+import { preloadLegacyAppBundle } from '@/lib/preloadLegacyApp';
 
 interface HeaderProps {
   onCategorySelect: (cat: string, sub?: string) => void;
@@ -129,7 +130,12 @@ export function Header({ onCategorySelect }: HeaderProps) {
           {/* Left: Hamburger sottile + Logo con altezza allungata ed elegante */}
           <div className="flex items-center gap-3 sm:gap-6 flex-shrink-0">
             <button 
-              onClick={() => setIsSideMenuOpen(true)}
+              onMouseEnter={preloadLegacyAppBundle}
+              onFocus={preloadLegacyAppBundle}
+              onClick={() => {
+                preloadLegacyAppBundle();
+                setIsSideMenuOpen(true);
+              }}
               className="p-2 -ml-1 text-neutral-800 hover:text-black hover:bg-neutral-100 rounded-full transition-all group flex items-center justify-center cursor-pointer"
               aria-label="Menu categorie"
               title="Menu Categorie"
@@ -221,7 +227,12 @@ export function Header({ onCategorySelect }: HeaderProps) {
             
             {/* Carrello Header */}
             <button 
-              onClick={() => setIsCartOpen(true)}
+              onMouseEnter={preloadLegacyAppBundle}
+              onFocus={preloadLegacyAppBundle}
+              onClick={() => {
+                preloadLegacyAppBundle();
+                setIsCartOpen(true);
+              }}
               className="relative flex items-center gap-2 text-neutral-800 hover:text-black group p-1 cursor-pointer"
               aria-label="Carrello acquisti"
             >
@@ -246,23 +257,6 @@ export function Header({ onCategorySelect }: HeaderProps) {
       {/* 3. Navigation / Categories Row: RIMANE SEMPRE VISIBILE E STICKY IN CIMA */}
       <div className="bg-white border-b border-neutral-200/70 px-3 sm:px-8 py-2.5 sm:py-3 flex items-center overflow-hidden z-20">
         <div className="flex overflow-x-auto no-scrollbar gap-1 sm:gap-2 items-center flex-1 scroll-smooth">
-          
-          {/* Categoria 'Tutti' */}
-          <button 
-            onClick={() => onCategorySelect("Tutti")}
-            className="relative px-3 py-1 flex-shrink-0 transition-all duration-200 group cursor-pointer"
-          >
-            <span className={`text-xs uppercase tracking-[0.18em] transition-all ${
-              selectedCategory === "Tutti"
-                ? "font-bold text-neutral-950 border-b-2 border-neutral-950 pb-1"
-                : "font-light text-neutral-500 hover:text-neutral-900"
-            }`}>
-              Tutti
-            </span>
-          </button>
-
-          <div className="h-4 w-[1px] bg-neutral-200 mx-1 flex-shrink-0" />
-
           {/* Categorie */}
           <div className="flex items-center gap-1 sm:gap-2">
             {pageSettings.categories.filter((c: string) => c !== "Tutti").map((cat: string) => {
@@ -284,45 +278,54 @@ export function Header({ onCategorySelect }: HeaderProps) {
               );
             })}
           </div>
+        </div>
+      </div>
 
-          {/* Sottocategorie se attive */}
-          {selectedCategory !== "Tutti" && selectedCategory !== "Preferiti" && (pageSettings.subcategories[selectedCategory] || []).length > 0 && (
-            <div className="flex items-center gap-1 pl-2 border-l border-neutral-200 ml-2">
+      {/* 3b. Sottocategorie: Seconda barra dedicata che appare sotto alla selezione di una categoria */}
+      <AnimatePresence>
+        {selectedCategory !== "Tutti" && selectedCategory !== "Preferiti" && (pageSettings.subcategories[selectedCategory] || []).length > 0 && (
+          <motion.div
+            key={`subcategories-bar-${selectedCategory}`}
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.25, ease: "easeOut" }}
+            className="bg-neutral-50/95 border-b border-neutral-200/80 px-3 sm:px-8 py-2 overflow-hidden z-10 shadow-xs"
+          >
+            <div className="flex overflow-x-auto no-scrollbar gap-1.5 sm:gap-2 items-center flex-1 scroll-smooth">
+              <span className="text-[9px] uppercase tracking-[0.22em] text-neutral-400 font-semibold mr-1 hidden sm:inline flex-shrink-0">
+                Sottocategorie:
+              </span>
               <button
                 onClick={() => setSelectedSubcategory('Tutti')}
-                className="px-2 py-0.5 flex-shrink-0 transition-all group cursor-pointer"
-              >
-                <span className={`text-[10px] uppercase tracking-[0.12em] transition-all ${
+                className={`px-3 py-1 rounded-full text-[10px] sm:text-[11px] uppercase tracking-[0.14em] transition-all flex-shrink-0 cursor-pointer ${
                   selectedSubcategory === 'Tutti'
-                    ? "font-bold text-neutral-950 bg-neutral-100 px-2 py-0.5 rounded-md"
-                    : "font-light text-neutral-400 hover:text-neutral-700"
-                }`}>
-                  Tutte
-                </span>
+                    ? "bg-neutral-950 text-white font-medium shadow-xs"
+                    : "bg-white text-neutral-600 hover:text-neutral-950 hover:bg-neutral-100 border border-neutral-200 font-light"
+                }`}
+              >
+                Tutte
               </button>
               {(pageSettings.subcategories[selectedCategory] || []).map((sub: string) => {
                 const isSubActive = selectedSubcategory === sub;
                 return (
                   <button
                     key={`sub-${sub}`}
-                    onClick={() => setSelectedSubcategory(sub)}
-                    className="px-2 py-0.5 flex-shrink-0 transition-all group cursor-pointer"
-                  >
-                    <span className={`text-[10px] uppercase tracking-[0.12em] transition-all ${
+                    onClick={() => setSelectedSubcategory((prev) => prev === sub ? 'Tutti' : sub)}
+                    className={`px-3 py-1 rounded-full text-[10px] sm:text-[11px] uppercase tracking-[0.14em] transition-all flex-shrink-0 cursor-pointer ${
                       isSubActive
-                        ? "font-bold text-neutral-950 bg-neutral-100 px-2 py-0.5 rounded-md"
-                        : "font-light text-neutral-400 hover:text-neutral-700"
-                    }`}>
-                      {sub}
-                    </span>
+                        ? "bg-neutral-950 text-white font-medium shadow-xs"
+                        : "bg-white text-neutral-600 hover:text-neutral-950 hover:bg-neutral-100 border border-neutral-200 font-light"
+                    }`}
+                  >
+                    {sub}
                   </button>
                 );
               })}
             </div>
-          )}
-
-        </div>
-      </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* 4. Mobile Search Input: Strutturato a tendina fissa senza scatti */}
       <div 

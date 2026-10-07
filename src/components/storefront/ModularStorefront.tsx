@@ -3,7 +3,6 @@
 import React, { useMemo } from 'react';
 import { useApp } from '@/context/AppProvider';
 import { Hero } from './Hero';
-import { ChoiceBlocks } from './ChoiceBlocks';
 import { SectionTitle } from './SectionTitle';
 import { ProductCard } from './ProductCard';
 import { motion, AnimatePresence } from 'motion/react';
@@ -105,13 +104,6 @@ export function ModularStorefront() {
         <Hero slides={topSlides} overlayEnabled={pageSettings.slidesOverlayEnabled} />
       )}
 
-      {/* 2. CHOICE BLOCKS: CATEGORIE A INCASTRO SOTTO LA HERO */}
-      <ChoiceBlocks 
-        onSelect={(cat) => {
-          handleCategorySelect(cat, 'Tutti');
-        }} 
-      />
-
       {!isFilterActive &&
         pageSettings.isMiddleSlidesEnabled !== false &&
         middleSlides.length > 0 && (
@@ -182,8 +174,8 @@ export function ModularStorefront() {
                 {availableSubcategories.map((sub: string) => (
                   <button
                     key={sub}
-                    onClick={() => setSelectedSubcategory(sub)}
-                    className={`px-3 py-1 rounded-full text-xs uppercase tracking-wider transition-all ${
+                    onClick={() => setSelectedSubcategory((prev: string) => prev === sub ? 'Tutti' : sub)}
+                    className={`px-3 py-1 rounded-full text-xs uppercase tracking-wider transition-all cursor-pointer ${
                       selectedSubcategory === sub
                         ? 'bg-neutral-900 text-white font-semibold'
                         : 'bg-neutral-100 hover:bg-neutral-200 text-neutral-700 font-normal'
