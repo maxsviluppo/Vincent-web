@@ -33,7 +33,7 @@ export async function authLogin(login: string, password: string): Promise<{ user
 }
 
 export async function authRegister(body: {
-  username: string;
+  username?: string;
   email: string;
   password: string;
   firstName?: string;

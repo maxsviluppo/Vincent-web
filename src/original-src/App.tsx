@@ -3039,6 +3039,7 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
       setCurrentUser(mapped);
       localStorage.setItem('vincent_current_user', JSON.stringify(mapped));
       setAuthStep('profile');
+      addToast('Dati di spedizione e profilo salvati con successo!', 'success');
     } finally {
       setAuthSubmitting(false);
     }
@@ -3047,25 +3048,21 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
   const handleAuthRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError('');
-    const username = authUsername.trim().toLowerCase();
-    if (username.length < 3) {
-      setAuthError('Username: minimo 3 caratteri');
-      return;
-    }
     if (authPassword.length < 6) {
       setAuthError('La password deve contenere almeno 6 caratteri');
       return;
     }
     setAuthSubmitting(true);
     try {
+      const username = authUsername.trim().toLowerCase() || undefined;
       const { user, error } = await authRegister({
         username,
         email: authEmail.toLowerCase(),
         password: authPassword,
-        firstName: authFirstName,
-        lastName: authLastName,
-        addressCity: authCity,
-        addressProvince: authProvince,
+        firstName: authFirstName.trim() || undefined,
+        lastName: authLastName.trim() || undefined,
+        addressCity: authCity || undefined,
+        addressProvince: authProvince || undefined,
       });
       if (error || !user) {
         setAuthError(error || 'Registrazione non riuscita');
@@ -3076,6 +3073,7 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
       localStorage.setItem('vincent_current_user', JSON.stringify(mapped));
       setIsAuthOpen(false);
       resetAuthFields();
+      addToast('Account creato con successo! Benvenuto in Vincent.', 'success');
     } finally {
       setAuthSubmitting(false);
     }
@@ -7955,10 +7953,61 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
 
                           {activeUserView === 'profile' && (
                             <div className="space-y-6">
-                              <div className="bg-brand-yellow/10 p-6 rounded-3xl border border-brand-yellow/20 text-center md:text-left">
-                                <p className="text-sm font-bold text-gray-600 leading-relaxed">Da qui puoi gestire le tue informazioni personali, visualizzare i tuoi ordini e contattare l'assistenza. Usa i collegamenti rapidi per navigare ed impostare i tuoi indirizzi di spedizione principali.</p>
+                              {/* Scheda Dati di Spedizione e Anagrafici */}
+                              <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm text-left space-y-4">
+                                <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                                  <div>
+                                    <h4 className="text-sm font-black uppercase tracking-wider text-brand-dark flex items-center gap-2">
+                                      <Truck className="w-4 h-4 text-brand-blue" />
+                                      Dati di Spedizione Predefiniti
+                                    </h4>
+                                    <p className="text-[10px] text-gray-400 font-medium">Utilizzati per precompilare automaticamente la consegna nei tuoi ordini</p>
+                                  </div>
+                                  <button
+                                    onClick={() => setAuthStep('edit_profile')}
+                                    className="px-3.5 py-1.5 bg-neutral-900 hover:bg-black text-white text-[10px] font-black uppercase tracking-wider rounded-xl transition-all shadow-xs"
+                                  >
+                                    {currentUser?.addressStreet ? 'Modifica Dati' : '+ Aggiungi Dati'}
+                                  </button>
+                                </div>
+
+                                {currentUser?.addressStreet ? (
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                                    <div className="bg-gray-50 p-3.5 rounded-2xl border border-gray-100">
+                                      <span className="text-[9px] font-black uppercase text-gray-400 block tracking-wider">Destinatario & Contatto</span>
+                                      <p className="font-bold text-neutral-900 mt-1">{currentUser.name || 'Nome non specificato'}</p>
+                                      <p className="text-gray-500 text-[11px] font-medium mt-0.5">{currentUser.phone ? `Tel: ${currentUser.phone}` : 'Nessun telefono registrato'}</p>
+                                    </div>
+                                    <div className="bg-gray-50 p-3.5 rounded-2xl border border-gray-100">
+                                      <span className="text-[9px] font-black uppercase text-gray-400 block tracking-wider">Indirizzo di Consegna</span>
+                                      <p className="font-bold text-neutral-900 mt-1">{currentUser.addressStreet}</p>
+                                      <p className="text-gray-500 text-[11px] font-medium mt-0.5">
+                                        {[currentUser.addressZip, currentUser.addressCity, currentUser.addressProvince ? `(${currentUser.addressProvince})` : ''].filter(Boolean).join(' ')}
+                                      </p>
+                                    </div>
+                                    {currentUser.taxCode && (
+                                      <div className="bg-gray-50 p-3 rounded-2xl border border-gray-100 md:col-span-2">
+                                        <span className="text-[9px] font-black uppercase text-gray-400 block tracking-wider">Codice Fiscale / P.IVA</span>
+                                        <p className="font-mono font-bold text-neutral-800 text-[11px] mt-0.5">{currentUser.taxCode}</p>
+                                      </div>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <div className="bg-amber-50/70 p-4 rounded-2xl border border-amber-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                    <div>
+                                      <p className="text-xs font-bold text-amber-950">Nessun indirizzo di spedizione salvato</p>
+                                      <p className="text-[10px] text-amber-800">Aggiungi indirizzo e numero di telefono per non doverli reinserire ad ogni acquisto.</p>
+                                    </div>
+                                    <button
+                                      onClick={() => setAuthStep('edit_profile')}
+                                      className="px-4 py-2 bg-brand-blue hover:bg-brand-dark text-white rounded-xl text-xs font-black uppercase tracking-wider shrink-0 transition-all shadow-sm"
+                                    >
+                                      Compila ora
+                                    </button>
+                                  </div>
+                                )}
                               </div>
-                              
+
                               <button onClick={() => { setIsAuthOpen(false); }} className="w-full bg-brand-dark hover:bg-black hover:text-white text-white p-4 rounded-xl font-black uppercase text-xs tracking-widest transition-all shadow-lg active:scale-95">
                                 Torna allo Shopping
                               </button>
@@ -8483,9 +8532,12 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                               <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Codice Fiscale / P.IVA</label>
                               <input type="text" value={profileEditForm.taxCode} onChange={e => setProfileEditForm({...profileEditForm, taxCode: e.target.value})} className="w-full bg-gray-50 border-gray-200 border rounded-xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-brand-blue focus:bg-white transition-all shadow-inner outline-none uppercase" placeholder="Es. RSSMRA80A01H501U" />
                             </div>
-                            <div className="pt-2">
-                              <button type="submit" className="w-full bg-brand-blue hover:bg-brand-dark text-white p-4 rounded-xl font-black uppercase text-xs tracking-widest transition-all shadow-lg active:scale-95">
-                                Salva Dati Profilo
+                            <div className="pt-2 flex flex-col gap-2">
+                              <button type="submit" disabled={authSubmitting} className="w-full bg-brand-blue hover:bg-brand-dark text-white p-4 rounded-xl font-black uppercase text-xs tracking-widest transition-all shadow-lg active:scale-95 disabled:opacity-50">
+                                {authSubmitting ? 'Salvataggio in corso...' : 'Salva Dati Profilo e Spedizione'}
+                              </button>
+                              <button type="button" onClick={() => setAuthStep('profile')} className="w-full bg-gray-100 hover:bg-gray-200 text-neutral-700 p-3 rounded-xl font-bold uppercase text-[10px] tracking-wider transition-all">
+                                Torna al Riepilogo Profilo
                               </button>
                             </div>
                           </form>
@@ -8985,100 +9037,31 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
 
                 {authStep === 'register' && (
                   <form onSubmit={handleAuthRegister} className="space-y-4 text-left">
-                    <div className="space-y-1.5">
-                      <label className="auth-field-label">Username *</label>
-                      <input
-                        type="text"
-                        required
-                        autoFocus
-                        value={authUsername}
-                        onChange={(e) => setAuthUsername(e.target.value)}
-                        className="auth-field-input"
-                        placeholder="es. mario_rossi"
-                      />
-                    </div>
-                    <p className="text-[10px] font-light text-neutral-400 -mt-2">Email: {authEmail}</p>
-                    {/* Grid per Nome e Cognome */}
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-1.5">
-                        <label className="auth-field-label">Nome</label>
-                        <input 
-                          type="text" 
-                          value={authFirstName}
-                          onChange={(e) => setAuthFirstName(e.target.value)}
-                          className="w-full bg-gray-50 border-gray-200 border rounded-xl px-4 py-4 text-sm font-bold focus:ring-2 focus:ring-brand-blue focus:bg-white transition-all shadow-inner outline-none"
-                          placeholder="Es. Mario"
-                        />
+                    <div className="bg-neutral-50 p-3.5 rounded-2xl border border-neutral-200/80 flex items-center justify-between">
+                      <div>
+                        <span className="text-[9px] font-black uppercase tracking-widest text-neutral-400 block">Stai creando l'account per:</span>
+                        <span className="text-xs font-bold text-neutral-900">{authEmail}</span>
                       </div>
-                      <div className="space-y-1.5">
-                        <label className="auth-field-label">Cognome</label>
-                        <input 
-                          type="text" 
-                          value={authLastName}
-                          onChange={(e) => setAuthLastName(e.target.value)}
-                          className="w-full bg-gray-50 border-gray-200 border rounded-xl px-4 py-4 text-sm font-bold focus:ring-2 focus:ring-brand-blue focus:bg-white transition-all shadow-inner outline-none"
-                          placeholder="Es. Rossi"
-                        />
-                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setAuthStep('email')}
+                        className="text-[10px] font-bold text-brand-blue hover:underline"
+                      >
+                        Cambia
+                      </button>
                     </div>
 
-                    {/* Grid per Provincia e Città */}
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Provincia</label>
-                        <select
-                          value={authProvince}
-                          onChange={(e) => {
-                            setAuthProvince(e.target.value);
-                            setAuthCity(''); // Reset selected city when province changes
-                          }}
-                          className="w-full bg-gray-50 border-gray-200 border rounded-xl px-4 py-4 text-sm font-bold focus:ring-2 focus:ring-brand-blue focus:bg-white transition-all shadow-inner outline-none cursor-pointer"
-                        >
-                          <option value="">Seleziona...</option>
-                          {uniqueProvinces.map((prov) => (
-                            <option key={prov.nome} value={prov.nome}>
-                              {prov.nome} ({prov.sigla})
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Città</label>
-                        {authProvince ? (
-                          <select
-                            value={authCity}
-                            onChange={(e) => setAuthCity(e.target.value)}
-                            required
-                            className="w-full bg-gray-50 border-gray-200 border rounded-xl px-4 py-4 text-sm font-bold focus:ring-2 focus:ring-brand-blue focus:bg-white transition-all shadow-inner outline-none cursor-pointer"
-                          >
-                            <option value="">Seleziona...</option>
-                            {filteredCities.map((citta) => (
-                              <option key={citta} value={citta}>
-                                {citta}
-                              </option>
-                            ))}
-                          </select>
-                        ) : (
-                          <input
-                            type="text"
-                            disabled
-                            placeholder="Scegli provincia..."
-                            className="w-full bg-gray-100 border-gray-200 border rounded-xl px-4 py-4 text-sm font-bold text-gray-400 outline-none cursor-not-allowed"
-                          />
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Password con Occhietto */}
+                    {/* Password con Occhietto (Obbligatoria) */}
                     <div className="space-y-1.5">
-                      <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Crea Password</label>
+                      <label className="text-[10px] font-black uppercase tracking-widest text-neutral-700 ml-1">Scegli una Password *</label>
                       <div className="relative">
                         <input 
                           type={showAuthPassword ? "text" : "password"} 
                           required
+                          autoFocus
                           value={authPassword}
                           onChange={(e) => setAuthPassword(e.target.value)}
-                          className="w-full bg-gray-50 border-gray-200 border rounded-xl pl-4 pr-12 py-4 text-sm font-bold focus:ring-2 focus:ring-brand-blue focus:bg-white transition-all shadow-inner outline-none"
+                          className="w-full bg-gray-50 border-gray-200 border rounded-xl pl-4 pr-12 py-3.5 text-sm font-bold focus:ring-2 focus:ring-brand-blue focus:bg-white transition-all shadow-inner outline-none"
                           placeholder="Minimo 6 caratteri"
                         />
                         <button
@@ -9090,6 +9073,34 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                         </button>
                       </div>
                     </div>
+
+                    {/* Nome e Cognome Opzionali */}
+                    <div className="grid grid-cols-2 gap-3 pt-1">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 ml-1">Nome (opzionale)</label>
+                        <input 
+                          type="text" 
+                          value={authFirstName}
+                          onChange={(e) => setAuthFirstName(e.target.value)}
+                          className="w-full bg-gray-50 border-gray-200 border rounded-xl px-3.5 py-3 text-xs font-bold focus:ring-2 focus:ring-brand-blue focus:bg-white transition-all outline-none"
+                          placeholder="Es. Mario"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 ml-1">Cognome (opzionale)</label>
+                        <input 
+                          type="text" 
+                          value={authLastName}
+                          onChange={(e) => setAuthLastName(e.target.value)}
+                          className="w-full bg-gray-50 border-gray-200 border rounded-xl px-3.5 py-3 text-xs font-bold focus:ring-2 focus:ring-brand-blue focus:bg-white transition-all outline-none"
+                          placeholder="Es. Rossi"
+                        />
+                      </div>
+                    </div>
+
+                    <p className="text-[10px] text-neutral-600 leading-relaxed bg-brand-yellow/15 p-3 rounded-xl border border-brand-yellow/30">
+                      💡 <strong>Registrazione rapida:</strong> Ti bastano email e password per creare l'account. Potrai completare o modificare in qualsiasi momento l'indirizzo di spedizione (via, civico, CAP, città, telefono) nella tua <strong>Scheda Profilo</strong>.
+                    </p>
                     
                     <button 
                       type="submit"
