@@ -2526,6 +2526,7 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
   const [showFeaturedOnly, setShowFeaturedOnly] = useState(false);
   const [showSpecialOnly, setShowSpecialOnly] = useState(false);
   const [adminCategoryFilter, setAdminCategoryFilter] = useState("Tutti");
+  const [adminSubcategoryFilter, setAdminSubcategoryFilter] = useState("Tutti");
   const [adminBrandFilter, setAdminBrandFilter] = useState("Tutti");
   const [adminChannelFilter, setAdminChannelFilter] = useState("Tutti"); // Tutti, Web, Amazon, Ebay
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
@@ -2861,6 +2862,7 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
         (p.ean && p.ean.toLowerCase().includes(adminSearchQuery.toLowerCase())) ||
         `BP-${p.id.padStart(4, '0')}`.toLowerCase().includes(adminSearchQuery.toLowerCase());
       const matchesCategory = adminCategoryFilter === 'Tutti' || p.category === adminCategoryFilter;
+      const matchesSubcategory = adminSubcategoryFilter === 'Tutti' || p.subcategory === adminSubcategoryFilter;
       const matchesBrand = adminBrandFilter === 'Tutti' || p.brand === adminBrandFilter;
       let matchesChannel = true;
       if (adminChannelFilter === 'Web') matchesChannel = (p.stock || 0) > 0;
@@ -2870,6 +2872,7 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
       return (
         matchesSearch &&
         matchesCategory &&
+        matchesSubcategory &&
         matchesBrand &&
         matchesChannel &&
         matchesFeatured &&
@@ -2880,6 +2883,7 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
     products,
     adminSearchQuery,
     adminCategoryFilter,
+    adminSubcategoryFilter,
     adminBrandFilter,
     adminChannelFilter,
     showFeaturedOnly,
@@ -6312,12 +6316,35 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
 
                 {adminActiveTab === 'products' && (
                   <div className="admin-products-panel space-y-6 md:space-y-8 animate-in fade-in zoom-in-95 duration-300">
-                    <div className="flex flex-col gap-4 md:flex-row md:justify-between md:items-center">
-                      <h2 className="text-2xl md:text-3xl font-black text-brand-dark uppercase tracking-tighter">
-                        {adminProductView === 'list' && "Gestione Prodotti"}
-                        {adminProductView === 'single' && "Nuovo Prodotto Multi-Canale"}
-                        {adminProductView === 'mass' && "Importazione Massiva"}
-                      </h2>
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
+                      <div>
+                        <div className="flex items-center gap-3">
+                          <h2 className="text-lg sm:text-xl font-light uppercase tracking-[0.22em] text-neutral-950">
+                            {adminProductView === 'list' && "Prodotti"}
+                            {adminProductView === 'single' && (editingAdminProduct ? "Modifica Prodotto" : "Nuovo Prodotto")}
+                            {adminProductView === 'mass' && "Importazione Massiva"}
+                          </h2>
+                          {adminProductView !== 'list' && (
+                            <button 
+                              type="button"
+                              onClick={() => {
+                                setAdminProductView('list');
+                                setEditingAdminProduct(null);
+                              }}
+                              className="p-1.5 sm:p-2 rounded-full border border-neutral-200 text-neutral-600 hover:text-neutral-950 hover:border-neutral-400 hover:bg-neutral-50 transition-all cursor-pointer shrink-0"
+                              title="Chiudi"
+                              aria-label="Chiudi"
+                            >
+                              <X className="w-5 h-5" />
+                            </button>
+                          )}
+                        </div>
+                        {adminProductView === 'list' && (
+                          <p className="text-[11px] text-neutral-400 font-light mt-1 tracking-wide">
+                            {products.length} prodotti · catalogo boutique
+                          </p>
+                        )}
+                      </div>
                       {adminProductView === 'list' && (
                           <div className="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-4 items-stretch sm:items-center w-full md:w-auto">
                             <div className="relative w-full sm:w-auto">
@@ -6386,188 +6413,195 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                             </button>
                           </div>
                       )}
-                      {adminProductView !== 'list' && (
-                        <button 
-                          onClick={() => setAdminProductView('list')}
-                          className="bg-gray-100 text-brand-dark px-6 py-3 rounded-xl font-bold uppercase text-xs tracking-widest hover:bg-gray-200 transition-all flex items-center gap-2"
-                        >
-                          <ArrowLeft className="w-4 h-4" /> Torna alla Lista
-                        </button>
-                      )}
+
                     </div>
                     
                     {adminProductView === 'list' && (
                       <div className="space-y-6">
-                        {/* Limits & Filters Row */}
-                        <div className="bg-white p-4 md:p-8 rounded-2xl md:rounded-[2.5rem] border border-gray-100 space-y-6">
-                           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-                              <div className="flex items-center gap-4">
-                                 <div className="w-12 h-12 bg-brand-yellow rounded-2xl flex items-center justify-center">
-                                    <Layers className="w-5 h-5 text-brand-dark" />
-                                 </div>
-                                 <div>
-                                    <h3 className="text-lg font-black uppercase tracking-tighter text-brand-dark">Display Home Controls</h3>
-                                    <p className="text-[9px] font-black uppercase text-gray-400 tracking-widest">Configura i limiti di visualizzazione per la homepage</p>
-                                 </div>
+                        {/* SCHEDA FILTRI & NAVIGAZIONE CATEGORIE / SOTTOCATEGORIE MINIMAL (STILE LUXURY STORE) */}
+                        <div className="bg-white p-4 sm:p-6 rounded-2xl md:rounded-[2rem] border border-neutral-200/80 shadow-xs space-y-4">
+                           
+                           {/* 1. SELETTORE CATEGORIE ORIZZONTALE (STILE HOME / CATEGORIE) */}
+                           <div className="space-y-2">
+                              <div className="flex items-center justify-between">
+                                 <span className="text-[10px] font-light uppercase tracking-[0.22em] text-neutral-400">
+                                    Filtra per Categoria
+                                 </span>
+                                 <span className="text-[10px] text-neutral-400 font-light tracking-wide">
+                                    {adminFilteredProducts.length} {adminFilteredProducts.length === 1 ? 'prodotto' : 'prodotti'}
+                                 </span>
                               </div>
-                              
-                              <div className="flex flex-wrap items-center gap-4">
-                                   {/* Vetrina Toggle */}
-                                   <div className="bg-gray-50 pr-4 pl-2 py-2 rounded-xl border border-gray-100 flex items-center gap-3 group">
-                                      <label className="relative inline-flex items-center cursor-pointer">
-                                         <input 
-                                           type="checkbox" 
-                                           className="sr-only peer" 
-                                           checked={pageSettings.isFeaturedEnabled} 
-                                           onChange={() => setPageSettings(prev => ({ ...prev, isFeaturedEnabled: !prev.isFeaturedEnabled }))}
-                                         />
-                                         <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-yellow relative"></div>
-                                      </label>
-                                      <div className="flex flex-col gap-1">
-                                         <div className="flex items-center gap-2">
-                                           <input 
-                                             type="text" 
-                                             value={pageSettings.featuredTitle}
-                                             onChange={e => setPageSettings(prev => ({ ...prev, featuredTitle: e.target.value }))}
-                                             placeholder="Titolo Vetrina"
-                                             className="bg-transparent text-[10px] font-black uppercase text-brand-dark focus:outline-none border-b border-brand-yellow/30 w-24"
-                                           />
-                                         </div>
-                                         <div className="flex items-center gap-0.5">
-                                           <span className="text-[8px] text-gray-400 font-black uppercase">Max:</span>
-                                           <input 
-                                             type="number" 
-                                             value={pageSettings.maxFeatured}
-                                             onChange={e => setPageSettings(prev => ({ ...prev, maxFeatured: Number(e.target.value) }))}
-                                             className="w-10 bg-transparent text-[10px] font-black text-gray-500 focus:outline-none border-b border-gray-200 p-0"
-                                           />
-                                         </div>
-                                      </div>
-                                   </div>
-
-                                   {/* Special Category Toggle */}
-                                   <div className="bg-gray-50 pr-4 pl-2 py-2 rounded-xl border border-gray-100 flex items-center gap-3 group">
-                                      <label className="relative inline-flex items-center cursor-pointer">
-                                         <input 
-                                           type="checkbox" 
-                                           className="sr-only peer" 
-                                           checked={pageSettings.isSpecialCategoryEnabled} 
-                                           onChange={() => setPageSettings(prev => ({ ...prev, isSpecialCategoryEnabled: !prev.isSpecialCategoryEnabled }))}
-                                         />
-                                         <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600 relative"></div>
-                                      </label>
-                                      <div className="flex flex-col gap-1">
-                                         <div className="flex items-center gap-2">
-                                           <input 
-                                             type="text" 
-                                             value={pageSettings.specialCategoryTitle}
-                                             onChange={e => setPageSettings(prev => ({ ...prev, specialCategoryTitle: e.target.value }))}
-                                             placeholder="Titolo Scelti"
-                                             className="bg-transparent text-[10px] font-black uppercase text-brand-dark focus:outline-none border-b border-indigo-600/30 w-24"
-                                           />
-                                         </div>
-                                         <div className="flex items-center gap-0.5">
-                                           <span className="text-[8px] text-gray-400 font-black uppercase">Max:</span>
-                                           <input 
-                                             type="number" 
-                                             value={pageSettings.specialCategoryMax}
-                                             onChange={e => setPageSettings(prev => ({ ...prev, specialCategoryMax: Number(e.target.value) }))}
-                                             className="w-10 bg-transparent text-[10px] font-black text-gray-500 focus:outline-none border-b border-gray-200 p-0"
-                                           />
-                                         </div>
-                                      </div>
-                                   </div>
-
-                                   {/* New Arrivals Toggle */}
-                                   <div className="bg-gray-50 pr-4 pl-2 py-2 rounded-xl border border-gray-100 flex items-center gap-3 group">
-                                      <label className="relative inline-flex items-center cursor-pointer">
-                                         <input 
-                                           type="checkbox" 
-                                           className="sr-only peer" 
-                                           checked={pageSettings.isNewArrivalsEnabled} 
-                                           onChange={() => setPageSettings(prev => ({ ...prev, isNewArrivalsEnabled: !prev.isNewArrivalsEnabled }))}
-                                         />
-                                         <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500 relative"></div>
-                                      </label>
-                                      <div className="flex flex-col gap-1">
-                                         <div className="flex items-center gap-2">
-                                           <input 
-                                             type="text" 
-                                             value={pageSettings.newArrivalsTitle || "NUOVI ARRIVI"}
-                                             onChange={e => setPageSettings(prev => ({ ...prev, newArrivalsTitle: e.target.value }))}
-                                             placeholder="Titolo Novità"
-                                             className="bg-transparent text-[10px] font-black uppercase text-brand-dark focus:outline-none border-b border-green-500/30 w-24"
-                                           />
-                                         </div>
-                                         <div className="flex items-center gap-0.5">
-                                           <span className="text-[8px] text-gray-400 font-black uppercase">Max:</span>
-                                           <input 
-                                             type="number" 
-                                             value={pageSettings.maxNewArrivals}
-                                             onChange={e => setPageSettings(prev => ({ ...prev, maxNewArrivals: Number(e.target.value) }))}
-                                             className="w-10 bg-transparent text-[10px] font-black text-gray-500 focus:outline-none border-b border-gray-200 p-0"
-                                           />
-                                         </div>
-                                      </div>
-                                   </div>
-                               </div>
+                              <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar pb-1 pt-0.5">
+                                 <button
+                                    type="button"
+                                    onClick={() => {
+                                       setAdminCategoryFilter("Tutti");
+                                       setAdminSubcategoryFilter("Tutti");
+                                    }}
+                                    className={`px-3.5 sm:px-4 py-2 rounded-full text-xs uppercase tracking-[0.14em] transition-all shrink-0 cursor-pointer flex items-center gap-1.5 ${
+                                       adminCategoryFilter === "Tutti"
+                                          ? "bg-neutral-950 text-white font-bold shadow-xs scale-[1.02]"
+                                          : "bg-neutral-50 hover:bg-neutral-100 text-neutral-600 hover:text-neutral-950 border border-neutral-200/70 font-medium"
+                                    }`}
+                                 >
+                                    <span>Tutte le Categorie</span>
+                                    <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${adminCategoryFilter === "Tutti" ? "bg-white/20 text-white" : "bg-neutral-200/60 text-neutral-600"}`}>
+                                       {products.length}
+                                    </span>
+                                 </button>
+                                 {pageSettings.categories.filter((c: string) => c !== "Tutti").map((cat: string) => {
+                                    const catCount = products.filter(p => p.category === cat).length;
+                                    const isSelected = adminCategoryFilter === cat;
+                                    return (
+                                       <button
+                                          key={`admin-cat-${cat}`}
+                                          type="button"
+                                          onClick={() => {
+                                             setAdminCategoryFilter(cat);
+                                             setAdminSubcategoryFilter("Tutti");
+                                          }}
+                                          className={`px-3.5 sm:px-4 py-2 rounded-full text-xs uppercase tracking-[0.14em] transition-all shrink-0 cursor-pointer flex items-center gap-1.5 ${
+                                             isSelected
+                                                ? "bg-neutral-950 text-white font-bold shadow-xs scale-[1.02]"
+                                                : "bg-neutral-50 hover:bg-neutral-100 text-neutral-600 hover:text-neutral-950 border border-neutral-200/70 font-medium"
+                                          }`}
+                                       >
+                                          <span>{cat}</span>
+                                          <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${isSelected ? "bg-white/20 text-white" : "bg-neutral-200/60 text-neutral-600"}`}>
+                                             {catCount}
+                                          </span>
+                                       </button>
+                                    );
+                                 })}
+                              </div>
                            </div>
 
-                           <div className="grid grid-cols-1 md:grid-cols-4 gap-3 md:gap-4 pt-4 border-t border-gray-50">
+                           {/* 2. BARRA SOTTOCATEGORIE DEDICATA (APPARE QUANDO SI SCEGLIE UNA CATEGORIA O QUANDO CI SONO SOTTOCATEGORIE) */}
+                           <AnimatePresence>
+                              {adminCategoryFilter !== "Tutti" && (pageSettings.subcategories?.[adminCategoryFilter] || []).length > 0 && (
+                                 <motion.div
+                                    initial={{ height: 0, opacity: 0 }}
+                                    animate={{ height: 'auto', opacity: 1 }}
+                                    exit={{ height: 0, opacity: 0 }}
+                                    transition={{ duration: 0.2 }}
+                                    className="bg-neutral-50/80 rounded-xl sm:rounded-2xl p-2.5 sm:p-3 border border-neutral-200/70 overflow-hidden"
+                                 >
+                                    <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar">
+                                       <span className="text-[10px] uppercase tracking-[0.18em] text-neutral-400 font-bold mr-1 shrink-0">
+                                          Sottocategorie:
+                                       </span>
+                                       <button
+                                          type="button"
+                                          onClick={() => setAdminSubcategoryFilter("Tutti")}
+                                          className={`px-3 py-1 rounded-full text-[11px] uppercase tracking-[0.12em] transition-all shrink-0 cursor-pointer ${
+                                             adminSubcategoryFilter === "Tutti"
+                                                ? "bg-neutral-900 text-white font-semibold shadow-xs"
+                                                : "bg-white text-neutral-600 hover:text-neutral-950 hover:bg-neutral-100 border border-neutral-200"
+                                          }`}
+                                       >
+                                          Tutte ({products.filter(p => p.category === adminCategoryFilter).length})
+                                       </button>
+                                       {(pageSettings.subcategories[adminCategoryFilter] || []).map((sub: string) => {
+                                          const subCount = products.filter(p => p.category === adminCategoryFilter && p.subcategory === sub).length;
+                                          const isSubActive = adminSubcategoryFilter === sub;
+                                          return (
+                                             <button
+                                                key={`admin-sub-${sub}`}
+                                                type="button"
+                                                onClick={() => setAdminSubcategoryFilter(prev => prev === sub ? "Tutti" : sub)}
+                                                className={`px-3 py-1 rounded-full text-[11px] uppercase tracking-[0.12em] transition-all shrink-0 cursor-pointer flex items-center gap-1 ${
+                                                   isSubActive
+                                                      ? "bg-neutral-900 text-white font-semibold shadow-xs"
+                                                      : "bg-white text-neutral-600 hover:text-neutral-950 hover:bg-neutral-100 border border-neutral-200"
+                                                }`}
+                                             >
+                                                <span>{sub}</span>
+                                                <span className="text-[9px] opacity-70">({subCount})</span>
+                                             </button>
+                                          );
+                                       })}
+                                    </div>
+                                 </motion.div>
+                              )}
+                           </AnimatePresence>
+
+                           {/* 3. BARRA DI RICERCA VELOCE & FILTRI STATO (MINIMAL & RAPIDO) */}
+                           <div className="grid grid-cols-1 md:grid-cols-4 gap-2.5 sm:gap-3 pt-2 border-t border-neutral-100">
                               <div className="md:col-span-2 relative">
-                                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                 <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
                                  <input 
-                                   type="text" 
-                                   placeholder="Cerca per Nome, SKU o EAN..." 
-                                   value={adminSearchQuery}
-                                   onChange={e => setAdminSearchQuery(e.target.value)}
-                                   className="w-full bg-gray-50 border-gray-100 rounded-xl py-3 pl-12 pr-4 text-sm font-bold focus:ring-2 focus:ring-brand-yellow transition-all"
+                                    type="text" 
+                                    placeholder="Cerca per Nome, SKU o EAN..." 
+                                    value={adminSearchQuery}
+                                    onChange={e => setAdminSearchQuery(e.target.value)}
+                                    className="w-full bg-neutral-50/70 border border-neutral-200 rounded-xl py-2.5 pl-10 pr-4 text-xs sm:text-sm font-medium text-neutral-900 focus:bg-white focus:ring-2 focus:ring-neutral-900 outline-none transition-all"
                                  />
+                                 {adminSearchQuery && (
+                                    <button 
+                                       onClick={() => setAdminSearchQuery("")}
+                                       className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-700 text-xs"
+                                    >
+                                       ✕
+                                    </button>
+                                 )}
                               </div>
-                              <div className="grid grid-cols-2 sm:flex sm:flex-row gap-2 md:col-span-2">
-                                <button 
-                                  onClick={() => setShowAdvancedFilters(true)}
-                                  className="col-span-2 sm:col-span-1 sm:flex-1 bg-white border border-gray-100 hover:border-brand-yellow text-brand-dark px-3 py-3 rounded-xl font-bold uppercase text-[9px] sm:text-[10px] tracking-widest transition-all flex items-center justify-center gap-2 group"
-                                >
-                                  <Layers className="w-4 h-4 text-brand-yellow group-hover:rotate-12 transition-transform" />
-                                  Filtri Avanzati
-                                </button>
+                              <div className="flex items-center gap-2 md:col-span-2 overflow-x-auto no-scrollbar">
                                  <button 
-                                   onClick={() => {
-                                     const newVal = !showFeaturedOnly;
-                                     setShowFeaturedOnly(newVal);
-                                     if (newVal) setShowSpecialOnly(false);
-                                   }}
-                                   className={`px-2 sm:px-4 py-3 rounded-xl font-bold uppercase text-[9px] sm:text-[10px] tracking-widest transition-all border flex items-center justify-center gap-1.5 ${showFeaturedOnly ? 'bg-neutral-950 text-white border-brand-yellow shadow-lg' : 'bg-white text-gray-500 border-gray-100'}`}
+                                    type="button"
+                                    onClick={() => {
+                                       const newVal = !showFeaturedOnly;
+                                       setShowFeaturedOnly(newVal);
+                                       if (newVal) setShowSpecialOnly(false);
+                                    }}
+                                    className={`px-3 py-2 rounded-xl font-bold uppercase text-[10px] tracking-wider transition-all border flex items-center justify-center gap-1.5 shrink-0 ${
+                                       showFeaturedOnly 
+                                          ? 'bg-neutral-950 text-white border-neutral-950 shadow-xs' 
+                                          : 'bg-white text-neutral-600 border-neutral-200 hover:border-neutral-400'
+                                    }`}
                                  >
-                                   <Sparkles className={`w-4 h-4 shrink-0 ${showFeaturedOnly ? 'fill-current' : ''}`} />
-                                   {showFeaturedOnly ? 'Solo Vetrina' : 'Vetrina'}
+                                    <Sparkles className={`w-3.5 h-3.5 ${showFeaturedOnly ? 'fill-current text-brand-yellow' : 'text-neutral-400'}`} />
+                                    <span>Vetrina</span>
                                  </button>
                                  <button 
-                                   onClick={() => {
-                                     const newVal = !showSpecialOnly;
-                                     setShowSpecialOnly(newVal);
-                                     if (newVal) setShowFeaturedOnly(false);
-                                   }}
-                                   className={`px-2 sm:px-4 py-3 rounded-xl font-bold uppercase text-[9px] sm:text-[10px] tracking-widest transition-all border flex items-center justify-center gap-1.5 ${showSpecialOnly ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg' : 'bg-white text-gray-500 border-gray-100'}`}
+                                    type="button"
+                                    onClick={() => {
+                                       const newVal = !showSpecialOnly;
+                                       setShowSpecialOnly(newVal);
+                                       if (newVal) setShowFeaturedOnly(false);
+                                    }}
+                                    className={`px-3 py-2 rounded-xl font-bold uppercase text-[10px] tracking-wider transition-all border flex items-center justify-center gap-1.5 shrink-0 ${
+                                       showSpecialOnly 
+                                          ? 'bg-neutral-950 text-white border-neutral-950 shadow-xs' 
+                                          : 'bg-white text-neutral-600 border-neutral-200 hover:border-neutral-400'
+                                    }`}
                                  >
-                                   <Star className={`w-4 h-4 shrink-0 ${showSpecialOnly ? 'fill-current' : ''}`} />
-                                   {showSpecialOnly ? 'Solo Scelti' : 'Scelti'}
+                                    <Star className={`w-3.5 h-3.5 ${showSpecialOnly ? 'fill-current text-indigo-400' : 'text-neutral-400'}`} />
+                                    <span>Scelti</span>
                                  </button>
-                                <button 
-                                  onClick={() => {
-                                    setAdminSearchQuery("");
-                                    setAdminCategoryFilter("Tutti");
-                                    setAdminBrandFilter("Tutti");
-                                    setAdminChannelFilter("Tutti");
-                                    setShowFeaturedOnly(false);
-                                    setShowSpecialOnly(false);
-                                  }}
-                                  className="bg-gray-50 text-gray-400 hover:text-red-500 rounded-xl p-3 transition-all"
-                                  title="Reset Filtri"
-                                >
-                                  <RefreshCw className="w-4 h-4" />
-                                </button>
+                                 <button 
+                                    type="button"
+                                    onClick={() => setShowAdvancedFilters(true)}
+                                    className="px-3 py-2 rounded-xl font-bold uppercase text-[10px] tracking-wider transition-all border border-neutral-200 bg-white hover:bg-neutral-50 text-neutral-700 flex items-center justify-center gap-1.5 shrink-0"
+                                 >
+                                    <Layers className="w-3.5 h-3.5 text-neutral-500" />
+                                    <span>Altri Filtri</span>
+                                 </button>
+                                 <button 
+                                    type="button"
+                                    onClick={() => {
+                                       setAdminSearchQuery("");
+                                       setAdminCategoryFilter("Tutti");
+                                       setAdminSubcategoryFilter("Tutti");
+                                       setAdminBrandFilter("Tutti");
+                                       setAdminChannelFilter("Tutti");
+                                       setShowFeaturedOnly(false);
+                                       setShowSpecialOnly(false);
+                                    }}
+                                    className="bg-neutral-100 hover:bg-neutral-200 text-neutral-600 rounded-xl p-2.5 transition-all shrink-0"
+                                    title="Reset Filtri"
+                                 >
+                                    <RefreshCw className="w-3.5 h-3.5" />
+                                 </button>
                               </div>
                            </div>
                         </div>
@@ -6681,292 +6715,185 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                           )}
                         </AnimatePresence>
 
-                        <div className="md:hidden space-y-7">
+                        {/* LISTA PRODOTTI PER MOBILE: SCHEDE PULITE, ELEGANTI E VELOCI CON RIFERIMENTO CATEGORIA/SOTTOCATEGORIA */}
+                        <div className="md:hidden space-y-3.5">
                           {adminFilteredProducts.length === 0 ? (
-                            <div className="bg-white rounded-3xl p-10 text-center border-2 border-dashed border-gray-200">
-                              <Package className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                              <p className="text-base font-bold text-gray-400">Nessun prodotto trovato</p>
-                              <p className="text-xs text-gray-400 mt-1">Prova a cambiare i filtri o la ricerca</p>
+                            <div className="bg-white rounded-2xl p-8 text-center border border-dashed border-neutral-300 space-y-2">
+                              <Package className="w-10 h-10 text-neutral-300 mx-auto" />
+                              <p className="text-sm font-bold text-neutral-700">Nessun prodotto trovato</p>
+                              <p className="text-xs text-neutral-400">Modifica la categoria o i criteri di ricerca</p>
                             </div>
                           ) : (
-                            adminFilteredProducts.map((p, index) => {
+                            adminFilteredProducts.map((p) => {
                               const stockQty = p.stock ?? 0;
                               const isLowStock = stockQty > 0 && stockQty <= 5;
                               const isOutOfStock = stockQty === 0;
                               const hasVariants = Boolean(p.variants && p.variants.length > 0);
+                              const totalVariantStock = hasVariants
+                                ? p.variants.reduce((acc: number, curr: any) => acc + (Number(curr.webStock) || 0), 0)
+                                : stockQty;
 
                               return (
                                 <article 
                                   key={`m-${p.id}`} 
-                                  className="rounded-[2.2rem] border-2 border-gray-200/90 bg-white shadow-md hover:shadow-lg transition-all overflow-hidden relative"
+                                  className="rounded-2xl border border-neutral-200 bg-white shadow-xs hover:border-neutral-300 transition-all p-3.5 sm:p-4 space-y-3"
                                 >
-                                  {/* Linea d'accento superiore colorata */}
-                                  <div className="h-1.5 w-full bg-gradient-to-r from-amber-400 via-amber-300 to-yellow-200" />
-
-                                  <div className="p-4 sm:p-5 space-y-4">
-                                    {/* RIGA 1: Codice SKU, Marchio e Stato Magazzino */}
-                                    <div className="flex items-center justify-between gap-2 flex-wrap border-b border-gray-100 pb-3">
-                                      <div className="flex items-center gap-2 flex-wrap">
-                                        <span className="text-[10px] font-black uppercase tracking-wider bg-gray-100 text-gray-800 px-2.5 py-1 rounded-lg border border-gray-200/80">
-                                          SKU: {p.sku || `BP-${p.id.padStart(4, '0')}`}
+                                  {/* RIGA 1: RIFERIMENTO CATEGORIA & SOTTOCATEGORIA + STATO STOCK */}
+                                  <div className="flex items-center justify-between gap-1.5 flex-wrap border-b border-neutral-100 pb-2.5">
+                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                      <span className="text-[10px] font-bold uppercase tracking-wider bg-neutral-950 text-white px-2.5 py-0.5 rounded-full">
+                                        {p.category}
+                                      </span>
+                                      {p.subcategory && (
+                                        <span className="text-[10px] font-medium tracking-wider bg-neutral-100 text-neutral-700 border border-neutral-200 px-2.5 py-0.5 rounded-full">
+                                          {p.subcategory}
                                         </span>
-                                        {p.brand && (
-                                          <span className="text-[10px] font-black uppercase tracking-wider text-amber-900 bg-amber-50 border border-amber-200/80 px-2.5 py-1 rounded-lg">
-                                            {p.brand}
+                                      )}
+                                      {p.brand && (
+                                        <span className="text-[10px] font-semibold text-neutral-500 uppercase tracking-wider">
+                                          • {p.brand}
+                                        </span>
+                                      )}
+                                    </div>
+
+                                    {/* Badge Disponibilità */}
+                                    <div className="shrink-0">
+                                      {hasVariants ? (
+                                        <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider bg-neutral-100 text-neutral-800 px-2 py-0.5 rounded-full">
+                                          {p.variants.length} var • {totalVariantStock} pz
+                                        </span>
+                                      ) : isOutOfStock ? (
+                                        <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider bg-red-50 text-red-700 border border-red-200 px-2 py-0.5 rounded-full">
+                                          <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span>
+                                          Esaurito
+                                        </span>
+                                      ) : isLowStock ? (
+                                        <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider bg-amber-50 text-amber-800 border border-amber-300 px-2 py-0.5 rounded-full">
+                                          <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                                          Scorte: {stockQty}
+                                        </span>
+                                      ) : (
+                                        <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-full">
+                                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                          Stock: {stockQty}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  {/* RIGA 2: ANTEPRIMA IMMAGINE + INFO PRODOTTO & PREZZO */}
+                                  <div className="flex gap-3 items-start">
+                                    <img 
+                                      src={p.image || 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?auto=format&fit=crop&w=400&q=80'} 
+                                      alt={p.name} 
+                                      className="w-18 h-22 sm:w-20 sm:h-24 rounded-xl object-cover border border-neutral-200 bg-neutral-100 shrink-0" 
+                                    />
+
+                                    <div className="min-w-0 flex-1 space-y-1">
+                                      <h4 className="font-bold text-sm text-neutral-950 leading-snug break-words line-clamp-2">
+                                        {p.name}
+                                      </h4>
+                                      <p className="text-[10px] font-mono text-neutral-400">
+                                        SKU: {p.sku || `BP-${p.id.padStart(4, '0')}`}
+                                      </p>
+                                      <div className="flex items-baseline gap-2 pt-0.5">
+                                        <span className="text-base font-bold text-neutral-950">
+                                          €{Number(p.price || 0).toFixed(2)}
+                                        </span>
+                                        {p.originalPrice && p.originalPrice > p.price && (
+                                          <span className="text-xs text-neutral-400 line-through font-medium">
+                                            €{Number(p.originalPrice).toFixed(2)}
                                           </span>
                                         )}
                                       </div>
-
-                                      {/* Badge Disponibilità */}
-                                      <div className="shrink-0">
-                                        {isOutOfStock ? (
-                                          <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider bg-red-50 text-red-700 border border-red-200 px-2.5 py-1 rounded-full">
-                                            <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span>
-                                            Esaurito (0)
-                                          </span>
-                                        ) : isLowStock ? (
-                                          <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider bg-amber-50 text-amber-800 border border-amber-300 px-2.5 py-1 rounded-full">
-                                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
-                                            Scorte Basse ({stockQty})
-                                          </span>
-                                        ) : (
-                                          <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-800 border border-emerald-200 px-2.5 py-1 rounded-full">
-                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                                            In Stock ({stockQty})
-                                          </span>
-                                        )}
-                                      </div>
                                     </div>
+                                  </div>
 
-                                    {/* RIGA 2: Foto Prodotto + Titolo + Prezzo Base in Risalto */}
-                                    <div className="flex gap-3.5 items-start">
-                                      <div className="relative shrink-0">
-                                        <img 
-                                          src={p.image || 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?auto=format&fit=crop&w=400&q=80'} 
-                                          alt={p.name} 
-                                          className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl object-cover border-2 border-gray-100 shadow-sm bg-gray-50" 
-                                        />
-                                        {p.rating ? (
-                                          <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-neutral-950 text-amber-300 text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm flex items-center gap-0.5 whitespace-nowrap">
-                                            <Star className="w-2.5 h-2.5 fill-amber-300 text-amber-300" />
-                                            <span>{p.rating}</span>
-                                          </div>
-                                        ) : null}
-                                      </div>
+                                  {/* RIGA 3: OPZIONI PROMO RAPIDE (VETRINA / SCELTI) */}
+                                  <div className="grid grid-cols-2 gap-2 pt-1">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setProducts(prev => prev.map(prod => prod.id === p.id ? { ...prod, isFeatured: !prod.isFeatured } : prod));
+                                        setCartTrigger(c => c + 1);
+                                      }}
+                                      className={`flex items-center justify-between p-2 rounded-xl border transition-all text-[11px] font-bold uppercase ${
+                                        p.isFeatured 
+                                          ? 'bg-neutral-950 text-white border-neutral-950 shadow-xs' 
+                                          : 'bg-neutral-50 text-neutral-500 border-neutral-200 hover:text-neutral-900'
+                                      }`}
+                                    >
+                                      <span className="flex items-center gap-1.5">
+                                        <Sparkles className={`w-3.5 h-3.5 ${p.isFeatured ? 'text-brand-yellow fill-brand-yellow' : 'text-neutral-400'}`} />
+                                        Vetrina
+                                      </span>
+                                      <span className={`w-2.5 h-2.5 rounded-full ${p.isFeatured ? 'bg-brand-yellow' : 'bg-neutral-300'}`} />
+                                    </button>
 
-                                      <div className="min-w-0 flex-1 space-y-1">
-                                        <h3 className="font-black text-base text-brand-dark leading-snug break-words">
-                                          {p.name}
-                                        </h3>
-                                        <div className="flex items-baseline gap-2 pt-0.5">
-                                          <span className="text-xl font-black text-brand-dark">
-                                            €{Number(p.price || 0).toFixed(2)}
-                                          </span>
-                                          {p.originalPrice && p.originalPrice > p.price && (
-                                            <span className="text-xs text-gray-400 line-through font-bold">
-                                              €{Number(p.originalPrice).toFixed(2)}
-                                            </span>
-                                          )}
-                                        </div>
-                                      </div>
-                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setProducts(prev => prev.map(prod => prod.id === p.id ? { ...prod, isSpecialPromotion: !prod.isSpecialPromotion } : prod));
+                                        setCartTrigger(c => c + 1);
+                                      }}
+                                      className={`flex items-center justify-between p-2 rounded-xl border transition-all text-[11px] font-bold uppercase ${
+                                        p.isSpecialPromotion 
+                                          ? 'bg-neutral-950 text-white border-neutral-950 shadow-xs' 
+                                          : 'bg-neutral-50 text-neutral-500 border-neutral-200 hover:text-neutral-900'
+                                      }`}
+                                    >
+                                      <span className="flex items-center gap-1.5">
+                                        <Star className={`w-3.5 h-3.5 ${p.isSpecialPromotion ? 'text-indigo-400 fill-indigo-400' : 'text-neutral-400'}`} />
+                                        Scelti
+                                      </span>
+                                      <span className={`w-2.5 h-2.5 rounded-full ${p.isSpecialPromotion ? 'bg-indigo-500' : 'bg-neutral-300'}`} />
+                                    </button>
+                                  </div>
 
-                                    {/* RIGA 3: Categoria, Sottocategoria & Canali Vendita */}
-                                    <div className="p-3 bg-gray-50/90 rounded-2xl border border-gray-100 space-y-2">
-                                      <div className="flex items-center justify-between gap-2 flex-wrap">
-                                        <div className="flex flex-wrap items-center gap-1.5">
-                                          <span className="text-[10px] font-black uppercase tracking-wider bg-amber-100 text-amber-950 px-2.5 py-0.5 rounded-md border border-amber-300">
-                                            {p.category}
-                                          </span>
-                                          {p.subcategory && (
-                                            <span className="text-[10px] font-bold text-gray-600 bg-white border border-gray-200 px-2.5 py-0.5 rounded-md">
-                                              {p.subcategory}
-                                            </span>
-                                          )}
-                                        </div>
-                                        <div className="flex items-center gap-2 text-[10px] font-bold text-gray-500">
-                                          <span className="flex items-center gap-1 text-emerald-700 font-black">
-                                            <Check className="w-3.5 h-3.5" /> Web
-                                          </span>
-                                          <span className={`flex items-center gap-1 ${p.amazonActive !== false ? 'text-amber-800 font-bold' : 'text-gray-400 line-through'}`}>
-                                            Amazon {p.amazonActive !== false ? '✓' : '✗'}
-                                          </span>
-                                          <span className={`flex items-center gap-1 ${p.ebayActive !== false ? 'text-blue-800 font-bold' : 'text-gray-400 line-through'}`}>
-                                            eBay {p.ebayActive !== false ? '✓' : '✗'}
-                                          </span>
-                                        </div>
-                                      </div>
-                                    </div>
+                                  {/* RIGA 4: AZIONI PRINCIPALI (TOUCH FRIENDLY) */}
+                                  <div className="flex items-center gap-2 pt-1 border-t border-neutral-100">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setEditingAdminProduct(p);
+                                        setAdminProductView('single');
+                                      }}
+                                      className="flex-1 py-2.5 px-3 rounded-xl bg-neutral-950 hover:bg-black text-white text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-xs active:scale-95 transition-all"
+                                    >
+                                      <Edit2 className="w-3.5 h-3.5 text-neutral-300" />
+                                      <span>Modifica Scheda</span>
+                                    </button>
 
-                                    {/* RIGA 4: Descrizione Prodotto Dettagliata su Più Righe */}
-                                    {p.description && (
-                                      <div className="bg-gray-50/90 rounded-2xl p-3 border border-gray-100 space-y-1">
-                                        <p className="text-[9px] font-black uppercase tracking-wider text-gray-400 flex items-center gap-1">
-                                          <FileText className="w-3 h-3 text-gray-400" />
-                                          Descrizione Voce
-                                        </p>
-                                        <p className="text-xs text-gray-700 font-medium leading-relaxed">
-                                          {p.description}
-                                        </p>
-                                      </div>
-                                    )}
+                                    <button
+                                      type="button"
+                                      onClick={() => handleProductSelect(p)}
+                                      className="p-2.5 rounded-xl bg-neutral-100 hover:bg-neutral-200 text-neutral-700 flex items-center justify-center transition-colors border border-neutral-200"
+                                      title="Visualizza nello Store"
+                                      aria-label="Visualizza nello Store"
+                                    >
+                                      <Eye className="w-4 h-4" />
+                                    </button>
 
-                                    {/* RIGA 5: Opzioni Visibilità & Promozioni */}
-                                    <div className="p-3 bg-slate-50/70 rounded-2xl border border-gray-100 space-y-2.5">
-                                      <p className="text-[9px] font-black uppercase tracking-wider text-gray-400">Opzioni Visibilità & Promozioni</p>
-                                      
-                                      <div className="grid grid-cols-2 gap-2 text-xs font-bold">
-                                        {/* Vetrina Toggle */}
-                                        <button
-                                          type="button"
-                                          onClick={() => {
-                                            setProducts(prev => prev.map(prod => prod.id === p.id ? { ...prod, isFeatured: !prod.isFeatured } : prod));
-                                            setCartTrigger(c => c + 1);
-                                          }}
-                                          className={`flex items-center justify-between p-2.5 rounded-xl border transition-all text-[11px] font-black uppercase ${
-                                            p.isFeatured 
-                                              ? 'bg-amber-100 border-amber-300 text-amber-950 shadow-xs' 
-                                              : 'bg-white border-gray-200 text-gray-400 hover:text-gray-600'
-                                          }`}
-                                        >
-                                          <span className="flex items-center gap-1.5">
-                                            <Sparkles className={`w-4 h-4 ${p.isFeatured ? 'text-amber-600 fill-amber-500' : 'text-gray-400'}`} />
-                                            Vetrina
-                                          </span>
-                                          <span className={`w-3.5 h-3.5 rounded-full ${p.isFeatured ? 'bg-amber-500' : 'bg-gray-200'}`} />
-                                        </button>
-
-                                        {/* Scelti Per Te Toggle */}
-                                        <button
-                                          type="button"
-                                          onClick={() => {
-                                            setProducts(prev => prev.map(prod => prod.id === p.id ? { ...prod, isSpecialPromotion: !prod.isSpecialPromotion } : prod));
-                                            setCartTrigger(c => c + 1);
-                                          }}
-                                          className={`flex items-center justify-between p-2.5 rounded-xl border transition-all text-[11px] font-black uppercase ${
-                                            p.isSpecialPromotion 
-                                              ? 'bg-indigo-100 border-indigo-300 text-indigo-950 shadow-xs' 
-                                              : 'bg-white border-gray-200 text-gray-400 hover:text-gray-600'
-                                          }`}
-                                        >
-                                          <span className="flex items-center gap-1.5">
-                                            <Star className={`w-4 h-4 ${p.isSpecialPromotion ? 'text-indigo-600 fill-indigo-500' : 'text-gray-400'}`} />
-                                            Scelti
-                                          </span>
-                                          <span className={`w-3.5 h-3.5 rounded-full ${p.isSpecialPromotion ? 'bg-indigo-600' : 'bg-gray-200'}`} />
-                                        </button>
-                                      </div>
-                                    </div>
-
-                                    {/* RIGA 6: Varianti Preview (Taglie & Colori) */}
-                                    {hasVariants && (
-                                      <div className="p-3 bg-amber-50/50 rounded-2xl border border-amber-200/80 space-y-2">
-                                        <div className="flex items-center justify-between">
-                                          <span className="text-[10px] font-black uppercase tracking-wider text-amber-900 flex items-center gap-1">
-                                            <Layers className="w-3.5 h-3.5 text-amber-600" />
-                                            Varianti Attive ({p.variants.length})
-                                          </span>
-                                          <span className="text-[9px] font-bold text-gray-500">Taglie / Colori</span>
-                                        </div>
-                                        <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto">
-                                          {p.variants.map((v: any, vIdx: number) => (
-                                            <span 
-                                              key={v.id || vIdx} 
-                                              className="inline-flex items-center gap-1 text-[10px] font-bold bg-white text-brand-dark px-2.5 py-1 rounded-lg border border-gray-200 shadow-2xs"
-                                            >
-                                              <span className="font-black text-amber-700">{v.type}:</span>
-                                              <span>{v.value}</span>
-                                              <span className="text-gray-400 text-[9px] font-mono">({v.webStock ?? v.stock ?? 0} pz)</span>
-                                            </span>
-                                          ))}
-                                        </div>
-                                      </div>
-                                    )}
-
-                                    {/* RIGA 7: Modifica Rapida Prezzo & Stock */}
-                                    <div className="grid grid-cols-2 gap-3 pt-1">
-                                      <div className="bg-gray-50 p-2.5 rounded-2xl border border-gray-200">
-                                        <label className="text-[9px] font-black text-gray-400 uppercase tracking-wider block mb-1">
-                                          Prezzo Rapido (€)
-                                        </label>
-                                        <div className="relative">
-                                          <input
-                                            type="number"
-                                            step="0.01"
-                                            value={p.price}
-                                            disabled={hasVariants}
-                                            onChange={(e) => {
-                                              const newPrice = parseFloat(e.target.value) || 0;
-                                              setProducts(prev => prev.map(prod => prod.id === p.id ? { ...prod, price: newPrice } : prod));
-                                            }}
-                                            className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm font-black text-brand-dark focus:ring-2 focus:ring-amber-400 disabled:opacity-50 min-h-[40px]"
-                                          />
-                                        </div>
-                                      </div>
-
-                                      <div className="bg-gray-50 p-2.5 rounded-2xl border border-gray-200">
-                                        <label className="text-[9px] font-black text-gray-400 uppercase tracking-wider block mb-1">
-                                          Quantità Stock (Pz)
-                                        </label>
-                                        <div className="relative">
-                                          <input
-                                            type="number"
-                                            value={p.stock ?? 0}
-                                            disabled={hasVariants}
-                                            onChange={(e) => {
-                                              const newStock = parseInt(e.target.value, 10) || 0;
-                                              setProducts(prev => prev.map(prod => prod.id === p.id ? { ...prod, stock: newStock } : prod));
-                                            }}
-                                            className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm font-black text-center text-brand-dark focus:ring-2 focus:ring-amber-400 disabled:opacity-50 min-h-[40px]"
-                                          />
-                                        </div>
-                                      </div>
-                                    </div>
-
-                                    {/* RIGA 8: Barra Azioni Mobile Sempre Visibili e Comode */}
-                                    <div className="flex gap-2 pt-2 border-t border-gray-100">
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          setEditingAdminProduct(p);
-                                          setAdminProductView('single');
-                                        }}
-                                        className="flex-[2] py-3.5 px-4 rounded-xl bg-neutral-950 hover:bg-black text-white text-xs font-black uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-all min-h-[48px]"
-                                      >
-                                        <Edit2 className="w-4 h-4 text-brand-yellow" />
-                                        <span>Modifica Scheda</span>
-                                      </button>
-
-                                      <button
-                                        type="button"
-                                        onClick={() => handleProductSelect(p)}
-                                        className="py-3.5 px-3.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-brand-dark flex items-center justify-center transition-colors min-h-[48px] border border-gray-200"
-                                        title="Visualizza nello Store"
-                                      >
-                                        <Eye className="w-4 h-4" />
-                                      </button>
-
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          setAdminConfirmAction({
-                                            active: true,
-                                            title: 'Elimina Prodotto',
-                                            message: `Eliminare definitivamente "${p.name}"? L'azione non è reversibile.`,
-                                            color: 'bg-red-500',
-                                            onConfirm: () => {
-                                              setProducts(prev => prev.filter(prod => prod.id !== p.id));
-                                              void deleteProductFromSupabase(p.id);
-                                              addToast('Prodotto eliminato dal catalogo.', 'success');
-                                            },
-                                          });
-                                        }}
-                                        className="py-3.5 px-3.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 flex items-center justify-center transition-colors min-h-[48px]"
-                                        aria-label="Elimina Prodotto"
-                                      >
-                                        <Trash2 className="w-4 h-4" />
-                                      </button>
-                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setAdminConfirmAction({
+                                          active: true,
+                                          title: 'Elimina Prodotto',
+                                          message: `Eliminare definitivamente "${p.name}"? L'azione non è reversibile.`,
+                                          color: 'bg-red-500',
+                                          onConfirm: () => {
+                                            setProducts(prev => prev.filter(prod => prod.id !== p.id));
+                                            void deleteProductFromSupabase(p.id);
+                                            addToast('Prodotto eliminato dal catalogo.', 'success');
+                                          },
+                                        });
+                                      }}
+                                      className="p-2.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 flex items-center justify-center transition-colors"
+                                      aria-label="Elimina Prodotto"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
                                   </div>
                                 </article>
                               );
@@ -7066,10 +6993,15 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                                        </div>
                                    </td>
                                     <td className="p-4">
-                                      <div className="flex flex-col gap-1">
-                                        <span className="text-xs font-bold px-2 py-1 bg-gray-100 text-gray-600 rounded-md w-fit">{p.category}</span>
+                                      <div className="flex flex-col gap-1 items-start">
+                                        <span className="text-[10px] font-bold px-2.5 py-0.5 bg-neutral-950 text-white rounded-full w-fit uppercase tracking-wider">{p.category}</span>
+                                        {p.subcategory && (
+                                          <span className="text-[10px] font-medium px-2 py-0.5 bg-neutral-100 text-neutral-600 rounded-full w-fit uppercase tracking-wider border border-neutral-200">
+                                            {p.subcategory}
+                                          </span>
+                                        )}
                                         {p.variants && p.variants.length > 0 ? (
-                                           <span className="text-[9px] font-black px-2 py-0.5 bg-neutral-950 text-white rounded-md w-fit uppercase tracking-wider">
+                                           <span className="text-[9px] font-semibold px-1.5 py-0.5 bg-neutral-100 text-neutral-700 rounded-md w-fit uppercase tracking-wider">
                                              {p.variants.length} Varianti
                                            </span>
                                          ) : (

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
-import { Package, X, Trash2, Layers, Globe, ExternalLink, Camera, Plus, Check, RefreshCw, Search, ChevronDown, ChevronUp, Truck, Info, Upload, Link as LinkIcon, Star, Maximize2, Type, AlignLeft, AlignCenter, AlignRight, Bold, Italic, Underline, Image as ImageIcon, Link as LucideLink, Eraser, Zap, FileText, FileSpreadsheet, Compass, FileCode } from "lucide-react";
+import { Package, X, Trash2, Layers, Globe, ExternalLink, Camera, Plus, Check, RefreshCw, Search, ChevronDown, ChevronUp, Truck, Info, Upload, Link as LinkIcon, Star, Maximize2, Type, AlignLeft, AlignCenter, AlignRight, Bold, Italic, Underline, Image as ImageIcon, Link as LucideLink, Eraser, Zap, FileText, FileSpreadsheet, Compass, FileCode, Palette } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { CATEGORIES, SUBCATEGORIES } from "./data";
 import { GoogleGenAI, Type as GenAIType } from "@google/genai";
@@ -488,34 +488,81 @@ export const AdminSingleProduct = ({ onBack, onSave, onDelete, initialData, exis
 
   // UPDATED: Variants State with independent inventory
   // --- CONFIGURAZIONE VARIANTI ABBIGLIAMENTO & CALZATURE ---
-  const [clothingCategoryType, setClothingCategoryType] = useState<'tops' | 'pants' | 'shoes' | 'custom'>('tops');
+  const [availableSizes, setAvailableSizes] = useState<string[]>([
+    'XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL', 'Unica',
+    '36', '37', '38', '39', '40', '41', '42', '43', '44', '45', '46', '48', '50'
+  ]);
   const [selectedPresetSizes, setSelectedPresetSizes] = useState<string[]>(['S', 'M', 'L', 'XL']);
   const [selectedPresetColors, setSelectedPresetColors] = useState<string[]>(['Nero']);
   const [customSizeText, setCustomSizeText] = useState<string>('');
-  const [customColorText, setCustomColorText] = useState<string>('');
   const [batchQty, setBatchQty] = useState<number>(5);
 
-  const CLOTHING_PRESETS: Record<'tops' | 'pants' | 'shoes', { label: string; icon: string; sizes: string[] }> = {
-    tops: {
-      label: "Maglie & Abbigliamento",
-      icon: "👕",
-      sizes: ["XS", "S", "M", "L", "XL", "XXL", "3XL"]
-    },
-    pants: {
-      label: "Pantaloni & Jeans",
-      icon: "👖",
-      sizes: ["38", "40", "42", "44", "46", "48", "50", "52", "54"]
-    },
-    shoes: {
-      label: "Scarpe & Calzature",
-      icon: "👟",
-      sizes: ["36", "37", "38", "39", "40", "41", "42", "43", "44", "45", "46"]
+  const handleAddCustomSize = () => {
+    const trimmed = customSizeText.trim().toUpperCase();
+    if (!trimmed) return;
+    if (!availableSizes.includes(trimmed)) {
+      setAvailableSizes(prev => [...prev, trimmed]);
+    }
+    if (!selectedPresetSizes.includes(trimmed)) {
+      setSelectedPresetSizes(prev => [...prev, trimmed]);
+    }
+    setCustomSizeText('');
+  };
+
+  const MASTER_COLOR_PALETTE: { name: string; hex: string; light?: boolean }[] = [
+    { name: "Nero", hex: "#111111" },
+    { name: "Bianco", hex: "#FFFFFF", light: true },
+    { name: "Antracite", hex: "#374151" },
+    { name: "Grigio", hex: "#6B7280" },
+    { name: "Grigio Chiaro", hex: "#E5E7EB", light: true },
+    { name: "Beige", hex: "#F5F5DC", light: true },
+    { name: "Cammello", hex: "#C19A6B" },
+    { name: "Tortora", hex: "#8B8589" },
+    { name: "Cuoio", hex: "#8B5A2B" },
+    { name: "Marrone", hex: "#4A2C11" },
+    { name: "Testa di Moro", hex: "#2B1B17" },
+    { name: "Blu Navy", hex: "#1E3A8A" },
+    { name: "Blu Notte", hex: "#0F172A" },
+    { name: "Blu Royal", hex: "#2563EB" },
+    { name: "Celeste", hex: "#BAE6FD", light: true },
+    { name: "Carta da Zucchero", hex: "#6BA4B8" },
+    { name: "Petrolio", hex: "#164E63" },
+    { name: "Salvia", hex: "#9CA38F" },
+    { name: "Verde Oliva", hex: "#556B2F" },
+    { name: "Verde Bosco", hex: "#166534" },
+    { name: "Kaki", hex: "#7F795B" },
+    { name: "Bordeaux", hex: "#800020" },
+    { name: "Rosso", hex: "#DC2626" },
+    { name: "Terracotta", hex: "#C2410C" },
+    { name: "Corallo", hex: "#F87171" },
+    { name: "Senape", hex: "#CA8A04" },
+    { name: "Giallo", hex: "#EAB308", light: true },
+    { name: "Cipria", hex: "#F4C2C2", light: true },
+    { name: "Rosa Antico", hex: "#E0A899" },
+    { name: "Malva", hex: "#915C83" },
+    { name: "Lilla", hex: "#C084FC" },
+    { name: "Prugna", hex: "#581C87" },
+  ];
+
+  const [customPaletteColors, setCustomPaletteColors] = useState<{ name: string; hex: string; light?: boolean }[]>([]);
+
+  const handlePickColor = (hex: string) => {
+    const upperHex = hex.toUpperCase();
+    const existing = MASTER_COLOR_PALETTE.find(c => c.hex.toUpperCase() === upperHex);
+    const colorName = existing ? existing.name : upperHex;
+    if (!selectedPresetColors.includes(colorName)) {
+      setSelectedPresetColors(prev => [...prev, colorName]);
+    }
+    if (!MASTER_COLOR_PALETTE.some(c => c.hex.toUpperCase() === upperHex) && !customPaletteColors.some(c => c.hex === upperHex)) {
+      setCustomPaletteColors(prev => [...prev, { name: colorName, hex: upperHex, light: false }]);
     }
   };
 
-  const PRESET_COLORS = [
-    "Nero", "Bianco", "Blu", "Grigio", "Rosso", "Verde", "Beige", "Rosa", "Marrone", "Giallo", "Bordeaux"
-  ];
+  const PRESET_COLORS_DATA = useMemo(() => {
+    return [...MASTER_COLOR_PALETTE, ...customPaletteColors];
+  }, [customPaletteColors]);
+
+  const PRESET_COLORS = useMemo(() => PRESET_COLORS_DATA.map(c => c.name), [PRESET_COLORS_DATA]);
 
   const handleGenerateClothingVariants = () => {
     if (selectedPresetSizes.length === 0) {
@@ -799,25 +846,8 @@ Rispondi SOLO con JSON valido, nessun testo extra: { "title": "...", "descriptio
 
   return (
     <>
-    <div className="bg-white rounded-2xl sm:rounded-[2.5rem] p-4 sm:p-8 lg:p-12 border border-gray-100 shadow-xl space-y-6 sm:space-y-10 animate-in slide-in-from-bottom-8 duration-500 relative w-full max-w-7xl mx-auto">
-      {/* Header Form Responsive */}
-      <div className="flex items-start justify-between gap-3 sm:gap-6 border-b border-gray-100 pb-5">
-        <div className="min-w-0 flex-1">
-          <h2 className="text-xl sm:text-3xl font-black text-brand-dark uppercase tracking-tight sm:tracking-tighter mb-1.5 break-words">
-            {initialData?.id ? 'Modifica Prodotto Master' : 'Creazione Prodotto Master'}
-          </h2>
-          <p className="text-xs sm:text-sm font-bold text-gray-400 leading-snug">
-            Dati completi per il sito eCommerce e sincronizzazione avanzata canali (B2C, B2B, Marketplace).
-          </p>
-        </div>
-        <button 
-          onClick={onBack} 
-          className="flex-shrink-0 p-2.5 sm:p-3 bg-gray-100 text-gray-600 hover:bg-brand-yellow hover:text-brand-dark rounded-xl sm:rounded-2xl transition-all shadow-sm active:scale-95"
-          title="Chiudi"
-        >
-          <X className="w-5 h-5 sm:w-6 sm:h-6" />
-        </button>
-      </div>
+    <div className="bg-white rounded-2xl sm:rounded-[2.5rem] p-4 sm:p-8 lg:p-12 pb-24 lg:pb-12 border border-gray-100 shadow-xl space-y-6 sm:space-y-10 animate-in slide-in-from-bottom-8 duration-500 relative w-full max-w-7xl mx-auto">
+
       
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
         
@@ -826,7 +856,11 @@ Rispondi SOLO con JSON valido, nessun testo extra: { "title": "...", "descriptio
           
           <div className="space-y-6">
             {/* Assegnazione Categoria & Sottocategoria */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50/50 p-6 rounded-2xl border border-gray-100 mb-6">
+            <div className="bg-gray-50/50 p-5 sm:p-6 rounded-2xl border border-gray-100 mb-6">
+              <h3 className="text-xs sm:text-sm font-light uppercase tracking-[0.22em] text-neutral-950 border-b border-neutral-200/60 pb-2.5 mb-4">
+                Categoria Prodotto
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <label className="block">
                 <span className="text-[10px] font-black uppercase tracking-widest text-brand-blue mb-1.5 block">Categoria *</span>
                 {isAddingNewCategory ? (
@@ -888,6 +922,7 @@ Rispondi SOLO con JSON valido, nessun testo extra: { "title": "...", "descriptio
                   </select>
                 )}
               </label>
+              </div>
             </div>
 
             <div className="flex justify-between items-end mb-1">
@@ -914,10 +949,12 @@ Rispondi SOLO con JSON valido, nessun testo extra: { "title": "...", "descriptio
 
             {/* Galleria Media (Spostata qui sotto il titolo) */}
             <div className="bg-gray-50/50 rounded-2xl p-6 border border-gray-100">
-              <h3 className="text-sm font-black uppercase tracking-widest text-brand-dark mb-4 flex items-center justify-between">
-                Galleria Immagini Prodotto
+              <div className="flex items-center justify-between border-b border-neutral-200/60 pb-2.5 mb-4">
+                <h3 className="text-xs sm:text-sm font-light uppercase tracking-[0.22em] text-neutral-950">
+                  Galleria Immagini
+                </h3>
                 <span className="text-[10px] font-bold text-gray-400">{gallery.length}/10 Max</span>
-              </h3>
+              </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
                  {gallery.map((img, i) => (
                     <div key={i} className={`aspect-square bg-white rounded-xl relative group overflow-hidden border-2 shadow-sm ${i===0 ? 'border-brand-yellow':'border-transparent'}`}>
@@ -953,7 +990,9 @@ Rispondi SOLO con JSON valido, nessun testo extra: { "title": "...", "descriptio
             </div>
 
             <div className="space-y-3">
-              <span className="text-[10px] font-black uppercase tracking-widest text-brand-blue mb-1 block">Descrizione Prodotto</span>
+              <h3 className="text-xs sm:text-sm font-light uppercase tracking-[0.22em] text-neutral-950 border-b border-neutral-100 pb-2.5">
+                Descrizione Prodotto
+              </h3>
               
               <div className="relative group/editor">
                 <MasterRichEditor 
@@ -982,9 +1021,8 @@ Rispondi SOLO con JSON valido, nessun testo extra: { "title": "...", "descriptio
             {/* === BLOCCO PREZZI RIDISEGNATO === */}
             <div className="bg-brand-dark rounded-[2.5rem] p-8 relative overflow-hidden ring-4 ring-brand-yellow/20 shadow-2xl">
                <div className="absolute top-0 right-0 w-64 h-64 bg-brand-yellow rounded-full blur-[100px] opacity-10 -mr-20 -mt-20"></div>
-               <h3 className="text-lg font-black uppercase tracking-widest text-white mb-8 flex items-center gap-3 relative z-10">
-                 <RefreshCw className="w-5 h-5 text-brand-yellow"/>
-                 Prezzi e Spedizione
+               <h3 className="text-xs sm:text-sm font-light uppercase tracking-[0.22em] text-white/90 border-b border-white/10 pb-2.5 mb-6 relative z-10">
+                 Prezzi e Listino
                </h3>
 
                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative z-10 items-start">
@@ -1198,19 +1236,21 @@ Rispondi SOLO con JSON valido, nessun testo extra: { "title": "...", "descriptio
                      Modalità Spedizione
                    </span>
                    {/* Toggle Gratuita / A pagamento */}
-                   <div className="flex items-center gap-3 bg-black/30 rounded-2xl p-1">
+                   <div className="flex items-center gap-2 bg-black/40 rounded-2xl p-1 border border-white/10">
                      <button
+                       type="button"
                        onClick={() => setFreeShipping(true)}
-                       className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
-                         freeShipping ? 'bg-green-500 text-white shadow-lg' : 'text-gray-500 hover:text-white'
+                       className={`px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                         freeShipping ? 'bg-green-500 text-white shadow-lg' : 'text-gray-400 hover:text-white'
                        }`}
                      >
                        Gratuita
                      </button>
                      <button
+                       type="button"
                        onClick={() => setFreeShipping(false)}
-                       className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
-                         !freeShipping ? 'bg-brand-yellow text-brand-dark shadow-lg' : 'text-gray-500 hover:text-white'
+                       className={`px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                         !freeShipping ? 'bg-brand-yellow text-brand-dark shadow-lg' : 'text-gray-400 hover:text-white'
                        }`}
                      >
                        A Pagamento
@@ -1277,170 +1317,85 @@ Rispondi SOLO con JSON valido, nessun testo extra: { "title": "...", "descriptio
 
             
             {/* Frontend Specs: 3D, Video, Specifiche */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6">
-               <label className="block">
-                 <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1 block">URL Video Youtube (Opzionale)</span>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4">
+               <label className="block md:col-span-1">
+                 <span className="text-xs font-semibold uppercase tracking-wider text-neutral-600 mb-1.5 block">URL Video Youtube (Opzionale)</span>
                  <input 
                    type="text" 
                    value={videoUrl}
                    onChange={e => setVideoUrl(e.target.value)}
                    placeholder="https://youtube.com/..." 
-                   className="w-full bg-white border-gray-200 rounded-xl px-4 py-3 text-sm font-medium focus:ring-brand-yellow focus:border-brand-yellow" 
+                   className="w-full bg-white border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs font-medium focus:ring-2 focus:ring-neutral-900 focus:border-neutral-900 outline-none" 
                  />
                </label>
 
-               <div className="flex flex-col gap-4">
-                 <div className="flex items-center gap-3">
-                   <label className="relative inline-flex items-center cursor-pointer group">
-                      <input 
-                        type="checkbox" 
-                        className="sr-only peer" 
-                        checked={isFeatured} 
-                        onChange={e => setIsFeatured(e.target.checked)} 
-                      />
-                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-yellow relative"></div>
-                   </label>
-                   <span className="text-[10px] font-black uppercase tracking-widest text-brand-dark">In Vetrina (Home)</span>
-                 </div>
-
-                 <div className="flex items-center gap-3">
-                   <label className="relative inline-flex items-center cursor-pointer group">
-                      <input 
-                        type="checkbox" 
-                        className="sr-only peer" 
-                        checked={isSpecialPromotion} 
-                        onChange={e => setIsSpecialPromotion(e.target.checked)} 
-                      />
-                      <div className="w-11 h-6 bg-gray-100 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-200 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600 relative"></div>
-                       {isSpecialPromotion && <Star className="absolute left-[3px] top-[4px] w-3 h-3 text-white pointer-events-none z-10 fill-current" />}
-                    </label>
-                    <span className="text-[10px] font-black uppercase tracking-widest text-indigo-600">Scelti Per Te</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3 pt-4">
-                  <label className="inline-flex items-center cursor-pointer">
-                    <input 
-                      type="checkbox" 
-                      className="sr-only peer" 
-                      checked={has3D}
-                      onChange={e => setHas3D(e.target.checked)}
-                    />
-                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-500 relative"></div>
-                  </label>
-                  <span className="text-[10px] font-black uppercase tracking-widest text-purple-600">Modello Vista 3D / AR</span>
-                </div>
-            </div>
-          </div>
-
-          {/* New Stock Section moved here */}
-          <div className="space-y-4 pt-4">
-             <h3 className="text-lg font-black uppercase tracking-widest text-brand-dark border-b border-gray-100 pb-3 flex items-center gap-2">
-               <Package className="w-5 h-5 text-indigo-500"/> Disponibilità & Stock Canali
-             </h3>
-             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-               {/* Independent Channel Stocks Interface */}
-               <label className="lg:col-span-1">
-                 <span className="text-[10px] font-black uppercase tracking-widest text-indigo-600 mb-1 block">Web Shop</span>
-                 <input 
-                   type="number" 
-                   value={webStock} 
-                   onFocus={e => webStock === 0 && setWebStock('' as any)} 
-                   onChange={e => setWebStock(Number(e.target.value))} 
-                   className="w-full bg-indigo-50 border-indigo-100 rounded-xl px-4 py-3 text-sm font-black text-indigo-700" 
-                 />
-               </label>
-
-               {isAmazonActive && (
-                 <label className="lg:col-span-1">
-                   <span className="text-[10px] font-black uppercase tracking-widest text-orange-600 mb-1 block">Amazon</span>
-                   <input 
-                     type="number" 
-                     value={amazonStock} 
-                     onFocus={e => amazonStock === 0 && setAmazonStock('' as any)} 
-                     onChange={e => setAmazonStock(Number(e.target.value))} 
-                     className="w-full bg-orange-50 border-orange-100 rounded-xl px-4 py-3 text-sm font-black text-orange-700" 
-                   />
+               <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                 {/* In Vetrina Toggle */}
+                 <label className="flex items-center justify-between p-3 bg-neutral-50 rounded-xl border border-neutral-200/80 cursor-pointer hover:bg-neutral-100/70 transition-colors">
+                   <span className="text-xs font-semibold uppercase tracking-wider text-neutral-900">In Vetrina</span>
+                   <div className="relative inline-flex items-center cursor-pointer shrink-0 ml-3">
+                     <input 
+                       type="checkbox" 
+                       className="sr-only peer" 
+                       checked={isFeatured} 
+                       onChange={e => setIsFeatured(e.target.checked)} 
+                     />
+                     <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-neutral-950 relative"></div>
+                   </div>
                  </label>
-               )}
-               
-               {isEbayActive && (
-                 <label className="lg:col-span-1">
-                   <span className="text-[10px] font-black uppercase tracking-widest text-blue-600 mb-1 block">eBay</span>
-                   <input 
-                     type="number" 
-                     value={ebayStock} 
-                     onFocus={e => ebayStock === 0 && setEbayStock('' as any)} 
-                     onChange={e => setEbayStock(Number(e.target.value))} 
-                     className="w-full bg-blue-50 border-blue-100 rounded-xl px-4 py-3 text-sm font-black text-blue-700" 
-                   />
+
+                 {/* Scelti Per Te Toggle */}
+                 <label className="flex items-center justify-between p-3 bg-neutral-50 rounded-xl border border-neutral-200/80 cursor-pointer hover:bg-neutral-100/70 transition-colors">
+                   <div className="flex items-center gap-1.5">
+                     <Star className="w-3.5 h-3.5 text-neutral-900 fill-current shrink-0" />
+                     <span className="text-xs font-semibold uppercase tracking-wider text-neutral-900">Scelti Per Te</span>
+                   </div>
+                   <div className="relative inline-flex items-center cursor-pointer shrink-0 ml-3">
+                     <input 
+                       type="checkbox" 
+                       className="sr-only peer" 
+                       checked={isSpecialPromotion} 
+                       onChange={e => setIsSpecialPromotion(e.target.checked)} 
+                     />
+                     <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-200 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-neutral-950 relative"></div>
+                   </div>
                  </label>
-               )}
 
-               <label className="lg:col-span-1">
-                 <span className="text-[10px] font-black uppercase tracking-widest text-green-600 mb-1 block">Stock Totale (Somma)</span>
-                 <div className="w-full bg-green-50 border-green-100 rounded-xl px-4 py-3 text-sm font-black text-green-700 flex items-center h-[46px]">
-                   {webStock + (isAmazonActive ? amazonStock : 0) + (isEbayActive ? ebayStock : 0)}
-                 </div>
-               </label>
-             </div>
-          </div>
-            
-          <div className="space-y-6 pt-4">
-              <span className="text-[10px] font-black uppercase tracking-widest text-brand-blue block">Peso e dimensioni dell'imballo</span>
-              
-              {/* Parametri Fissi */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-5 bg-gray-50 rounded-2xl border border-gray-100 shadow-inner">
-                <label className="block">
-                  <span className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-1 block">Peso + Imballo (Kg)</span>
-                  <input type="number" value={weight} onFocus={e => weight === 0 && setWeight('' as any)} onChange={e => setWeight(Number(e.target.value))} step="0.01" className="w-full bg-white border-gray-200 rounded-xl px-3 py-2 text-xs font-bold focus:ring-brand-blue" />
-                </label>
-                <label className="block">
-                  <span className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-1 block">Lunghezza (cm)</span>
-                  <input type="number" value={length} onFocus={e => length === 0 && setLength('' as any)} onChange={e => setLength(Number(e.target.value))} step="0.1" className="w-full bg-white border-gray-200 rounded-xl px-3 py-2 text-xs font-bold focus:ring-brand-blue" />
-                </label>
-                <label className="block">
-                  <span className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-1 block">Larghezza (cm)</span>
-                  <input type="number" value={width} onFocus={e => width === 0 && setWidth('' as any)} onChange={e => setWidth(Number(e.target.value))} step="0.1" className="w-full bg-white border-gray-200 rounded-xl px-3 py-2 text-xs font-bold focus:ring-brand-blue" />
-                </label>
-                <label className="block">
-                  <span className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-1 block">Altezza (cm)</span>
-                  <input type="number" value={height} onFocus={e => height === 0 && setHeight('' as any)} onChange={e => setHeight(Number(e.target.value))} step="0.1" className="w-full bg-white border-gray-200 rounded-xl px-3 py-2 text-xs font-bold focus:ring-brand-blue" />
-                </label>
-              </div>
-
-              <span className="text-[9px] font-black uppercase tracking-widest text-gray-400 block pt-2">Voci Aggiuntive Manuali</span>
-              <div className="space-y-3 pt-2">
-                <span className="text-[10px] font-black uppercase tracking-widest text-brand-blue block">Specifiche Tecniche per Tabella (Sito)</span>
-              {specs.map((s, i) => (
-                <div key={i} className="flex gap-2">
-                  <input type="text" value={s.key} onChange={e => {
-                    const newSpecs = [...specs]; newSpecs[i].key = e.target.value; setSpecs(newSpecs);
-                  }} placeholder="Proprietà (es. Peso)" className="flex-1 bg-white border-gray-200 rounded-lg px-3 py-2 text-sm font-bold" />
-                  <input type="text" value={s.value} onChange={e => {
-                    const newSpecs = [...specs]; newSpecs[i].value = e.target.value; setSpecs(newSpecs);
-                  }} placeholder="Valore (es. 2Kg)" className="flex-1 bg-white border-gray-200 rounded-lg px-3 py-2 text-sm font-bold" />
-                  <button onClick={() => setSpecs(specs.filter((_, idx) => idx !== i))} className="p-2 text-red-500 hover:bg-red-50 rounded-lg"><Trash2 className="w-4 h-4"/></button>
-                </div>
-              ))}
-              <button onClick={() => setSpecs([...specs, {key:"", value:""}])} className="text-[10px] font-black uppercase text-brand-blue hover:text-brand-yellow transition-colors bg-brand-blue/5 px-3 py-2 rounded-lg">+ Aggiungi Riga Specifica</button>
+                 {/* Vista 3D / AR Toggle */}
+                 <label className="flex items-center justify-between p-3 bg-neutral-50 rounded-xl border border-neutral-200/80 cursor-pointer hover:bg-neutral-100/70 transition-colors">
+                   <span className="text-xs font-semibold uppercase tracking-wider text-neutral-900">Vista 3D / AR</span>
+                   <div className="relative inline-flex items-center cursor-pointer shrink-0 ml-3">
+                     <input 
+                       type="checkbox" 
+                       className="sr-only peer" 
+                       checked={has3D}
+                       onChange={e => setHas3D(e.target.checked)} 
+                     />
+                     <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-neutral-950 relative"></div>
+                   </div>
+                 </label>
+               </div>
             </div>
           </div>
 
           <div className="space-y-4">
-            <h3 className="text-lg font-black uppercase tracking-widest text-brand-dark border-b border-gray-100 pb-3 flex items-center gap-2"><Package className="w-5 h-5 text-gray-400"/> Identificativi & Core</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <label className="lg:col-span-1">
-                <span className="text-[10px] font-black uppercase tracking-widest text-brand-blue mb-1 block">SKU Master *</span>
+            <h3 className="text-xs sm:text-sm font-light uppercase tracking-[0.22em] text-neutral-950 border-b border-neutral-100 pb-2.5">
+              Identificativi
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {/* SKU Master */}
+              <label className="block">
+                <span className="text-xs font-semibold uppercase tracking-wider text-neutral-600 mb-1.5 block">SKU Master *</span>
                 <div className="relative group">
                     <input 
                       type="text" 
                       value={sku}
                       onChange={e => setSku(e.target.value.toUpperCase().replace(/\s+/g, '-'))}
                       placeholder="SKU-01" 
-                      className="w-full bg-gray-50 border-gray-200 rounded-xl px-4 py-3 text-sm font-bold focus:ring-brand-blue" 
+                      className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-2.5 text-xs sm:text-sm font-bold focus:bg-white focus:ring-2 focus:ring-neutral-900 outline-none" 
                     />
                     <button 
+                      type="button"
                       onClick={() => {
                         const newV = variants.map(v => ({
                           ...v,
@@ -1449,48 +1404,52 @@ Rispondi SOLO con JSON valido, nessun testo extra: { "title": "...", "descriptio
                         setVariants(newV);
                       }}
                       title="Sincronizza SKU Varianti"
-                      className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-brand-blue hover:text-brand-yellow transition-colors opacity-0 group-hover:opacity-100"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-neutral-600 hover:text-neutral-950 transition-colors"
                     >
                       <RefreshCw className="w-4 h-4" />
                     </button>
                   </div>
               </label>
-              <label className="lg:col-span-1">
-                <div className="flex justify-between items-center mb-1">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-brand-blue block">EAN</span>
-                  <label className="inline-flex items-center cursor-pointer scale-75 origin-right">
+
+              {/* Codice EAN + Trigger Visibile Mobile-Friendly */}
+              <div className="block">
+                <div className="flex justify-between items-center mb-1.5">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-neutral-600 block">Codice EAN</span>
+                  <label className="inline-flex items-center gap-2 cursor-pointer py-0.5">
+                    <span className="text-xs font-medium text-neutral-600 peer-checked:text-neutral-950">Visibile</span>
                     <input type="checkbox" className="sr-only peer" checked={showEan} onChange={e => setShowEan(e.target.checked)} />
-                    <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-brand-blue relative"></div>
-                    <span className="ml-2 text-[8px] font-black uppercase text-gray-400 peer-checked:text-brand-blue">Visibile</span>
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-neutral-950 relative"></div>
                   </label>
                 </div>
                 <input 
                   type="text" 
                   value={ean}
                   onChange={e => setEan(e.target.value)}
-                  placeholder="801234..." 
-                  className="w-full bg-gray-50 border-gray-200 rounded-xl px-4 py-3 text-sm font-bold focus:ring-brand-blue" 
+                  placeholder="8012345678901..." 
+                  className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-2.5 text-xs sm:text-sm font-bold focus:bg-white focus:ring-2 focus:ring-neutral-900 outline-none" 
                 />
-              </label>
-              <label className="lg:col-span-1">
-                 <div className="flex justify-between items-center mb-1">
-                   <span className="text-[10px] font-black uppercase tracking-widest text-brand-blue block">Marca / Brand</span>
-                   <label className="inline-flex items-center cursor-pointer scale-75 origin-right">
+              </div>
+
+              {/* Marca / Brand + Trigger Visibile Mobile-Friendly */}
+              <div className="block">
+                 <div className="flex justify-between items-center mb-1.5">
+                   <span className="text-xs font-semibold uppercase tracking-wider text-neutral-600 block">Marca / Brand</span>
+                   <label className="inline-flex items-center gap-2 cursor-pointer py-0.5">
+                     <span className="text-xs font-medium text-neutral-600 peer-checked:text-neutral-950">Visibile</span>
                      <input type="checkbox" className="sr-only peer" checked={showBrand} onChange={e => setShowBrand(e.target.checked)} />
-                     <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-brand-blue relative"></div>
-                     <span className="ml-2 text-[8px] font-black uppercase text-gray-400 peer-checked:text-brand-blue">Visibile</span>
+                     <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-neutral-950 relative"></div>
                    </label>
                  </div>
                  {isAddingNewBrand ? (
-                   <div className="flex gap-1">
+                   <div className="flex gap-1.5">
                      <input 
                         type="text" 
                         value={newBrand}
                         onChange={e => setNewBrand(e.target.value)}
                         placeholder="Nuova Marca..." 
-                        className="w-full bg-yellow-50 border-brand-yellow rounded-xl px-4 py-3 text-sm font-bold focus:ring-brand-yellow" 
+                        className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-2.5 text-xs sm:text-sm font-bold focus:bg-white focus:ring-2 focus:ring-neutral-900 outline-none" 
                      />
-                     <button onClick={() => setIsAddingNewBrand(false)} className="px-2 text-red-500 hover:bg-red-50 rounded-lg">×</button>
+                     <button type="button" onClick={() => setIsAddingNewBrand(false)} className="px-3 text-red-500 hover:bg-red-50 rounded-xl font-bold">×</button>
                    </div>
                  ) : (
                    <select 
@@ -1502,132 +1461,76 @@ Rispondi SOLO con JSON valido, nessun testo extra: { "title": "...", "descriptio
                          setBrand(e.target.value);
                        }
                      }}
-                     className="w-full bg-white border-gray-200 rounded-xl px-4 py-3 text-sm font-bold focus:ring-brand-yellow"
+                     className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-xs sm:text-sm font-bold text-neutral-900 focus:ring-2 focus:ring-neutral-900 outline-none"
                    >
                      <option value="">Seleziona...</option>
                      {existingBrands.map(b => <option key={b} value={b}>{b}</option>)}
-                     <option value="ADD_NEW" className="text-brand-blue font-black">+ NUOVA MARCA</option>
+                     <option value="ADD_NEW" className="text-neutral-900 font-black">+ NUOVA MARCA</option>
                    </select>
                  )}
-               </label>
-               <div className="hidden">
-                </div>
-              </div>
+               </div>
+            </div>
           </div>
 
-          
           <div className="space-y-6">
-            <div className="flex items-center justify-between border-b border-gray-100 pb-3 flex-wrap gap-2">
-              <div>
-                <h3 className="text-lg font-black uppercase tracking-widest text-brand-dark flex items-center gap-2">
-                  <Package className="w-5 h-5 text-brand-yellow" />
-                  Taglie, Colori & Codici a Barre (Magazzino Abbigliamento)
-                </h3>
-                <p className="text-xs text-gray-500 font-bold mt-0.5">
-                  Procedura preimpostata per negozio di abbigliamento e scarpe. Gestisci taglie, colori, giacenze e barcode univoci senza codici complessi.
-                </p>
-              </div>
+            <div className="flex items-center justify-between border-b border-neutral-100 pb-2.5 flex-wrap gap-2">
+              <h3 className="text-xs sm:text-sm font-light uppercase tracking-[0.22em] text-neutral-950">
+                Taglie e Colori
+              </h3>
 
               {/* Contatore Capi Totali */}
-              <div className="flex items-center gap-2 bg-neutral-950 text-white px-4 py-2 rounded-2xl shadow-sm">
-                <span className="text-[10px] font-black uppercase tracking-wider text-brand-yellow">Totale Capi in Magazzino:</span>
-                <span className="text-base font-black text-white">
+              <div className="flex items-center gap-2 bg-neutral-950 text-white px-3.5 py-1.5 rounded-xl shadow-xs">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-300">Totale Capi:</span>
+                <span className="text-xs sm:text-sm font-bold text-white">
                   {variants.reduce((acc, curr) => acc + (Number(curr.webStock) || 0), 0)} pz
                 </span>
               </div>
             </div>
 
-            {/* BOX PREIMPOSTATO VELOCE: GENERATORE TAGLIE E COLORI */}
-            <div className="bg-gradient-to-br from-amber-50/70 via-orange-50/40 to-yellow-50/60 p-6 rounded-[2.2rem] border-2 border-amber-200/80 shadow-xs space-y-6">
+            {/* GENERATORE TAGLIE E COLORI MINIMAL */}
+            <div className="bg-neutral-50/80 p-4 sm:p-6 rounded-2xl md:rounded-3xl border border-neutral-200/90 shadow-xs space-y-4">
               
-              {/* PASSO 1: SCELTA CATEGORIA / TEMPLATE TAGLIE */}
-              <div className="space-y-2">
-                <span className="text-[10px] font-black uppercase tracking-widest text-amber-950 flex items-center gap-1.5">
-                  <span>1.</span> Seleziona Tipo di Capo / Tagliario Preimpostato:
-                </span>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                  {[
-                    { key: 'tops', label: 'Maglie & Abbigliamento', icon: '👕', desc: 'XS, S, M, L, XL...' },
-                    { key: 'pants', label: 'Pantaloni & Jeans', icon: '👖', desc: '38, 40, 42, 44...' },
-                    { key: 'shoes', label: 'Scarpe & Calzature', icon: '👟', desc: '36, 37, 38, 39...' },
-                    { key: 'custom', label: 'Taglie Libere', icon: '⚙️', desc: 'Personalizzate' }
-                  ].map(tab => (
-                    <button
-                      key={tab.key}
-                      type="button"
-                      onClick={() => {
-                        const newKey = tab.key as any;
-                        setClothingCategoryType(newKey);
-                        if (newKey !== 'custom') {
-                          setSelectedPresetSizes(CLOTHING_PRESETS[newKey].sizes.slice(0, 5));
-                        }
-                      }}
-                      className={`p-3.5 rounded-2xl border text-left transition-all flex flex-col gap-1 ${
-                        clothingCategoryType === tab.key
-                          ? 'bg-neutral-950 text-white border-neutral-950 shadow-md scale-[1.01]'
-                          : 'bg-white text-gray-700 border-amber-200/70 hover:border-amber-300 hover:bg-white/90'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className="text-xl">{tab.icon}</span>
-                        <span className="text-xs font-black uppercase tracking-tight">{tab.label}</span>
-                      </div>
-                      <span className={`text-[9px] font-bold ${clothingCategoryType === tab.key ? 'text-amber-300' : 'text-gray-400'}`}>
-                        {tab.desc}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* PASSO 2: SELEZIONE TAGLIE */}
-              <div className="space-y-2 bg-white/80 p-4 rounded-2xl border border-amber-200/60">
+              {/* SELEZIONE TAGLIE (TUTTE LE TAGLIE DIRETTE IN ELEGANTE RETTANGOLO) */}
+              <div className="space-y-3 bg-white p-4 sm:p-5 rounded-2xl border border-neutral-200/80">
                 <div className="flex items-center justify-between flex-wrap gap-2">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-amber-950 flex items-center gap-1.5">
-                    <span>2.</span> Seleziona le Taglie da Generare:
+                  <span className="text-[11px] font-bold uppercase tracking-[0.16em] text-neutral-900">
+                    Seleziona Taglie:
                   </span>
-                  {clothingCategoryType !== 'custom' && (
-                    <div className="flex items-center gap-2 text-[9px] font-bold">
-                      <button
-                        type="button"
-                        onClick={() => setSelectedPresetSizes(CLOTHING_PRESETS[clothingCategoryType].sizes)}
-                        className="text-amber-900 hover:text-black font-black underline uppercase"
-                      >
-                        Seleziona Tutte
-                      </button>
-                      <span className="text-gray-300">•</span>
-                      <button
-                        type="button"
-                        onClick={() => setSelectedPresetSizes([])}
-                        className="text-gray-500 hover:text-red-600 font-bold uppercase"
-                      >
-                        Deseleziona
-                      </button>
-                    </div>
-                  )}
+                  <div className="flex items-center gap-2 text-[10px] font-bold">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedPresetSizes([...availableSizes])}
+                      className="text-neutral-900 hover:underline uppercase tracking-wider cursor-pointer"
+                    >
+                      Tutte
+                    </button>
+                    <span className="text-neutral-300">•</span>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedPresetSizes([])}
+                      className="text-neutral-400 hover:text-red-600 uppercase tracking-wider cursor-pointer"
+                    >
+                      Deseleziona
+                    </button>
+                  </div>
                 </div>
 
-                <div className="flex flex-wrap gap-2 pt-1">
-                  {(clothingCategoryType !== 'custom' 
-                    ? CLOTHING_PRESETS[clothingCategoryType].sizes 
-                    : ['XS', 'S', 'M', 'L', 'XL', 'XXL', '38', '40', '42', '44', '46']
-                  ).map(sz => {
+                <div className="flex flex-wrap gap-1.5 sm:gap-2 pt-1">
+                  {availableSizes.map(sz => {
                     const isSelected = selectedPresetSizes.includes(sz);
                     return (
                       <button
                         key={sz}
                         type="button"
                         onClick={() => {
-                          if (isSelected) {
-                            setSelectedPresetSizes(prev => prev.filter(s => s !== sz));
-                          } else {
-                            setSelectedPresetSizes(prev => [...prev, sz]);
-                          }
+                          setSelectedPresetSizes(prev => 
+                            isSelected ? prev.filter(s => s !== sz) : [...prev, sz]
+                          );
                         }}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all border ${
+                        className={`min-w-[40px] sm:min-w-[46px] h-9 sm:h-10 px-3 rounded-lg text-xs font-semibold tracking-wider uppercase transition-all border flex items-center justify-center cursor-pointer ${
                           isSelected
-                            ? 'bg-neutral-950 text-brand-yellow border-neutral-950 shadow-sm scale-105'
-                            : 'bg-white text-gray-700 border-gray-200 hover:border-gray-400'
+                            ? 'bg-neutral-950 text-white border-neutral-950 shadow-xs'
+                            : 'bg-white text-neutral-800 border-neutral-200 hover:border-neutral-900 hover:text-neutral-950'
                         }`}
                       >
                         {sz}
@@ -1636,8 +1539,8 @@ Rispondi SOLO con JSON valido, nessun testo extra: { "title": "...", "descriptio
                   })}
                 </div>
 
-                {/* Input rapido per aggiungere altra taglia personalizzata */}
-                <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
+                {/* Input rapido per aggiungere taglia personalizzata */}
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-3 border-t border-neutral-100">
                   <input
                     type="text"
                     value={customSizeText}
@@ -1645,154 +1548,134 @@ Rispondi SOLO con JSON valido, nessun testo extra: { "title": "...", "descriptio
                     onKeyDown={e => {
                       if (e.key === 'Enter') {
                         e.preventDefault();
-                        if (customSizeText.trim() && !selectedPresetSizes.includes(customSizeText.trim())) {
-                          setSelectedPresetSizes(prev => [...prev, customSizeText.trim()]);
-                          setCustomSizeText('');
-                        }
+                        handleAddCustomSize();
                       }
                     }}
-                    placeholder="+ Aggiungi altra taglia (es. 4XL o 35)..."
-                    className="bg-white border border-gray-200 rounded-xl px-3 py-1.5 text-xs font-bold text-neutral-900 w-64 focus:ring-2 focus:ring-amber-400 outline-none"
+                    placeholder="+ Nuova taglia (es. 4XL, 35, Unica)..."
+                    className="bg-neutral-50 border border-neutral-200 rounded-xl px-3.5 py-2.5 text-xs font-medium text-neutral-900 flex-1 sm:max-w-xs focus:bg-white focus:ring-2 focus:ring-neutral-900 outline-none transition-all"
                   />
                   <button
                     type="button"
-                    onClick={() => {
-                      if (customSizeText.trim() && !selectedPresetSizes.includes(customSizeText.trim())) {
-                        setSelectedPresetSizes(prev => [...prev, customSizeText.trim()]);
-                        setCustomSizeText('');
-                      }
-                    }}
-                    className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-black uppercase"
+                    onClick={handleAddCustomSize}
+                    className="px-4 py-2.5 bg-neutral-950 hover:bg-black text-white rounded-xl text-xs font-bold uppercase tracking-wider shadow-xs transition-all active:scale-95 shrink-0 cursor-pointer self-end sm:self-auto"
                   >
                     Aggiungi Taglia
                   </button>
                 </div>
               </div>
 
-              {/* PASSO 3: SELEZIONE COLORI */}
-              <div className="space-y-2 bg-white/80 p-4 rounded-2xl border border-amber-200/60">
+              {/* SELEZIONE COLORI (TAVOLOZZA COLORI MINIMAL SENZA CAMPO TESTO) */}
+              <div className="space-y-3 bg-white p-4 sm:p-5 rounded-2xl border border-neutral-200/80">
                 <div className="flex items-center justify-between flex-wrap gap-2">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-amber-950 flex items-center gap-1.5">
-                    <span>3.</span> Seleziona i Colori del Capo:
-                  </span>
-                  <div className="flex items-center gap-2 text-[9px] font-bold">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] font-bold uppercase tracking-[0.16em] text-neutral-900">
+                      Tavolozza Colori:
+                    </span>
+                    <span className="text-[10px] text-neutral-400 font-light">
+                      ({selectedPresetColors.length} selezionati)
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 text-[10px] font-bold">
                     <button
                       type="button"
                       onClick={() => setSelectedPresetColors([])}
-                      className="text-gray-500 hover:text-red-600 font-bold uppercase"
+                      className="text-neutral-400 hover:text-red-600 transition-colors uppercase tracking-wider cursor-pointer"
                     >
-                      Nessun Colore / Reset
+                      Deseleziona
                     </button>
                   </div>
                 </div>
 
-                <div className="flex flex-wrap gap-2 pt-1">
-                  {PRESET_COLORS.map(col => {
-                    const isSelected = selectedPresetColors.includes(col);
+                {/* Palline della tavolozza curate */}
+                <div className="flex flex-wrap gap-2 sm:gap-2.5 pt-1 items-center max-h-48 overflow-y-auto no-scrollbar pr-1">
+                  {PRESET_COLORS_DATA.map(col => {
+                    const isSelected = selectedPresetColors.includes(col.name);
                     return (
                       <button
-                        key={col}
+                        key={col.name}
                         type="button"
                         onClick={() => {
-                          if (isSelected) {
-                            setSelectedPresetColors(prev => prev.filter(c => c !== col));
-                          } else {
-                            setSelectedPresetColors(prev => [...prev, col]);
-                          }
+                          setSelectedPresetColors(prev => 
+                            isSelected ? prev.filter(c => c !== col.name) : [...prev, col.name]
+                          );
                         }}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all border flex items-center gap-1.5 ${
-                          isSelected
-                            ? 'bg-neutral-950 text-white border-neutral-950 shadow-sm scale-105'
-                            : 'bg-white text-gray-700 border-gray-200 hover:border-gray-400'
-                        }`}
+                        className="group focus:outline-none transition-transform active:scale-95 relative p-0.5 cursor-pointer"
+                        title={col.name}
+                        aria-label={col.name}
                       >
-                        <span 
-                          className="w-2.5 h-2.5 rounded-full border border-black/10 shrink-0"
-                          style={{
-                            backgroundColor: 
-                              col === 'Nero' ? '#111111' :
-                              col === 'Bianco' ? '#ffffff' :
-                              col === 'Blu' ? '#1e40af' :
-                              col === 'Grigio' ? '#9ca3af' :
-                              col === 'Rosso' ? '#dc2626' :
-                              col === 'Verde' ? '#16a34a' :
-                              col === 'Beige' ? '#f5f5dc' :
-                              col === 'Rosa' ? '#f472b6' :
-                              col === 'Marrone' ? '#78350f' :
-                              col === 'Giallo' ? '#eab308' :
-                              col === 'Bordeaux' ? '#800020' : '#cccccc'
-                          }}
-                        />
-                        <span>{col}</span>
+                        <span
+                          className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full border transition-all flex items-center justify-center relative ${
+                            isSelected
+                              ? 'ring-2 ring-neutral-950 ring-offset-2 scale-110 shadow-xs border-neutral-950'
+                              : 'border-neutral-300 hover:scale-105 hover:border-neutral-700'
+                          }`}
+                          style={{ backgroundColor: col.hex }}
+                        >
+                          {isSelected && (
+                            <Check className={`w-3.5 h-3.5 ${col.light ? 'text-neutral-950' : 'text-white'}`} strokeWidth={3} />
+                          )}
+                        </span>
                       </button>
                     );
                   })}
                 </div>
 
-                {/* Input rapido per colore personalizzato */}
-                <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
-                  <input
-                    type="text"
-                    value={customColorText}
-                    onChange={e => setCustomColorText(e.target.value)}
-                    onKeyDown={e => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        if (customColorText.trim() && !selectedPresetColors.includes(customColorText.trim())) {
-                          setSelectedPresetColors(prev => [...prev, customColorText.trim()]);
-                          setCustomColorText('');
-                        }
-                      }
-                    }}
-                    placeholder="+ Aggiungi altro colore (es. Verde Militare, Fantasia)..."
-                    className="bg-white border border-gray-200 rounded-xl px-3 py-1.5 text-xs font-bold text-neutral-900 w-64 focus:ring-2 focus:ring-amber-400 outline-none"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (customColorText.trim() && !selectedPresetColors.includes(customColorText.trim())) {
-                        setSelectedPresetColors(prev => [...prev, customColorText.trim()]);
-                        setCustomColorText('');
-                      }
-                    }}
-                    className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-black uppercase"
-                  >
-                    Aggiungi Colore
-                  </button>
+                {/* Selettore Tavolozza Libera (Color Picker - NO campo testo) */}
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-3 border-t border-neutral-100">
+                  <div className="flex items-center gap-2">
+                    <label
+                      className="group flex items-center gap-2 px-3.5 py-2 rounded-xl bg-neutral-950 hover:bg-black text-white cursor-pointer transition-all shadow-xs relative shrink-0 active:scale-95"
+                      title="Apri tavolozza cromatica per scegliere qualsiasi colore"
+                    >
+                      <Palette className="w-4 h-4 text-white" />
+                      <span className="text-xs font-bold uppercase tracking-wider text-white">
+                        Tavolozza Libera
+                      </span>
+                      <input
+                        type="color"
+                        defaultValue="#111111"
+                        onChange={e => handlePickColor(e.target.value)}
+                        className="opacity-0 absolute inset-0 w-full h-full cursor-pointer"
+                      />
+                    </label>
+                  </div>
+                  <p className="text-[11px] text-neutral-400 font-light tracking-wide">
+                    Tocca le tonalità per attivarle oppure apri la tavolozza libera per qualsiasi gradazione.
+                  </p>
                 </div>
               </div>
 
-              {/* PASSO 4: QUANTITÀ DEFAULT E PULSANTE DI GENERAZIONE */}
-              <div className="flex items-center justify-between gap-4 flex-wrap bg-white/90 p-4 rounded-2xl border border-amber-300">
+              {/* QUANTITÀ DEFAULT E GENERAZIONE COMBINAZIONI */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-neutral-200/80">
                 <div className="flex items-center gap-3">
-                  <label className="text-xs font-black text-neutral-900 uppercase">
-                    Giacenza Iniziale per capo:
+                  <label className="text-xs font-bold text-neutral-900 uppercase tracking-wider">
+                    Giacenza Iniziale:
                   </label>
                   <input
                     type="number"
                     min="0"
                     value={batchQty}
                     onChange={e => setBatchQty(Number(e.target.value))}
-                    className="w-20 bg-gray-50 border border-gray-300 rounded-xl px-3 py-2 text-center text-sm font-black text-neutral-900 focus:ring-2 focus:ring-amber-400 outline-none"
+                    className="w-20 bg-neutral-50 border border-neutral-300 rounded-lg px-3 py-1.5 text-center text-sm font-bold text-neutral-900 focus:bg-white focus:ring-2 focus:ring-neutral-900 outline-none"
                   />
-                  <span className="text-xs text-gray-500 font-bold">pz / variante</span>
+                  <span className="text-xs text-neutral-500 font-medium">pz / variante</span>
                 </div>
 
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
                     onClick={handleAddSingleRow}
-                    className="px-4 py-3 bg-white border border-gray-300 hover:border-neutral-900 text-neutral-900 rounded-2xl text-xs font-black uppercase tracking-wider transition-all"
+                    className="flex-1 sm:flex-none px-4 py-2.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-900 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer"
                   >
                     + Riga Singola
                   </button>
                   <button
                     type="button"
                     onClick={handleGenerateClothingVariants}
-                    className="px-6 py-3 bg-neutral-950 hover:bg-black text-brand-yellow rounded-2xl text-xs font-black uppercase tracking-wider shadow-md hover:shadow-lg transition-all active:scale-95 flex items-center gap-2"
+                    className="flex-2 sm:flex-none px-5 py-2.5 bg-neutral-950 hover:bg-black text-white rounded-xl text-xs font-bold uppercase tracking-wider shadow-xs transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
                   >
-                    <Sparkles className="w-4 h-4 text-brand-yellow" />
-                    <span>Genera Combinazioni ({selectedPresetSizes.length} Taglie × {selectedPresetColors.length || 1} Colori)</span>
+                    <Sparkles className="w-4 h-4 text-neutral-300" />
+                    <span>Genera ({selectedPresetSizes.length} Taglie × {selectedPresetColors.length || 1} Col.)</span>
                   </button>
                 </div>
               </div>
@@ -1803,7 +1686,7 @@ Rispondi SOLO con JSON valido, nessun testo extra: { "title": "...", "descriptio
             <div className="bg-white rounded-3xl border border-gray-200 overflow-hidden shadow-xs">
               {variants.length === 0 ? (
                 <div className="p-12 text-center space-y-3">
-                  <div className="w-14 h-14 mx-auto rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center text-2xl">
+                  <div className="w-14 h-14 mx-auto rounded-2xl bg-neutral-100 border border-neutral-200 flex items-center justify-center text-2xl">
                     👕
                   </div>
                   <h4 className="text-base font-black text-neutral-900 uppercase tracking-tight">Nessuna variante inserita</h4>
@@ -1833,7 +1716,7 @@ Rispondi SOLO con JSON valido, nessun testo extra: { "title": "...", "descriptio
                           const curColor = v.color || parts[1] || '';
 
                           return (
-                            <tr key={v.id || i} className="hover:bg-amber-50/20 transition-colors">
+                            <tr key={v.id || i} className="hover:bg-neutral-50/60 transition-colors">
                               <td colSpan={5} className="p-3.5">
                                 <div className="space-y-2.5">
                                   {/* RIGO 1 (DESKTOP): Indice, Taglia, Colore, Quantità, Azioni */}
@@ -1856,7 +1739,7 @@ Rispondi SOLO con JSON valido, nessun testo extra: { "title": "...", "descriptio
                                           setVariants(newV);
                                         }}
                                         placeholder="Taglia (es. M, 42...)"
-                                        className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs font-black uppercase text-neutral-900 focus:bg-white focus:ring-2 focus:ring-amber-400 outline-none"
+                                        className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs font-black uppercase text-neutral-900 focus:bg-white focus:ring-2 focus:ring-neutral-900 outline-none"
                                       />
                                     </div>
 
@@ -1874,7 +1757,7 @@ Rispondi SOLO con JSON valido, nessun testo extra: { "title": "...", "descriptio
                                           setVariants(newV);
                                         }}
                                         placeholder="Colore (es. Nero, Bianco, Blu Navy...)"
-                                        className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold text-neutral-900 focus:bg-white focus:ring-2 focus:ring-amber-400 outline-none"
+                                        className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold text-neutral-900 focus:bg-white focus:ring-2 focus:ring-neutral-900 outline-none"
                                       />
                                     </div>
 
@@ -1942,7 +1825,7 @@ Rispondi SOLO con JSON valido, nessun testo extra: { "title": "...", "descriptio
                                           setVariants(newV);
                                         }}
                                         placeholder="Scansiona o digita codice a barre (Barcode / EAN) per intero..."
-                                        className="w-full bg-gray-50/60 border border-gray-200 rounded-xl pl-4 pr-4 py-2 text-xs font-mono font-bold text-neutral-900 focus:bg-white focus:ring-2 focus:ring-amber-400 outline-none placeholder:text-gray-400"
+                                        className="w-full bg-gray-50/60 border border-gray-200 rounded-xl pl-4 pr-4 py-2 text-xs font-mono font-bold text-neutral-900 focus:bg-white focus:ring-2 focus:ring-neutral-900 outline-none placeholder:text-gray-400"
                                       />
                                     </div>
                                   </div>
@@ -1962,7 +1845,7 @@ Rispondi SOLO con JSON valido, nessun testo extra: { "title": "...", "descriptio
                       const curColor = v.color || parts[1] || '';
 
                       return (
-                        <div key={v.id || i} className="p-3.5 space-y-2.5 bg-white hover:bg-amber-50/20 transition-colors">
+                        <div key={v.id || i} className="p-3.5 space-y-2.5 bg-white hover:bg-neutral-50/60 transition-colors">
                           {/* RIGO 1: Indice, Taglia, Colore, Quantità */}
                           <div className="flex items-center gap-2">
                             <span className="w-6 h-6 rounded-full bg-gray-100 text-gray-600 text-[10px] font-black flex items-center justify-center flex-shrink-0">
@@ -1983,7 +1866,7 @@ Rispondi SOLO con JSON valido, nessun testo extra: { "title": "...", "descriptio
                                   setVariants(newV);
                                 }}
                                 placeholder="Taglia"
-                                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-2.5 py-2 text-xs font-black uppercase text-neutral-900 focus:bg-white focus:ring-2 focus:ring-amber-400 outline-none text-center"
+                                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-2.5 py-2 text-xs font-black uppercase text-neutral-900 focus:bg-white focus:ring-2 focus:ring-neutral-900 outline-none text-center"
                               />
                             </div>
 
@@ -2001,7 +1884,7 @@ Rispondi SOLO con JSON valido, nessun testo extra: { "title": "...", "descriptio
                                   setVariants(newV);
                                 }}
                                 placeholder="Colore..."
-                                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-2.5 py-2 text-xs font-bold text-neutral-900 focus:bg-white focus:ring-2 focus:ring-amber-400 outline-none"
+                                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-2.5 py-2 text-xs font-bold text-neutral-900 focus:bg-white focus:ring-2 focus:ring-neutral-900 outline-none"
                               />
                             </div>
 
@@ -2039,7 +1922,7 @@ Rispondi SOLO con JSON valido, nessun testo extra: { "title": "...", "descriptio
                                   setVariants(newV);
                                 }}
                                 placeholder="Codice a Barre (Barcode / EAN)..."
-                                className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-7 pr-2.5 py-2 text-xs font-mono font-bold text-neutral-900 focus:bg-white focus:ring-2 focus:ring-amber-400 outline-none placeholder:text-gray-400"
+                                className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-7 pr-2.5 py-2 text-xs font-mono font-bold text-neutral-900 focus:bg-white focus:ring-2 focus:ring-neutral-900 outline-none placeholder:text-gray-400"
                               />
                             </div>
 
@@ -2114,8 +1997,8 @@ Rispondi SOLO con JSON valido, nessun testo extra: { "title": "...", "descriptio
           {/* Sincronizzazione Marketplace (Solo se attivi nel negozio) */}
           {hasAnyMarketplace && (
             <div className="space-y-4">
-              <h3 className="text-lg font-black uppercase tracking-widest text-brand-dark border-b border-gray-100 pb-3 flex items-center gap-2">
-                <Globe className="w-5 h-5 text-gray-400"/> Sincronizzazione Marketplace (Overrides)
+              <h3 className="text-xs sm:text-sm font-light uppercase tracking-[0.22em] text-neutral-950 border-b border-neutral-100 pb-2.5">
+                Marketplace
               </h3>
               
               {/* AI Error Banner */}
@@ -2291,7 +2174,9 @@ Rispondi SOLO con JSON valido, nessun testo extra: { "title": "...", "descriptio
           )}
           {/* Prodotti Correlati */}
           <div className="space-y-4">
-            <h3 className="text-lg font-black uppercase tracking-widest text-brand-dark border-b border-gray-100 pb-3 flex items-center gap-2"><LinkIcon className="w-5 h-5 text-gray-400"/> Upsell & Cross-sell (Correlati)</h3>
+            <h3 className="text-xs sm:text-sm font-light uppercase tracking-[0.22em] text-neutral-950 border-b border-neutral-100 pb-2.5">
+              Prodotti Correlati
+            </h3>
             <div className="bg-gray-50 p-6 rounded-[2rem] border border-gray-200">
                <label className="block relative">
                  <span className="text-[10px] font-black uppercase tracking-widest text-brand-dark mb-2 block">Imposta Prodotti Correlati Manualmente</span>
@@ -2362,9 +2247,9 @@ Rispondi SOLO con JSON valido, nessun testo extra: { "title": "...", "descriptio
           </div>
 
           <div className="space-y-4">
-            <div className="flex justify-between items-center border-b border-gray-100 pb-3 mt-10">
-               <h3 className="text-lg font-black uppercase tracking-widest text-brand-dark flex items-center gap-2">
-                 <Search className="w-5 h-5 text-gray-400"/> SEO & Google Search Console
+            <div className="flex justify-between items-center border-b border-neutral-100 pb-2.5 mt-10">
+               <h3 className="text-xs sm:text-sm font-light uppercase tracking-[0.22em] text-neutral-950">
+                 Ottimizzazione SEO
                </h3>
                <button 
                 onClick={() => {
@@ -2421,19 +2306,10 @@ Rispondi SOLO con JSON valido, nessun testo extra: { "title": "...", "descriptio
           </div>
 
           {/* Sezione Logistica - FULL WIDTH BLOCK spostata alla fine */}
-          <div className="bg-white p-10 rounded-[3.5rem] border border-gray-100 space-y-8 mt-10">
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-[1.5rem] bg-indigo-500 flex items-center justify-center">
-                <Truck className="w-7 h-7 text-white" />
-              </div>
-              <div>
-                <h4 className="text-xl font-black uppercase tracking-tighter text-brand-dark leading-none">Logistica & Partner di Spedizione</h4>
-                <div className="flex items-center gap-2 mt-2">
-                   <span className="w-6 h-1 bg-indigo-500 rounded-full" />
-                   <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Configurazione Automazione Consegne</p>
-                </div>
-              </div>
-            </div>
+          <div className="bg-white p-8 sm:p-10 rounded-2xl sm:rounded-[2.5rem] border border-gray-100 space-y-6 mt-10">
+            <h3 className="text-xs sm:text-sm font-light uppercase tracking-[0.22em] text-neutral-950 border-b border-neutral-100 pb-2.5">
+              Logistica e Spedizioni
+            </h3>
 
             <div className="space-y-8">
               <div className="relative group">
@@ -2533,6 +2409,25 @@ Rispondi SOLO con JSON valido, nessun testo extra: { "title": "...", "descriptio
 
 
 
+
+    {/* Mobile Sticky Action Bar */}
+      <div className="lg:hidden fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur-md p-3.5 border-t border-neutral-200 z-50 flex items-center gap-2.5 shadow-2xl safe-area-bottom">
+        <button
+          type="button"
+          onClick={onBack}
+          className="px-4 py-3 rounded-xl border border-neutral-300 text-neutral-700 font-bold uppercase text-xs tracking-wider cursor-pointer active:scale-95 transition-all"
+        >
+          Chiudi
+        </button>
+        <button 
+          type="button"
+          onClick={handleSave}
+          className="flex-1 bg-neutral-950 text-white hover:bg-black py-3 px-4 rounded-xl font-bold uppercase text-xs tracking-wider flex items-center justify-center gap-2 shadow-md active:scale-95 transition-all cursor-pointer"
+        >
+          <Check className="w-4 h-4 text-white" />
+          <span>Salva e Pubblica</span>
+        </button>
+      </div>
 
     {/* Modal Importazione Immagine */}
     <AnimatePresence>
