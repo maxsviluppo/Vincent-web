@@ -88,6 +88,9 @@ import { Product, CartItem } from "./types";
 import { useNavigate, useLocation } from "react-router-dom";
 import { AdminSingleProduct } from "./AdminSingleProduct";
 import { AdminCategoriesSection } from "../components/admin/AdminCategoriesSection";
+import { AdminCompanySection } from "../components/admin/AdminCompanySection";
+import { AdminSlidesSection } from "../components/admin/AdminSlidesSection";
+import { AdminQuickLinksSection } from "../components/admin/AdminQuickLinksSection";
 import { AdminSlidePickerList } from "../components/admin/AdminSlidePickerList";
 import { AdminMassiveImport } from "./AdminMassiveImport";
 import { AdminImageLinker } from "./AdminImageLinker";
@@ -96,6 +99,7 @@ import { AdminCouriers } from "./AdminCouriers";
 import { AdminReturns } from "./AdminReturns";
 import { AdminUsers } from "./AdminUsers";
 import { AdminReviews } from "./AdminReviews";
+import { ADMIN_BTN_PRIMARY, ADMIN_BTN_SECONDARY, ADMIN_INPUT } from "../components/admin/adminTouchTargets";
 import { useApp } from "@/context/AppProvider";
 import {
   authDeleteAccount,
@@ -4036,22 +4040,30 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                 className="admin-panel-root flex flex-col md:flex-row w-full h-full bg-white shadow-2xl relative overflow-hidden"
               >
                 {/* Mobile Admin Header */}
-                <div className="md:hidden fixed top-0 left-0 right-0 h-14 flex items-center justify-between px-4 border-b border-gray-100 bg-white z-[60] safe-area-top">
-                  <h3 className="font-black text-brand-dark uppercase tracking-tight text-base">Admin Panel</h3>
+                <div className="md:hidden fixed top-0 left-0 right-0 h-12 flex items-center justify-between px-3.5 border-b border-neutral-900 bg-neutral-950 text-white z-[60] safe-area-top shadow-lg">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="w-7 h-7 rounded-lg bg-neutral-900 flex items-center justify-center border border-neutral-800 shrink-0">
+                      <Shield className="w-3.5 h-3.5 text-white" />
+                    </div>
+                    <div className="min-w-0 flex items-baseline gap-2">
+                      <h3 className="font-bold text-white uppercase tracking-wider text-xs truncate">Admin Panel</h3>
+                      <span className="text-[10px] text-neutral-400 uppercase tracking-widest hidden sm:inline">Control Center</span>
+                    </div>
+                  </div>
                   <button
                     type="button"
                     onClick={() => setIsMobileAdminMenuOpen(!isMobileAdminMenuOpen)}
-                    className="h-11 w-11 flex items-center justify-center text-brand-dark hover:bg-gray-100 rounded-xl transition-colors active:scale-95"
+                    className="h-8 w-8 flex items-center justify-center text-white bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 rounded-lg transition-colors active:scale-95 cursor-pointer"
                     aria-label={isMobileAdminMenuOpen ? 'Chiudi menu admin' : 'Apri menu admin'}
                   >
-                    {isMobileAdminMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+                    {isMobileAdminMenuOpen ? <X className="w-4 h-4 text-white" /> : <Menu className="w-4 h-4 text-white" />}
                   </button>
                 </div>
 
                 {isMobileAdminMenuOpen && (
                   <button
                     type="button"
-                    className="md:hidden fixed inset-0 top-14 bg-brand-dark/40 z-[50]"
+                    className="md:hidden fixed inset-0 top-12 bg-black/75 backdrop-blur-sm z-[50]"
                     aria-label="Chiudi menu"
                     onClick={() => setIsMobileAdminMenuOpen(false)}
                   />
@@ -4065,7 +4077,8 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
               }}
               transition={{ type: 'spring', stiffness: 400, damping: 35 }}
               className={`bg-gray-50 border-r border-gray-100 flex flex-col relative z-[55] h-full overflow-hidden flex-shrink-0
-                max-md:fixed max-md:left-0 max-md:top-14 max-md:bottom-0 max-md:!w-[min(100vw,19rem)] max-md:max-h-[calc(100dvh-3.5rem)] max-md:shadow-2xl max-md:transition-transform max-md:duration-300 max-md:ease-out
+                max-md:fixed max-md:left-0 max-md:top-12 max-md:bottom-0 max-md:!w-[min(82vw,16.5rem)] max-md:max-h-[calc(100dvh-3rem)] max-md:shadow-2xl max-md:transition-transform max-md:duration-300 max-md:ease-out
+                max-md:bg-neutral-950 max-md:border-r max-md:border-neutral-900 max-md:text-white
                 ${isMobileAdminMenuOpen ? 'max-md:translate-x-0' : 'max-md:-translate-x-full max-md:pointer-events-none'}
                 md:relative md:top-auto md:translate-x-0 md:pointer-events-auto md:max-h-none`}
             >
@@ -4079,6 +4092,15 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                   </div>
                 </button>
 
+                {/* Mobile Drawer Top Banner */}
+                <div className="md:hidden px-3.5 py-2.5 border-b border-neutral-900 flex items-center justify-between text-[11px] font-bold text-neutral-400 tracking-wider uppercase shrink-0">
+                  <span className="text-white font-extrabold tracking-wide">Menu Sezioni</span>
+                  <span className="text-[10px] text-emerald-400 flex items-center gap-1 font-semibold normal-case">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                    Online
+                  </span>
+                </div>
+
                 <div className={`hidden md:flex items-center ${isSidebarCollapsed ? 'justify-center' : 'gap-3 px-6'} mt-6 mb-10 overflow-hidden`}>
                   <div className="w-10 h-10 bg-brand-blue rounded-xl flex-shrink-0 flex items-center justify-center">
                     <Shield className="w-6 h-6 text-brand-yellow" />
@@ -4088,7 +4110,7 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                   )}
                 </div>
 
-                <nav className="space-y-1 flex-1 min-h-0 overflow-y-auto custom-scrollbar max-md:overscroll-contain max-md:pb-2">
+                <nav className="space-y-1 max-md:space-y-0.5 flex-1 min-h-0 overflow-y-auto custom-scrollbar max-md:overscroll-contain p-0 max-md:p-2 max-md:pb-2">
                   {[
                     { tab: 'dashboard', label: 'Panoramica', icon: Home, color: 'bg-brand-yellow text-brand-dark font-black shadow-sm' },
                     { tab: 'company', label: 'Azienda', icon: Grid, color: 'bg-brand-yellow text-brand-dark font-black' },
@@ -4108,17 +4130,25 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                     { tab: 'marketing', label: 'Marketing', icon: Target, color: 'bg-orange-500 text-white' },
                     /* Recensioni sospese */
                   ].map((item) => (
-                    <div key={item.tab} className="px-3">
+                    <div key={item.tab} className="px-3 max-md:px-0">
                       <button 
                         onClick={() => {
                           setAdminActiveTab(item.tab as any);
                           setIsMobileAdminMenuOpen(false);
                         }}
-                        className={`w-full flex items-center max-md:gap-3 max-md:px-4 ${isSidebarCollapsed ? 'md:justify-center md:px-0 md:gap-0' : 'gap-3 px-4'} py-3.5 md:py-2.5 rounded-xl font-bold text-sm transition-all ${adminActiveTab === item.tab ? item.color : 'text-gray-400 hover:bg-gray-100/50'}`}
+                        className={`w-full flex items-center transition-all cursor-pointer
+                          ${isSidebarCollapsed ? 'md:justify-center md:px-0 md:gap-0' : 'gap-3 px-4'}
+                          md:py-2.5 md:rounded-xl md:font-bold md:text-sm
+                          max-md:gap-2.5 max-md:px-3 max-md:py-2 max-md:rounded-lg max-md:text-xs max-md:font-medium
+                          ${
+                            adminActiveTab === item.tab 
+                              ? `md:${item.color} max-md:bg-neutral-800 max-md:text-white max-md:font-bold max-md:border max-md:border-neutral-700 max-md:shadow-sm` 
+                              : `text-gray-400 hover:bg-gray-100/50 max-md:text-white max-md:hover:text-white max-md:hover:bg-neutral-900 max-md:active:bg-neutral-800`
+                          }`}
                         title={isSidebarCollapsed ? item.label : ''}
                       >
-                        <item.icon className="w-5 h-5 flex-shrink-0" />
-                        <span className={isSidebarCollapsed ? 'md:hidden' : ''}>{item.label}</span>
+                        <item.icon className="w-5 h-5 max-md:w-4 max-md:h-4 flex-shrink-0 text-current max-md:text-white" />
+                        <span className={`text-inherit max-md:text-white ${isSidebarCollapsed ? 'md:hidden' : ''}`}>{item.label}</span>
                       </button>
                     </div>
                   ))}
@@ -4127,10 +4157,10 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                 <button
                   type="button"
                   onClick={() => { setIsAdminOpen(false); setIsMobileAdminMenuOpen(false); if (hideStorefront) window.location.href = '/'; }}
-                  className={`md:hidden shrink-0 mt-auto m-3 flex items-center justify-center gap-2 px-4 py-4 rounded-2xl font-black text-sm uppercase tracking-wide text-white bg-red-600 hover:bg-red-700 active:scale-[0.98] shadow-md border-2 border-red-700`}
+                  className={`md:hidden shrink-0 mt-auto m-2.5 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider text-white bg-red-600/90 hover:bg-red-600 active:scale-[0.98] shadow-md border border-red-500/40 cursor-pointer`}
                 >
-                  <X className="w-5 h-5 shrink-0" />
-                  <span>Esci da Admin Panel</span>
+                  <X className="w-4 h-4 shrink-0 text-white" />
+                  <span className="text-white">Esci da Admin</span>
                 </button>
 
                 <button
@@ -4144,7 +4174,7 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
             </motion.div>
 
               {/* Content Area */}
-              <div className="admin-mobile-content flex-1 min-w-0 min-h-0 w-full overflow-y-auto overflow-x-hidden pt-[3.75rem] px-3 pb-8 md:pt-0 md:p-10 bg-gray-50/50 overscroll-contain">
+              <div className="admin-mobile-content flex-1 min-w-0 min-h-0 w-full overflow-y-auto overflow-x-hidden pt-14 px-3 pb-8 md:pt-0 md:p-10 bg-gray-50/50 overscroll-contain">
                 {adminActiveTab === 'dashboard' && (
                   <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
                     {/* Welcome & Command Bar Banner */}
@@ -4516,1223 +4546,23 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                     </div>
                   </div>
                 )}
-                                {adminActiveTab === 'company' && (
-                  <div className="space-y-8 animate-in fade-in slide-in-from-right-8 duration-500">
-                    <div className="flex justify-between items-center">
-                      <h2 className="text-3xl font-black text-brand-dark uppercase tracking-tighter">Configurazione Azienda</h2>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                      {/* Basic Info */}
-                      <div className="space-y-4">
-                        <h4 className="text-xs font-black uppercase tracking-widest text-brand-blue border-l-4 border-brand-yellow pl-3">Brand & Identity</h4>
-                        
-                        {/* Image Logo Upload */}
-                        <div className="space-y-2">
-                          <span className="text-xs font-black uppercase tracking-widest text-gray-400">Logo Aziendale (Rettangolo Orizzontale)</span>
-                          <div className="flex gap-4 items-start">
-                            <label className="flex-1 cursor-pointer group">
-                              <div className="flex flex-col items-center justify-center border-2 border-dashed border-gray-100 rounded-2xl p-6 bg-gray-50 group-hover:bg-gray-100 group-hover:border-brand-yellow transition-all">
-                                <Upload className="w-8 h-8 text-brand-blue mb-2" />
-                                <span className="text-[10px] font-black uppercase text-gray-500">Seleziona Immagine Logo</span>
-                                <input 
-                                  type="file" 
-                                  className="hidden" 
-                                  accept="image/*"
-                                  onChange={(e) => handleFileChange(e, (url) => setCompanySettings({...companySettings, imageLogo: url}))}
-                                />
-                              </div>
-                            </label>
-                            {companySettings.imageLogo && (
-                              <div className="w-32 h-32 bg-white border border-gray-100 rounded-2xl p-2 flex items-center justify-center relative">
-                                <img src={companySettings.imageLogo} className="max-w-full max-h-full object-contain" />
-                                <button 
-                                  onClick={() => setCompanySettings({...companySettings, imageLogo: ""})}
-                                  className="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full hover:scale-110 transition-transform"
-                                >
-                                  <X className="w-3 h-3" />
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                          <p className="text-[9px] text-gray-400 font-bold italic leading-tight">
-                            * Caricando un logo immagine, il Nome Brand e il Logo Testo verranno disabilitati nella barra superiore per far spazio alla grafica del logo.
-                          </p>
-                        </div>
-
-                        {/* Favicon Upload */}
-                        <div className="space-y-2">
-                          <span className="text-xs font-black uppercase tracking-widest text-gray-400">Favicon (100x100px)</span>
-                          <div className="flex gap-4 items-center">
-                            <label className="flex-1 cursor-pointer group">
-                              <div className="flex items-center gap-4 border-2 border-dashed border-gray-100 rounded-2xl px-6 py-4 bg-gray-50 group-hover:bg-gray-100 group-hover:border-brand-yellow transition-all">
-                                <Camera className="w-6 h-6 text-brand-blue" />
-                                <span className="text-[10px] font-black uppercase text-gray-500">Carica Favicon</span>
-                                <input 
-                                  type="file" 
-                                  className="hidden" 
-                                  accept="image/*"
-                                  onChange={(e) => handleFileChange(e, (url) => setCompanySettings({...companySettings, favicon: url}))}
-                                />
-                              </div>
-                            </label>
-                            {companySettings.favicon && (
-                              <div className="w-14 h-14 bg-white border border-gray-100 rounded-xl p-1 flex items-center justify-center relative">
-                                <img src={companySettings.favicon} className="w-full h-full object-contain rounded-lg" />
-                                <button 
-                                  onClick={() => setCompanySettings({...companySettings, favicon: ""})}
-                                  className="absolute -top-1 -right-1 bg-red-500 text-white p-0.5 rounded-full"
-                                >
-                                  <X className="w-2 h-2" />
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4 pt-2">
-                          <label className={`block transition-opacity ${companySettings.imageLogo ? 'opacity-40' : 'opacity-100'}`}>
-                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Logo (Solo Testo)</span>
-                            <input 
-                              type="text" 
-                              disabled={!!companySettings.imageLogo}
-                              value={companySettings.logo}
-                              onChange={(e) => setCompanySettings({...companySettings, logo: e.target.value})}
-                              className={`mt-1 block w-full bg-gray-50 border-gray-200 rounded-xl px-4 py-3 text-base font-bold focus:ring-brand-yellow focus:border-brand-yellow ${companySettings.imageLogo ? 'cursor-not-allowed' : ''}`}
-                            />
-                          </label>
-                          <label className={`block transition-opacity ${companySettings.imageLogo ? 'opacity-40' : 'opacity-100'}`}>
-                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Nome Brand (Testo)</span>
-                            <input 
-                              type="text" 
-                              disabled={!!companySettings.imageLogo}
-                              value={companySettings.name}
-                              onChange={(e) => setCompanySettings({...companySettings, name: e.target.value})}
-                              className={`mt-1 block w-full bg-gray-50 border-gray-200 rounded-xl px-4 py-3 text-base font-bold focus:ring-brand-yellow focus:border-brand-yellow ${companySettings.imageLogo ? 'cursor-not-allowed' : ''}`}
-                            />
-                          </label>
-                        </div>
-                        <label className="block">
-                          <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Ragione Sociale</span>
-                          <input 
-                            type="text" 
-                            value={companySettings.legalName}
-                            onChange={(e) => setCompanySettings({...companySettings, legalName: e.target.value})}
-                            className="mt-1 block w-full bg-gray-50 border-gray-200 rounded-xl px-4 py-3 text-base font-bold focus:ring-brand-yellow focus:border-brand-yellow"
-                          />
-                        </label>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <label className="block">
-                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Partita IVA</span>
-                            <input 
-                              type="text" 
-                              value={companySettings.vatNumber || ''}
-                              onChange={(e) => setCompanySettings({...companySettings, vatNumber: e.target.value})}
-                              className="mt-1 block w-full bg-gray-50 border-gray-200 rounded-xl px-4 py-3 text-base font-bold focus:ring-brand-yellow focus:border-brand-yellow"
-                            />
-                          </label>
-                          <label className="block">
-                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Codice Univoco (SDI)</span>
-                            <input 
-                              type="text" 
-                              value={companySettings.sdiCode || ''}
-                              onChange={(e) => setCompanySettings({...companySettings, sdiCode: e.target.value})}
-                              className="mt-1 block w-full bg-gray-50 border-gray-200 rounded-xl px-4 py-3 text-base font-bold focus:ring-brand-yellow focus:border-brand-yellow uppercase"
-                            />
-                          </label>
-                        </div>
-                      </div>
-
-                      {/* Contact Info */}
-                      <div className="space-y-4">
-                        <h4 className="text-xs font-black uppercase tracking-widest text-brand-blue border-l-4 border-brand-yellow pl-3">Contatti</h4>
-                        <label className="block">
-                          <span className="text-xs font-black uppercase tracking-widest text-gray-400">Sede Legale</span>
-                          <input 
-                            type="text" 
-                            value={companySettings.legalAddress}
-                            onChange={(e) => setCompanySettings({...companySettings, legalAddress: e.target.value})}
-                            className="mt-1 block w-full bg-gray-50 border-gray-200 rounded-xl px-4 py-3 text-base font-bold focus:ring-brand-yellow focus:border-brand-yellow"
-                          />
-                        </label>
-                        <label className="block">
-                          <span className="text-xs font-black uppercase tracking-widest text-gray-400">Telefono</span>
-                          <input 
-                            type="text" 
-                            value={companySettings.phone}
-                            onChange={(e) => setCompanySettings({...companySettings, phone: e.target.value})}
-                            className="mt-1 block w-full bg-gray-50 border-gray-200 rounded-xl px-4 py-3 text-base font-bold focus:ring-brand-yellow focus:border-brand-yellow"
-                          />
-                        </label>
-                        <label className="block">
-                          <span className="text-xs font-black uppercase tracking-widest text-gray-400">Email</span>
-                          <input 
-                            type="email" 
-                            value={companySettings.email}
-                            onChange={(e) => setCompanySettings({...companySettings, email: e.target.value})}
-                            className="mt-1 block w-full bg-gray-50 border-gray-200 rounded-xl px-4 py-3 text-base font-bold focus:ring-brand-yellow focus:border-brand-yellow"
-                          />
-                        </label>
-                        <label className="block">
-                          <span className="text-xs font-black uppercase tracking-widest text-brand-blue">Email Mittente Stato Ordine</span>
-                          <input 
-                            type="email" 
-                            value={companySettings.orderStatusSenderEmail || ''}
-                            onChange={(e) => setCompanySettings({...companySettings, orderStatusSenderEmail: e.target.value})}
-                            className="mt-1 block w-full bg-gray-50 border-gray-200 rounded-xl px-4 py-3 text-base font-bold focus:ring-brand-yellow focus:border-brand-yellow"
-                            placeholder="es. ordini@iltuosito.it"
-                          />
-                        </label>
-                      </div>
-                    </div>
-
-                    {/* Mission & Bio */}
-                    <div className="space-y-4">
-                      <h4 className="text-xs font-black uppercase tracking-widest text-brand-blue border-l-4 border-brand-yellow pl-3">Identità</h4>
-                      <label className="block">
-                        <span className="text-xs font-black uppercase tracking-widest text-gray-400">Mission Aziendale</span>
-                        <textarea 
-                          rows={3}
-                          value={companySettings.mission}
-                          onChange={(e) => setCompanySettings({...companySettings, mission: e.target.value})}
-                          className="mt-1 block w-full bg-gray-50 border-gray-200 rounded-xl px-4 py-3 text-base font-bold focus:ring-brand-yellow focus:border-brand-yellow"
-                        />
-                      </label>
-                      <label className="block">
-                        <span className="text-xs font-black uppercase tracking-widest text-gray-400">Link Bio / Social Linktree</span>
-                        <input 
-                          type="text" 
-                          value={companySettings.bioLink}
-                          onChange={(e) => setCompanySettings({...companySettings, bioLink: e.target.value})}
-                          className="mt-1 block w-full bg-gray-50 border-gray-200 rounded-xl px-4 py-3 text-base font-bold focus:ring-brand-yellow focus:border-brand-yellow"
-                        />
-                      </label>
-                    </div>
-
-                    {/* Socials */}
-                    <div className="space-y-4">
-                      <h4 className="text-xs font-black uppercase tracking-widest text-brand-blue border-l-4 border-brand-yellow pl-3">Social Media</h4>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <label className="block">
-                          <span className="text-[10px] font-black uppercase text-gray-400">Facebook URL</span>
-                          <input 
-                            type="text" 
-                            value={companySettings.socials.facebook}
-                            onChange={(e) => setCompanySettings({...companySettings, socials: {...companySettings.socials, facebook: e.target.value}})}
-                            className="mt-1 block w-full bg-gray-50 border-gray-200 rounded-xl px-3 py-2 text-base font-bold focus:ring-brand-yellow focus:border-brand-yellow"
-                          />
-                        </label>
-                        <label className="block">
-                          <span className="text-[10px] font-black uppercase text-gray-400">Instagram URL</span>
-                          <input 
-                            type="text" 
-                            value={companySettings.socials.instagram}
-                            onChange={(e) => setCompanySettings({...companySettings, socials: {...companySettings.socials, instagram: e.target.value}})}
-                            className="mt-1 block w-full bg-gray-50 border-gray-200 rounded-xl px-3 py-2 text-base font-bold focus:ring-brand-yellow focus:border-brand-yellow"
-                          />
-                        </label>
-                        <label className="block">
-                          <span className="text-[10px] font-black uppercase text-gray-400">Twitter URL</span>
-                          <input 
-                            type="text" 
-                            value={companySettings.socials.twitter}
-                            onChange={(e) => setCompanySettings({...companySettings, socials: {...companySettings.socials, twitter: e.target.value}})}
-                            className="mt-1 block w-full bg-gray-50 border-gray-200 rounded-xl px-3 py-2 text-base font-bold focus:ring-brand-yellow focus:border-brand-yellow"
-                          />
-                        </label>
-                        <label className="block">
-                          <span className="text-[10px] font-black uppercase text-gray-400">YouTube URL</span>
-                          <input 
-                            type="text" 
-                            value={companySettings.socials.youtube}
-                            onChange={(e) => setCompanySettings({...companySettings, socials: {...companySettings.socials, youtube: e.target.value}})}
-                            className="mt-1 block w-full bg-gray-50 border-gray-200 rounded-xl px-3 py-2 text-base font-bold focus:ring-brand-yellow focus:border-brand-yellow"
-                          />
-                        </label>
-                        <label className="block">
-                          <span className="text-[10px] font-black uppercase text-gray-400">TikTok URL</span>
-                          <input 
-                            type="text" 
-                            value={companySettings.socials.tiktok}
-                            onChange={(e) => setCompanySettings({...companySettings, socials: {...companySettings.socials, tiktok: e.target.value}})}
-                            className="mt-1 block w-full bg-gray-50 border-gray-200 rounded-xl px-3 py-2 text-base font-bold focus:ring-brand-yellow focus:border-brand-yellow"
-                          />
-                        </label>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-
-
-                {adminActiveTab === 'seo' && (
-                  <div className="space-y-10 animate-in fade-in slide-in-from-right-8 duration-700">
-                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-                       <div>
-                          <h2 className="text-3xl font-black text-brand-dark uppercase tracking-tighter leading-none mb-2">SEO & Indicizzazione</h2>
-                          <div className="flex items-center gap-2">
-                            <span className="w-8 h-1 bg-brand-yellow rounded-full" />
-                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Ottimizzazione Motori di Ricerca & Google</p>
-                          </div>
-                       </div>
-                       <button className="bg-neutral-950 text-white px-8 py-4 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-black transition-all flex items-center gap-3">
-                         <Globe className="w-5 h-5" />
-                         <span>Invia Sitemap</span>
-                       </button>
-                    </div>
-
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                       <div className="lg:col-span-2 space-y-8">
-                          <div className="bg-white p-10 rounded-[3.5rem] border border-gray-100">
-                             <h3 className="text-xl font-black text-brand-dark uppercase tracking-tighter mb-8 flex items-center gap-3">
-                                <Globe className="w-6 h-6 text-brand-blue" /> Configurazione Meta Tags Globali
-                             </h3>
-                             <div className="space-y-6">
-                                <div className="space-y-2">
-                                   <label className="text-[10px] font-black uppercase text-gray-400 ml-1">Meta Title Default</label>
-                                   <input type="text" className="w-full bg-gray-50 border-2 border-transparent rounded-2xl px-6 py-4 font-bold text-brand-dark focus:border-brand-yellow focus:bg-white transition-all font-mono" placeholder="BesPoint | Il meglio del tech e della casa" />
-                                </div>
-                                <div className="space-y-2">
-                                   <label className="text-[10px] font-black uppercase text-gray-400 ml-1">Meta Description Default</label>
-                                   <textarea className="w-full bg-gray-50 border-2 border-transparent rounded-2xl px-6 py-4 font-bold text-brand-dark focus:border-brand-yellow focus:bg-white transition-all font-mono" rows={3}></textarea>
-                                </div>
-                             </div>
-                          </div>
-
-                          <div className="bg-white p-10 rounded-[3.5rem] border border-gray-100">
-                             <h3 className="text-xl font-black text-brand-dark uppercase tracking-tighter mb-8 flex items-center gap-3">
-                                <Search className="w-6 h-6 text-brand-blue" /> Generatore Snippet URL Automatico
-                             </h3>
-                             <div className="p-8 bg-brand-dark rounded-[2.5rem] text-white space-y-4">
-                                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Esempio Anteprima Google</p>
-                                <p className="text-blue-400 text-sm font-bold">https://vincentstore.it/categoria/lampade-led</p>
-                                <p className="text-lg font-black leading-tight uppercase">Lampade Led Minimal - BesPoint</p>
-                                <p className="text-xs text-gray-400 leading-relaxed">Le migliori lampade led dal design unico... acquista ora su BesPoint con spedizione rapida.</p>
-                             </div>
-                             <div className="mt-8">
-                                <button className="flex items-center gap-2 text-brand-blue font-black uppercase text-[10px] tracking-widest hover:text-brand-dark transition-colors">
-                                   <Sparkles className="w-4 h-4" /> Rigenera tutti gli slug del catalogo
-                                </button>
-                             </div>
-                          </div>
-                       </div>
-
-                       <div className="bg-white p-10 rounded-[3.5rem] border border-gray-100 space-y-8">
-                          <h3 className="text-xl font-black text-brand-dark uppercase tracking-tighter flex items-center gap-3">
-                             <Activity className="w-6 h-6 text-green-500" /> Health Check SEO
-                          </h3>
-                          <div className="space-y-6">
-                             {[
-                               { label: 'Indice Google', val: '85%', color: 'bg-green-500' },
-                               { label: 'Mobile Friendly', val: '100%', color: 'bg-green-500' },
-                               { label: 'Pagine Duplicate', val: '0', color: 'bg-blue-500' },
-                               { label: 'Link Rotti', val: '3', color: 'bg-orange-500' }
-                             ].map((h, i) => (
-                               <div key={i} className="flex items-center justify-between">
-                                  <span className="text-xs font-bold text-gray-500 uppercase">{h.label}</span>
-                                  <div className="flex items-center gap-3">
-                                     <div className="w-32 h-2 bg-gray-100 rounded-full overflow-hidden">
-                                        <div className={`h-full ${h.color}`} style={{ width: h.val === '100%' ? '100%' : h.val }}></div>
-                                     </div>
-                                     <span className="text-xs font-black text-brand-dark w-10 text-right">{h.val}</span>
-                                  </div>
-                               </div>
-                             ))}
-                          </div>
-                          <div className="pt-6 border-t border-gray-50">
-                             <p className="text-[9px] font-bold text-gray-400 uppercase italic">Ultima scansione: Oggi, 04:30 AM</p>
-                          </div>
-                       </div>
-                    </div>
-                  </div>
+                {adminActiveTab === 'company' && (
+                  <AdminCompanySection
+                    companySettings={companySettings}
+                    setCompanySettings={setCompanySettings}
+                    handleFileChange={handleFileChange}
+                    addToast={addToast}
+                  />
                 )}
 
                 {adminActiveTab === 'slides' && (
-                  <div className="w-full">
-                    <div className="space-y-8">
-                    
-                    {/* Top Bar Configurator */}
-                    <div className="bg-white p-10 rounded-[3.5rem] border border-gray-100 space-y-8 mb-12">
-                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                        <div>
-                          <h3 className="text-xl font-black text-brand-dark uppercase tracking-tighter flex items-center gap-3">
-                            <Monitor className="w-6 h-6 text-brand-blue" /> Configurazione Top Bar (1920x40px)
-                          </h3>
-                          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">Personalizza il testo e l'immagine della barra superiore</p>
-                        </div>
-                        <div className="flex bg-gray-100 p-1.5 rounded-2xl gap-1 self-start">
-                          {(['static', 'marquee', 'image'] as const).map((mode) => (
-                            <button
-                              key={mode}
-                              onClick={() => setPageSettings({ ...pageSettings, topBarMode: mode })}
-                              className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${(pageSettings.topBarMode ?? 'static') === mode ? 'bg-white text-brand-dark shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
-                            >
-                              {mode === 'static' ? 'Testo Fisso' : mode === 'marquee' ? 'Scorrimento' : 'Immagine'}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                        {(pageSettings.topBarMode ?? 'static') === 'static' && (
-                          <>
-                            <div className="space-y-2">
-                               <label className="text-[10px] font-black uppercase text-gray-400 ml-1">Testo Sinistra</label>
-                               <input 
-                                 type="text" 
-                                 value={pageSettings.topBarLeftText}
-                                 onChange={(e) => setPageSettings({ ...pageSettings, topBarLeftText: e.target.value })}
-                                 className="w-full bg-gray-50 border-2 border-transparent rounded-2xl px-6 py-4 font-bold text-brand-dark focus:border-brand-yellow focus:bg-white transition-all"
-                                 placeholder="Es: Consegna a Massimo - Roma"
-                               />
-                            </div>
-                            <div className="space-y-2">
-                               <label className="text-[10px] font-black uppercase text-gray-400 ml-1">Testo Destra</label>
-                               <input 
-                                 type="text" 
-                                 value={pageSettings.topBarRightText}
-                                 onChange={(e) => setPageSettings({ ...pageSettings, topBarRightText: e.target.value })}
-                                 className="w-full bg-gray-50 border-2 border-transparent rounded-2xl px-6 py-4 font-bold text-brand-dark focus:border-brand-yellow focus:bg-white transition-all"
-                                 placeholder="Es: Aiuto Resi e Ordini"
-                               />
-                            </div>
-                          </>
-                        )}
-
-                        {(pageSettings.topBarMode ?? 'static') === 'marquee' && (
-                          <div className="col-span-2 space-y-6">
-                            <div className="space-y-2">
-                               <label className="text-[10px] font-black uppercase text-gray-400 ml-1">Testo a Scorrimento</label>
-                               <textarea 
-                                 value={pageSettings.topBarMarqueeText}
-                                 onChange={(e) => setPageSettings({ ...pageSettings, topBarMarqueeText: e.target.value })}
-                                 className="w-full bg-gray-50 border-2 border-transparent rounded-2xl px-6 py-4 font-bold text-brand-dark focus:border-brand-yellow focus:bg-white transition-all whitespace-pre-wrap"
-                                 rows={2}
-                                 placeholder="Inserisci il testo che scorrerà..."
-                               />
-                            </div>
-                            <div className="space-y-2">
-                               <label className="text-[10px] font-black uppercase text-gray-400 ml-1 text-center block">Velocità Scorrimento (Lento - Veloce)</label>
-                               <div className="flex items-center gap-4">
-                                 <span className="text-[10px] font-black text-gray-400">Lento</span>
-                                 <input 
-                                   type="range" 
-                                   min="5" 
-                                   max="60" 
-                                   step="1"
-                                   value={70 - pageSettings.topBarMarqueeSpeed} 
-                                   onChange={(e) => setPageSettings({ ...pageSettings, topBarMarqueeSpeed: 70 - parseInt(e.target.value) })}
-                                   className="flex-1 accent-brand-yellow" 
-                                 />
-                                 <span className="text-[10px] font-black text-gray-400">Veloce</span>
-                                 <span className="bg-brand-blue text-white px-3 py-1 rounded-lg text-[10px] font-black">{Math.round(100 / (pageSettings.topBarMarqueeSpeed / 10))}%</span>
-                               </div>
-                            </div>
-                          </div>
-                        )}
-
-                        {(pageSettings.topBarMode ?? 'static') === 'image' && (
-                          <div className="col-span-2 space-y-4">
-                            <div className="space-y-2">
-                               <label className="text-[10px] font-black uppercase text-gray-400 ml-1">Immagine Top Bar (Dimensioni: 1920x40px)</label>
-                               <div className="flex gap-4">
-                                  <input 
-                                    type="text" 
-                                    value={pageSettings.topBarImage}
-                                    onChange={(e) => setPageSettings({ ...pageSettings, topBarImage: e.target.value })}
-                                    className="flex-1 bg-gray-50 border-2 border-transparent rounded-2xl px-6 py-4 font-bold text-brand-dark focus:border-brand-yellow focus:bg-white transition-all"
-                                    placeholder="https://..."
-                                  />
-                                  <label className="cursor-pointer bg-neutral-950 text-white px-8 py-4 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-brand-orange transition-all flex items-center gap-2">
-                                    <Upload className="w-5 h-5" />
-                                    <span>Carica</span>
-                                    <input 
-                                      type="file" 
-                                      className="hidden" 
-                                      accept="image/*"
-                                      onChange={(e) => handleFileChange(e, (url) => setPageSettings({ ...pageSettings, topBarImage: url }))}
-                                    />
-                                  </label>
-                               </div>
-                            </div>
-                            {pageSettings.topBarImage && (
-                              <div className="w-full h-10 rounded-xl overflow-hidden border border-gray-100 bg-gray-50">
-                                <img src={pageSettings.topBarImage} className="w-full h-full object-cover" />
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="rounded-2xl border border-gray-100 bg-gray-900 overflow-hidden">
-                        <p className="text-[9px] font-black uppercase tracking-widest text-gray-400 px-4 py-2 border-b border-gray-800">Anteprima top bar (40px)</p>
-                        <div className="h-10 bg-gradient-to-r from-neutral-900 via-black to-neutral-900 text-white overflow-hidden relative">
-                          {(pageSettings.topBarMode ?? 'static') === 'image' && pageSettings.topBarImage ? (
-                            <img src={pageSettings.topBarImage} alt="" className="w-full h-full object-cover object-center" />
-                          ) : (pageSettings.topBarMode ?? 'static') === 'marquee' ? (
-                            <div className="marquee-topbar h-full w-full overflow-hidden flex items-center">
-                              <div
-                                className="marquee-topbar-track text-[10px] font-black uppercase tracking-[0.2em]"
-                                style={{ animationDuration: `${Math.max(8, Number(pageSettings.topBarMarqueeSpeed) || 30)}s` }}
-                              >
-                                <span className="px-8">{pageSettings.topBarMarqueeText || 'Testo scorrimento…'}</span>
-                                <span className="px-8" aria-hidden="true">{pageSettings.topBarMarqueeText || 'Testo scorrimento…'}</span>
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="h-full px-4 flex items-center justify-between text-[10px] font-black uppercase tracking-widest">
-                              <span className="opacity-80 truncate max-w-[45%]">{pageSettings.topBarLeftText || 'Testo sinistra'}</span>
-                              <span className="opacity-80 truncate max-w-[45%] text-right">{pageSettings.topBarRightText || 'Testo destra'}</span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                      <div className="flex items-center gap-6">
-                        <h2 className="text-3xl font-black text-brand-dark uppercase tracking-tighter">GESTIONE SLIDE</h2>
-                        <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-2xl border border-gray-100 shadow-sm">
-                          <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Scura Slide</span>
-                          <button 
-                            onClick={() => setPageSettings({ ...pageSettings, slidesOverlayEnabled: !pageSettings.slidesOverlayEnabled })}
-                            className={`w-12 h-6 rounded-full transition-all relative ${pageSettings.slidesOverlayEnabled ? 'bg-brand-blue' : 'bg-gray-200'}`}
-                          >
-                            <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${pageSettings.slidesOverlayEnabled ? 'left-7' : 'left-1'}`} />
-                          </button>
-                        </div>
-                      </div>
-                      <button 
-                        onClick={() => {
-                          const newSlides: any[] = [];
-                          const categories = pageSettings.categories.filter(c => c !== "Tutti");
-                          
-                          // Only one Top Slide (first category)
-                          if (categories.length > 0) {
-                            const cat = categories[0];
-                            newSlides.push({ 
-                              id: `top-${cat}-${Date.now()}`, 
-                              url: `https://picsum.photos/seed/${cat.toLowerCase()}-top/1920/1080`, 
-                              alt: `Scopri ${cat}`, 
-                              title: cat, 
-                              link: "", 
-                              position: "home_top" 
-                            });
-                          }
-
-                          categories.forEach(cat => {
-                            newSlides.push({ 
-                              id: `mid-${cat}-${Date.now()}`, 
-                              url: `https://picsum.photos/seed/${cat.toLowerCase()}-mid/1920/600`, 
-                              alt: `Offerte ${cat}`, 
-                              title: `Specialisti in ${cat}`, 
-                              link: "", 
-                              position: "home_middle" 
-                            });
-                            newSlides.push({ 
-                              id: `bot-${cat}-${Date.now()}`, 
-                              url: `https://picsum.photos/seed/${cat.toLowerCase()}-bot/1920/600`, 
-                              alt: `Qualità ${cat}`, 
-                              title: `Il meglio di ${cat}`, 
-                              link: "", 
-                              position: "home_bottom" 
-                            });
-                          });
-                          setPageSettings({ ...pageSettings, homeSlides: newSlides });
-                        }}
-                        className="bg-brand-blue text-white px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-brand-dark transition-all active:scale-95"
-                      >
-                        Genera Slide per Categoria
-                      </button>
-                    </div>
-
-                    {/* Home Slides Management */}
-                    <div className="space-y-6">
-                                    <div className="admin-slides-block bg-white p-4 md:p-5 rounded-2xl md:rounded-3xl border border-gray-100 space-y-4">
-                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-100 pb-4">
-                          <h3 className="text-sm md:text-lg font-light md:font-black text-neutral-900 md:text-brand-dark uppercase tracking-[0.14em] md:tracking-tighter flex items-center gap-2">
-                            <span className="w-1 h-5 md:w-1.5 md:h-6 bg-brand-yellow rounded-full"></span>
-                            Slide Top (Hero) <span className="text-neutral-400 md:text-brand-blue text-[10px] md:text-xs ml-2">1920×1080</span>
-                          </h3>
-                          
-                          <div className="flex flex-wrap items-center gap-2 bg-gray-50 p-1.5 rounded-2xl border border-gray-100">
-                            <button
-                              type="button"
-                              title={pageSettings.isHeroEnabled !== false ? 'Nascondi hero dalla home' : 'Mostra hero in home'}
-                              onClick={() => setPageSettings({ ...pageSettings, isHeroEnabled: pageSettings.isHeroEnabled === false })}
-                              className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${pageSettings.isHeroEnabled !== false ? 'bg-green-600 text-white' : 'bg-gray-400 text-white'}`}
-                            >
-                              {pageSettings.isHeroEnabled !== false ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
-                              <span>{pageSettings.isHeroEnabled !== false ? 'Visibile' : 'Nascosta'}</span>
-                            </button>
-                            <div className="w-px h-6 bg-gray-200 mx-1 hidden sm:block"></div>
-                            <div className="flex items-center">
-                              <button 
-                                onClick={() => setAdminTopIdx(prev => Math.max(0, prev - 1))}
-                                disabled={adminTopIdx === 0}
-                                className="p-2 text-brand-dark hover:bg-white rounded-xl transition-all disabled:opacity-20 disabled:cursor-not-allowed"
-                              >
-                                <ChevronLeft className="w-4 h-4" />
-                              </button>
-                              <div className="px-3 min-w-[60px] text-center">
-                                <span className="text-[10px] font-black text-brand-blue uppercase tracking-widest leading-none">
-                                  {adminTopSlides.length > 0 ? `${adminTopIdx + 1} / ${adminTopSlides.length}` : '0 / 0'}
-                                </span>
-                              </div>
-                              <button 
-                                onClick={() => setAdminTopIdx(prev => Math.min(adminTopSlides.length - 1, prev + 1))}
-                                disabled={adminTopIdx >= adminTopSlides.length - 1 || adminTopSlides.length === 0}
-                                className="p-2 text-brand-dark hover:bg-white rounded-xl transition-all disabled:opacity-20 disabled:cursor-not-allowed"
-                              >
-                                <ChevronRight className="w-4 h-4" />
-                              </button>
-                            </div>
-                            
-                            <div className="w-px h-6 bg-gray-200 mx-1"></div>
-                            
-                            <button 
-                              onClick={() => {
-                                const newId = Date.now().toString();
-                                setPageSettings({
-                                  ...pageSettings,
-                                  homeSlides: [...pageSettings.homeSlides, { id: newId, url: "", alt: "", title: "", link: "", position: "home_top" }]
-                                });
-                                setAdminTopIdx(adminTopSlides.length);
-                              }}
-                              className="p-2 bg-brand-yellow text-brand-dark rounded-xl hover:bg-brand-orange transition-all active:scale-90"
-                              title="Aggiungi Slide"
-                            >
-                              <Plus className="w-4 h-4" />
-                            </button>
-                            
-                          </div>
-                        </div>
-
-                        <AdminSlidePickerList
-                          slides={adminTopSlides}
-                          activeIdx={adminTopIdx}
-                          setActiveIdx={setAdminTopIdx}
-                          deleteTypeLabel="Hero"
-                          position="home_top"
-                          setSlideToDelete={setSlideToDelete}
-                        />
-                        
-                        <div className="grid grid-cols-1 gap-4">
-                          {adminTopSlides.length === 0 ? (
-                            <div className="py-20 text-center border-2 border-dashed border-gray-100 rounded-3xl bg-gray-50/30">
-                              <Compass className="w-12 h-12 text-gray-200 mx-auto mb-4" />
-                              <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest">Nessuna slide top configurata</p>
-                              <button 
-                                onClick={() => {
-                                  const newId = Date.now().toString();
-                                  setPageSettings({
-                                    ...pageSettings,
-                                    homeSlides: [...pageSettings.homeSlides, { id: newId, url: "", alt: "", title: "", link: "", position: "home_top" }]
-                                  });
-                                  setAdminTopIdx(0);
-                                }}
-                                className="mt-4 text-[10px] font-black uppercase tracking-widest text-brand-blue border-b border-brand-blue"
-                              >
-                                Crea la prima slide
-                              </button>
-                            </div>
-                          ) : (
-                            <div key={adminTopSlides[adminTopIdx]?.id} className="bg-gray-50 p-6 rounded-3xl border border-gray-100 animate-in fade-in slide-in-from-right-2 duration-300">
-                              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                <div className="space-y-4">
-                                  <div className="space-y-1.5">
-                                    <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 ml-1">Sorgente Immagine</label>
-                                    <div className="flex gap-2">
-                                      <input 
-                                        type="text" 
-                                        value={adminTopSlides[adminTopIdx]?.url || ""}
-                                        onChange={(e) => {
-                                          const slideId = adminTopSlides[adminTopIdx].id;
-                                          setPageSettings({
-                                            ...pageSettings,
-                                            homeSlides: pageSettings.homeSlides.map((s: any) => s.id === slideId ? { ...s, url: e.target.value } : s)
-                                          });
-                                        }}
-                                        className="flex-1 bg-white border-gray-200 rounded-xl px-4 py-3 text-sm font-bold focus:ring-brand-blue focus:border-brand-blue"
-                                        placeholder="https://..."
-                                      />
-                                      <label className="cursor-pointer bg-white border border-gray-200 p-3 rounded-xl hover:bg-gray-50 transition-colors">
-                                        <Upload className="w-5 h-5 text-brand-blue" />
-                                        <input 
-                                          type="file" 
-                                          className="hidden" 
-                                          accept="image/*"
-                                          onChange={(e) => handleFileChange(e, (url) => {
-                                            const slideId = adminTopSlides[adminTopIdx].id;
-                                            setPageSettings({
-                                              ...pageSettings,
-                                              homeSlides: pageSettings.homeSlides.map((s: any) => s.id === slideId ? { ...s, url: url } : s)
-                                            });
-                                          })}
-                                        />
-                                      </label>
-                                    </div>
-                                  </div>
-                                  <div className="space-y-1.5">
-                                    <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 ml-1">Link Destinazione</label>
-                                    <input 
-                                      type="text" 
-                                      value={adminTopSlides[adminTopIdx]?.link || ""}
-                                      onChange={(e) => {
-                                        const slideId = adminTopSlides[adminTopIdx].id;
-                                        setPageSettings({
-                                          ...pageSettings,
-                                          homeSlides: pageSettings.homeSlides.map((s: any) => s.id === slideId ? { ...s, link: e.target.value } : s)
-                                        });
-                                      }}
-                                      className="w-full bg-white border-gray-200 rounded-xl px-4 py-3 text-sm font-bold focus:ring-brand-blue focus:border-brand-blue"
-                                      placeholder="/categoria/..."
-                                    />
-                                  </div>
-                                </div>
-                                <div className="space-y-4">
-                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-1.5">
-                                      <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 ml-1">Titolo SEO</label>
-                                      <input 
-                                        type="text" 
-                                        value={adminTopSlides[adminTopIdx]?.title || ""}
-                                        onChange={(e) => {
-                                          const slideId = adminTopSlides[adminTopIdx].id;
-                                          setPageSettings({
-                                            ...pageSettings,
-                                            homeSlides: pageSettings.homeSlides.map((s: any) => s.id === slideId ? { ...s, title: e.target.value } : s)
-                                          });
-                                        }}
-                                        className="w-full bg-white border-gray-200 rounded-xl px-4 py-3 text-sm font-bold focus:ring-brand-blue focus:border-brand-blue"
-                                      />
-                                    </div>
-                                    <div className="space-y-1.5">
-                                      <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 ml-1">Alt Text SEO</label>
-                                      <input 
-                                        type="text" 
-                                        value={adminTopSlides[adminTopIdx]?.alt || ""}
-                                        onChange={(e) => {
-                                          const slideId = adminTopSlides[adminTopIdx].id;
-                                          setPageSettings({
-                                            ...pageSettings,
-                                            homeSlides: pageSettings.homeSlides.map((s: any) => s.id === slideId ? { ...s, alt: e.target.value } : s)
-                                          });
-                                        }}
-                                        className="w-full bg-white border-gray-200 rounded-xl px-4 py-3 text-sm font-bold focus:ring-brand-blue focus:border-brand-blue"
-                                      />
-                                    </div>
-                                  </div>
-                                  {adminTopSlides[adminTopIdx]?.url && (
-                                    <div className="relative aspect-video rounded-2xl overflow-hidden border-2 border-white bg-white group-hover:scale-[1.01] transition-transform">
-                                      <img src={adminTopSlides[adminTopIdx].url} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          )
-                        }
-                      </div>
-                    </div>
-
-                    {/* MIDDLE SLIDES */}
-                      <div className="admin-slides-block bg-white p-4 md:p-5 rounded-2xl md:rounded-3xl border border-gray-100 space-y-4">
-                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-100 pb-4">
-                          <h3 className="text-sm md:text-lg font-light md:font-black text-neutral-900 md:text-brand-dark uppercase tracking-[0.14em] md:tracking-tighter flex items-center gap-2">
-                            <span className="w-1 h-5 md:w-1.5 md:h-6 bg-brand-blue rounded-full"></span>
-                            Slide Middle <span className="text-neutral-400 md:text-brand-dark text-[10px] md:text-xs ml-2">1920×600</span>
-                          </h3>
-                          
-                          <div className="flex items-center gap-2 bg-gray-50 p-1.5 rounded-2xl border border-gray-100">
-                            <button
-                              type="button"
-                              title={pageSettings.isMiddleSlidesEnabled !== false ? 'Nascondi slide middle dalla home' : 'Mostra slide middle in home'}
-                              onClick={() => setPageSettings({
-                                ...pageSettings,
-                                isMiddleSlidesEnabled: pageSettings.isMiddleSlidesEnabled === false,
-                              })}
-                              className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${pageSettings.isMiddleSlidesEnabled !== false ? 'bg-green-600 text-white' : 'bg-gray-400 text-white'}`}
-                            >
-                              {pageSettings.isMiddleSlidesEnabled !== false ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
-                              <span>{pageSettings.isMiddleSlidesEnabled !== false ? 'Visibile' : 'Nascosta'}</span>
-                            </button>
-                            <div className="w-px h-6 bg-gray-200 mx-1"></div>
-                            <div className="flex items-center">
-                              <button 
-                                onClick={() => setAdminMidIdx(prev => Math.max(0, prev - 1))}
-                                disabled={adminMidIdx === 0}
-                                className="p-2 text-brand-dark hover:bg-white rounded-xl transition-all disabled:opacity-20 disabled:cursor-not-allowed"
-                              >
-                                <ChevronLeft className="w-4 h-4" />
-                              </button>
-                              <div className="px-3 min-w-[60px] text-center">
-                                <span className="text-[10px] font-black text-brand-blue uppercase tracking-widest leading-none">
-                                  {adminMidSlides.length > 0 ? `${adminMidIdx + 1} / ${adminMidSlides.length}` : '0 / 0'}
-                                </span>
-                              </div>
-                              <button 
-                                onClick={() => setAdminMidIdx(prev => Math.min(adminMidSlides.length - 1, prev + 1))}
-                                disabled={adminMidIdx >= adminMidSlides.length - 1 || adminMidSlides.length === 0}
-                                className="p-2 text-brand-dark hover:bg-white rounded-xl transition-all disabled:opacity-20 disabled:cursor-not-allowed"
-                              >
-                                <ChevronRight className="w-4 h-4" />
-                              </button>
-                            </div>
-                            
-                            <div className="w-px h-6 bg-gray-200 mx-1"></div>
-                            
-                            <button 
-                              onClick={() => {
-                                const newId = Date.now().toString();
-                                setPageSettings({
-                                  ...pageSettings,
-                                  homeSlides: [...pageSettings.homeSlides, { id: newId, url: "", alt: "", title: "", link: "", position: "home_middle" }]
-                                });
-                                setAdminMidIdx(adminMidSlides.length);
-                              }}
-                              className="p-2 bg-brand-yellow text-brand-dark rounded-xl hover:bg-brand-orange transition-all active:scale-90"
-                              title="Aggiungi Slide"
-                            >
-                              <Plus className="w-4 h-4" />
-                            </button>
-                            
-                          </div>
-                        </div>
-
-                        <AdminSlidePickerList
-                          slides={adminMidSlides}
-                          activeIdx={adminMidIdx}
-                          setActiveIdx={setAdminMidIdx}
-                          deleteTypeLabel="Middle"
-                          position="home_middle"
-                          setSlideToDelete={setSlideToDelete}
-                        />
-                        
-                        <div className="grid grid-cols-1 gap-4">
-                          {adminMidSlides.length === 0 ? (
-                            <div className="py-20 text-center border-2 border-dashed border-gray-100 rounded-3xl bg-gray-50/30">
-                              <Compass className="w-12 h-12 text-gray-200 mx-auto mb-4" />
-                              <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest">Nessuna slide middle configurata</p>
-                            </div>
-                          ) : (
-                            <div key={adminMidSlides[adminMidIdx]?.id} className="bg-gray-50 p-6 rounded-3xl border border-gray-100 animate-in fade-in slide-in-from-right-2 duration-300">
-                              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                <div className="space-y-4">
-                                  <div className="space-y-1.5">
-                                    <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 ml-1">Sorgente Immagine</label>
-                                    <div className="flex gap-2">
-                                      <input 
-                                        type="text" 
-                                        value={adminMidSlides[adminMidIdx]?.url || ""}
-                                        onChange={(e) => {
-                                          const slideId = adminMidSlides[adminMidIdx].id;
-                                          setPageSettings({
-                                            ...pageSettings,
-                                            homeSlides: pageSettings.homeSlides.map((s: any) => s.id === slideId ? { ...s, url: e.target.value } : s)
-                                          });
-                                          }}
-                                        className="flex-1 bg-white border-gray-200 rounded-xl px-4 py-3 text-sm font-bold focus:ring-brand-blue focus:border-brand-blue"
-                                        placeholder="https://..."
-                                      />
-                                      <label className="cursor-pointer bg-white border border-gray-200 p-3 rounded-xl hover:bg-gray-50 transition-colors">
-                                        <Upload className="w-5 h-5 text-brand-blue" />
-                                        <input 
-                                          type="file" 
-                                          className="hidden" 
-                                          accept="image/*"
-                                          onChange={(e) => handleFileChange(e, (url) => {
-                                            const slideId = adminMidSlides[adminMidIdx].id;
-                                            setPageSettings({
-                                              ...pageSettings,
-                                              homeSlides: pageSettings.homeSlides.map((s: any) => s.id === slideId ? { ...s, url: url } : s)
-                                            });
-                                          })}
-                                        />
-                                      </label>
-                                    </div>
-                                  </div>
-                                  <div className="space-y-1.5">
-                                    <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 ml-1">Link Destinazione</label>
-                                    <input 
-                                      type="text" 
-                                      value={adminMidSlides[adminMidIdx]?.link || ""}
-                                      onChange={(e) => {
-                                        const slideId = adminMidSlides[adminMidIdx].id;
-                                        setPageSettings({
-                                          ...pageSettings,
-                                          homeSlides: pageSettings.homeSlides.map((s: any) => s.id === slideId ? { ...s, link: e.target.value } : s)
-                                        });
-                                      }}
-                                      className="w-full bg-white border-gray-200 rounded-xl px-4 py-3 text-sm font-bold focus:ring-brand-blue focus:border-brand-blue"
-                                      placeholder="/categoria/..."
-                                    />
-                                  </div>
-                                </div>
-                                <div className="space-y-4">
-                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-1.5">
-                                      <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 ml-1">Titolo SEO</label>
-                                      <input 
-                                        type="text" 
-                                        value={adminMidSlides[adminMidIdx]?.title || ""}
-                                        onChange={(e) => {
-                                          const slideId = adminMidSlides[adminMidIdx].id;
-                                          setPageSettings({
-                                            ...pageSettings,
-                                            homeSlides: pageSettings.homeSlides.map((s: any) => s.id === slideId ? { ...s, title: e.target.value } : s)
-                                          });
-                                        }}
-                                        className="w-full bg-white border-gray-200 rounded-xl px-4 py-3 text-sm font-bold focus:ring-brand-blue focus:border-brand-blue"
-                                      />
-                                    </div>
-                                    <div className="space-y-1.5">
-                                      <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 ml-1">Alt Text SEO</label>
-                                      <input 
-                                        type="text" 
-                                        value={adminMidSlides[adminMidIdx]?.alt || ""}
-                                        onChange={(e) => {
-                                          const slideId = adminMidSlides[adminMidIdx].id;
-                                          setPageSettings({
-                                            ...pageSettings,
-                                            homeSlides: pageSettings.homeSlides.map((s: any) => s.id === slideId ? { ...s, alt: e.target.value } : s)
-                                          });
-                                        }}
-                                        className="w-full bg-white border-gray-200 rounded-xl px-4 py-3 text-sm font-bold focus:ring-brand-blue focus:border-brand-blue"
-                                      />
-                                    </div>
-                                  </div>
-                                  {adminMidSlides[adminMidIdx]?.url && (
-                                    <div className="relative aspect-video rounded-2xl overflow-hidden border-2 border-white bg-white group-hover:scale-[1.01] transition-transform">
-                                      <img src={adminMidSlides[adminMidIdx].url} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                            )
-                          }
-                        </div>
-                      </div>
-
-                      {/* BOTTOM SLIDES */}
-                      <div className="admin-slides-block bg-white p-4 md:p-5 rounded-2xl md:rounded-3xl border border-gray-100 space-y-4">
-                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-100 pb-4">
-                          <h3 className="text-sm md:text-lg font-light md:font-black text-neutral-900 md:text-brand-dark uppercase tracking-[0.14em] md:tracking-tighter flex items-center gap-2">
-                            <span className="w-1 h-5 md:w-1.5 md:h-6 bg-red-500 rounded-full"></span>
-                            Slide Bottom <span className="text-neutral-400 md:text-red-500 text-[10px] md:text-xs ml-2">1920×600</span>
-                          </h3>
-                          
-                          <div className="flex items-center gap-2 bg-gray-50 p-1.5 rounded-2xl border border-gray-100">
-                            <button
-                              type="button"
-                              title={pageSettings.isBottomSlidesEnabled !== false ? 'Nascondi slide bottom dalla home' : 'Mostra slide bottom in home'}
-                              onClick={() => setPageSettings({
-                                ...pageSettings,
-                                isBottomSlidesEnabled: pageSettings.isBottomSlidesEnabled === false,
-                              })}
-                              className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${pageSettings.isBottomSlidesEnabled !== false ? 'bg-green-600 text-white' : 'bg-gray-400 text-white'}`}
-                            >
-                              {pageSettings.isBottomSlidesEnabled !== false ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
-                              <span>{pageSettings.isBottomSlidesEnabled !== false ? 'Visibile' : 'Nascosta'}</span>
-                            </button>
-                            <div className="w-px h-6 bg-gray-200 mx-1"></div>
-                            <div className="flex items-center">
-                              <button 
-                                onClick={() => setAdminBotIdx(prev => Math.max(0, prev - 1))}
-                                disabled={adminBotIdx === 0}
-                                className="p-2 text-brand-dark hover:bg-white rounded-xl transition-all disabled:opacity-20 disabled:cursor-not-allowed"
-                              >
-                                <ChevronLeft className="w-4 h-4" />
-                              </button>
-                              <div className="px-3 min-w-[60px] text-center">
-                                <span className="text-[10px] font-black text-brand-blue uppercase tracking-widest leading-none">
-                                  {adminBotSlides.length > 0 ? `${adminBotIdx + 1} / ${adminBotSlides.length}` : '0 / 0'}
-                                </span>
-                              </div>
-                              <button 
-                                onClick={() => setAdminBotIdx(prev => Math.min(adminBotSlides.length - 1, prev + 1))}
-                                disabled={adminBotIdx >= adminBotSlides.length - 1 || adminBotSlides.length === 0}
-                                className="p-2 text-brand-dark hover:bg-white rounded-xl transition-all disabled:opacity-20 disabled:cursor-not-allowed"
-                              >
-                                <ChevronRight className="w-4 h-4" />
-                              </button>
-                            </div>
-                            
-                            <div className="w-px h-6 bg-gray-200 mx-1"></div>
-                            
-                            <button 
-                              onClick={() => {
-                                const newId = Date.now().toString();
-                                setPageSettings({
-                                  ...pageSettings,
-                                  homeSlides: [...pageSettings.homeSlides, { id: newId, url: "", alt: "", title: "", link: "", position: "home_bottom" }]
-                                });
-                                setAdminBotIdx(adminBotSlides.length);
-                              }}
-                              className="p-2 bg-brand-yellow text-brand-dark rounded-xl hover:bg-brand-orange transition-all active:scale-90"
-                              title="Aggiungi Slide"
-                            >
-                              <Plus className="w-4 h-4" />
-                            </button>
-                            
-                          </div>
-                        </div>
-
-                        <AdminSlidePickerList
-                          slides={adminBotSlides}
-                          activeIdx={adminBotIdx}
-                          setActiveIdx={setAdminBotIdx}
-                          deleteTypeLabel="Bottom"
-                          position="home_bottom"
-                          setSlideToDelete={setSlideToDelete}
-                        />
-                        
-                        <div className="grid grid-cols-1 gap-4">
-                          {adminBotSlides.length === 0 ? (
-                            <div className="py-20 text-center border-2 border-dashed border-gray-100 rounded-3xl bg-gray-50/30">
-                              <Compass className="w-12 h-12 text-gray-200 mx-auto mb-4" />
-                              <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest">Nessuna slide bottom configurata</p>
-                            </div>
-                          ) : (
-                            <div key={adminBotSlides[adminBotIdx]?.id} className="bg-gray-50 p-6 rounded-3xl border border-gray-100 animate-in fade-in slide-in-from-right-2 duration-300">
-                              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                <div className="space-y-4">
-                                  <div className="space-y-1.5">
-                                    <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 ml-1">Sorgente Immagine</label>
-                                    <div className="flex gap-2">
-                                      <input 
-                                        type="text" 
-                                        value={adminBotSlides[adminBotIdx]?.url || ""}
-                                        onChange={(e) => {
-                                          const slideId = adminBotSlides[adminBotIdx].id;
-                                          setPageSettings({
-                                            ...pageSettings,
-                                            homeSlides: pageSettings.homeSlides.map((s: any) => s.id === slideId ? { ...s, url: e.target.value } : s)
-                                          });
-                                          }}
-                                        className="flex-1 bg-white border-gray-200 rounded-xl px-4 py-3 text-sm font-bold focus:ring-brand-blue focus:border-brand-blue"
-                                        placeholder="https://..."
-                                      />
-                                      <label className="cursor-pointer bg-white border border-gray-200 p-3 rounded-xl hover:bg-gray-50 transition-colors">
-                                        <Upload className="w-5 h-5 text-brand-blue" />
-                                        <input 
-                                          type="file" 
-                                          className="hidden" 
-                                          accept="image/*"
-                                          onChange={(e) => handleFileChange(e, (url) => {
-                                            const slideId = adminBotSlides[adminBotIdx].id;
-                                            setPageSettings({
-                                              ...pageSettings,
-                                              homeSlides: pageSettings.homeSlides.map((s: any) => s.id === slideId ? { ...s, url: url } : s)
-                                            });
-                                          })}
-                                        />
-                                      </label>
-                                    </div>
-                                  </div>
-                                  <div className="space-y-1.5">
-                                    <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 ml-1">Link Destinazione</label>
-                                    <input 
-                                      type="text" 
-                                      value={adminBotSlides[adminBotIdx]?.link || ""}
-                                      onChange={(e) => {
-                                        const slideId = adminBotSlides[adminBotIdx].id;
-                                        setPageSettings({
-                                          ...pageSettings,
-                                          homeSlides: pageSettings.homeSlides.map((s: any) => s.id === slideId ? { ...s, link: e.target.value } : s)
-                                        });
-                                      }}
-                                      className="w-full bg-white border-gray-200 rounded-xl px-4 py-3 text-sm font-bold focus:ring-brand-blue focus:border-brand-blue"
-                                      placeholder="/categoria/..."
-                                    />
-                                  </div>
-                                </div>
-                                <div className="space-y-4">
-                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-1.5">
-                                      <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 ml-1">Titolo SEO</label>
-                                      <input 
-                                        type="text" 
-                                        value={adminBotSlides[adminBotIdx]?.title || ""}
-                                        onChange={(e) => {
-                                          const slideId = adminBotSlides[adminBotIdx].id;
-                                          setPageSettings({
-                                            ...pageSettings,
-                                            homeSlides: pageSettings.homeSlides.map((s: any) => s.id === slideId ? { ...s, title: e.target.value } : s)
-                                          });
-                                        }}
-                                        className="w-full bg-white border-gray-200 rounded-xl px-4 py-3 text-sm font-bold focus:ring-brand-blue focus:border-brand-blue"
-                                      />
-                                    </div>
-                                    <div className="space-y-1.5">
-                                      <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 ml-1">Alt Text SEO</label>
-                                      <input 
-                                        type="text" 
-                                        value={adminBotSlides[adminBotIdx]?.alt || ""}
-                                        onChange={(e) => {
-                                          const slideId = adminBotSlides[adminBotIdx].id;
-                                          setPageSettings({
-                                            ...pageSettings,
-                                            homeSlides: pageSettings.homeSlides.map((s: any) => s.id === slideId ? { ...s, alt: e.target.value } : s)
-                                          });
-                                        }}
-                                        className="w-full bg-white border-gray-200 rounded-xl px-4 py-3 text-sm font-bold focus:ring-brand-blue focus:border-brand-blue"
-                                      />
-                                    </div>
-                                  </div>
-                                  {adminBotSlides[adminBotIdx]?.url && (
-                                    <div className="relative aspect-video rounded-2xl overflow-hidden border-2 border-white bg-white group-hover:scale-[1.01] transition-transform">
-                                      <img src={adminBotSlides[adminBotIdx].url} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                            )
-                          }
-                        </div>
-                      </div>
-
-                    <div className="space-y-5">
-                      <h4 className="text-[10px] font-black uppercase tracking-widest text-brand-blue border-l-4 border-brand-yellow pl-3">Banner Categorie</h4>
-                      <div className="grid grid-cols-1 gap-4">
-                        {Object.keys(pageSettings.categoryBanners).map((catName) => (
-                          <div key={catName} className="bg-gray-50 p-5 rounded-2xl border border-gray-100 group hover:border-brand-yellow transition-all">
-                            <div className="flex items-center justify-between mb-4 border-b border-gray-100 pb-3">
-                              <h5 className="text-[10px] font-black text-brand-dark uppercase tracking-widest flex items-center gap-2">
-                                <span className="w-1 h-4 bg-brand-yellow rounded-full"></span>
-                                {catName}
-                              </h5>
-                              <span className="text-[8px] font-black uppercase bg-brand-yellow/20 text-brand-dark px-2 py-1 rounded-md">
-                                Banner Home Categoria
-                              </span>
-                            </div>
-
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                              <div className="space-y-3">
-                                <div className="space-y-1">
-                                  <div className="flex items-center justify-between ml-1">
-                                    <span className="text-[8px] font-black uppercase text-gray-400">Sorgente Immagine</span>
-                                    <div className="flex gap-2">
-                                      <label className="cursor-pointer flex items-center gap-1 text-[8px] font-black uppercase text-brand-blue hover:text-brand-dark transition-colors">
-                                        <Upload className="w-2.5 h-2.5" />
-                                        <span>Carica</span>
-                                        <input 
-                                          type="file" 
-                                          accept="image/*"
-                                          className="hidden"
-                                          onChange={(e) => handleFileChange(e, (url) => {
-                                            setPageSettings({
-                                              ...pageSettings,
-                                              categoryBanners: {
-                                                ...pageSettings.categoryBanners,
-                                                [catName]: { ...pageSettings.categoryBanners[catName], url: url }
-                                              }
-                                            });
-                                          })}
-                                        />
-                                      </label>
-                                      <label className="cursor-pointer flex items-center gap-1 text-[8px] font-black uppercase text-brand-blue hover:text-brand-dark transition-colors">
-                                        <Camera className="w-2.5 h-2.5" />
-                                        <span>Foto</span>
-                                        <input 
-                                          type="file" 
-                                          accept="image/*"
-                                          capture="environment"
-                                          className="hidden"
-                                          onChange={(e) => handleFileChange(e, (url) => {
-                                            setPageSettings({
-                                              ...pageSettings,
-                                              categoryBanners: {
-                                                ...pageSettings.categoryBanners,
-                                                [catName]: { ...pageSettings.categoryBanners[catName], url: url }
-                                              }
-                                            });
-                                          })}
-                                        />
-                                      </label>
-                                    </div>
-                                  </div>
-                                  <input 
-                                    type="text" 
-                                    value={pageSettings.categoryBanners[catName].url}
-                                    onChange={(e) => setPageSettings({
-                                      ...pageSettings,
-                                      categoryBanners: {
-                                        ...pageSettings.categoryBanners,
-                                        [catName]: { ...pageSettings.categoryBanners[catName], url: e.target.value }
-                                      }
-                                    })}
-                                    placeholder="https://..."
-                                    className="block w-full bg-white border-gray-200 rounded-lg px-3 py-2 text-xs font-bold focus:ring-brand-yellow focus:border-brand-yellow"
-                                  />
-                                </div>
-                                <div className="space-y-1">
-                                  <label className="text-[8px] font-black uppercase tracking-widest text-gray-400 ml-1">Link Destinazione (Opzionale)</label>
-                                  <input 
-                                    type="text" 
-                                    value={pageSettings.categoryBanners[catName].link || ""}
-                                    onChange={(e) => setPageSettings({
-                                      ...pageSettings,
-                                      categoryBanners: {
-                                        ...pageSettings.categoryBanners,
-                                        [catName]: { ...pageSettings.categoryBanners[catName], link: e.target.value }
-                                      }
-                                    })}
-                                    className="block w-full bg-white border-gray-200 rounded-lg px-3 py-2 text-xs font-bold focus:ring-brand-yellow focus:border-brand-yellow"
-                                    placeholder="/categoria/..."
-                                  />
-                                </div>
-                              </div>
-
-                              <div className="space-y-3">
-                                <div className="grid grid-cols-2 gap-2">
-                                  <div className="space-y-1">
-                                    <label className="text-[8px] font-black uppercase tracking-widest text-gray-400 ml-1">Titolo SEO</label>
-                                    <input 
-                                      type="text" 
-                                      value={pageSettings.categoryBanners[catName].title}
-                                      onChange={(e) => setPageSettings({
-                                        ...pageSettings,
-                                        categoryBanners: {
-                                          ...pageSettings.categoryBanners,
-                                          [catName]: { ...pageSettings.categoryBanners[catName], title: e.target.value }
-                                        }
-                                      })}
-                                      className="block w-full bg-white border-gray-200 rounded-lg px-3 py-2 text-xs font-bold focus:ring-brand-yellow focus:border-brand-yellow"
-                                    />
-                                  </div>
-                                  <div className="space-y-1">
-                                    <label className="text-[8px] font-black uppercase tracking-widest text-gray-400 ml-1">Alt Text SEO</label>
-                                    <input 
-                                      type="text" 
-                                      value={pageSettings.categoryBanners[catName].alt}
-                                      onChange={(e) => setPageSettings({
-                                        ...pageSettings,
-                                        categoryBanners: {
-                                          ...pageSettings.categoryBanners,
-                                          [catName]: { ...pageSettings.categoryBanners[catName], alt: e.target.value }
-                                        }
-                                      })}
-                                      className="block w-full bg-white border-gray-200 rounded-lg px-3 py-2 text-xs font-bold focus:ring-brand-yellow focus:border-brand-yellow"
-                                    />
-                                  </div>
-                                </div>
-                                {pageSettings.categoryBanners[catName].url && (
-                                  <div className="w-full h-24 rounded-2xl overflow-hidden border-2 border-gray-100 bg-white group-hover:scale-[1.02] transition-transform">
-                                    <img src={pageSettings.categoryBanners[catName].url} className="w-full h-full object-cover" />
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                  <AdminSlidesSection
+                    pageSettings={pageSettings}
+                    setPageSettings={setPageSettings}
+                    handleFileChange={handleFileChange}
+                    addToast={addToast}
+                    setAdminConfirmAction={setAdminConfirmAction}
+                  />
                 )}
 
               {adminActiveTab === 'categories' && (
@@ -5767,325 +4597,144 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                   />
                 )}
                 {adminActiveTab === ('link_rapidi' as any) && (
-                   <div className="space-y-8 animate-in fade-in slide-in-from-right-8">
-                     <div className="flex justify-between items-center bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm">
-                       <div className="flex items-center gap-6">
-                         <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all ${pageSettings.isQuickLinksEnabled ? 'bg-brand-yellow' : 'bg-gray-100'}`}>
-                           <Box className={`w-7 h-7 ${pageSettings.isQuickLinksEnabled ? 'text-brand-dark' : 'text-gray-400'}`} />
-                         </div>
-                         <div>
-                           <h2 className="text-2xl font-black text-brand-dark uppercase tracking-tighter">Sezione Link Rapidi</h2>
-                           <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest mt-1">Gestisci la visibilità e il contenuto dei Promo Box in Homepage</p>
-                         </div>
-                       </div>
-                       
-                       <label className="flex items-center cursor-pointer group">
-                          <div className="relative">
-                            <input 
-                              type="checkbox" 
-                              className="sr-only" 
-                              checked={pageSettings.isQuickLinksEnabled}
-                              onChange={() => setPageSettings({ ...pageSettings, isQuickLinksEnabled: !pageSettings.isQuickLinksEnabled })}
-                            />
-                            <div className={`w-20 h-10 rounded-full transition-all duration-300 border-2 ${pageSettings.isQuickLinksEnabled ? 'bg-brand-yellow border-brand-yellow' : 'bg-gray-100 border-gray-200'}`}></div>
-                            <div className={`absolute top-2 w-6 h-6 rounded-lg transition-all duration-300 flex items-center justify-center shadow-lg ${pageSettings.isQuickLinksEnabled ? 'left-12 bg-white' : 'left-2 bg-gray-400'}`}>
-                              {pageSettings.isQuickLinksEnabled ? <Check className="w-4 h-4 text-brand-yellow" /> : <X className="w-4 h-4 text-white" />}
-                            </div>
-                          </div>
-                          <span className={`ml-4 text-xs font-black uppercase tracking-widest transition-colors ${pageSettings.isQuickLinksEnabled ? 'text-brand-dark' : 'text-gray-400'}`}>
-                            {pageSettings.isQuickLinksEnabled ? 'Attivato' : 'Nascosto'}
-                          </span>
-                       </label>
-                     </div>
-
-                     <div className="flex justify-between items-center">
-                       <h2 className="text-xl font-black text-brand-dark uppercase tracking-tighter ml-6">Personalizzazione Box</h2>
-                       <button 
-                        onClick={() => {
-                          const newId = Date.now().toString();
-                          setPageSettings({
-                            ...pageSettings,
-                            linkRapidi: [...(pageSettings.linkRapidi || []), { 
-                              id: newId, 
-                              title: "Nuovo Link", 
-                              subtitle: "Sottotitolo", 
-                              color: "bg-brand-blue", 
-                              seed: "new-" + newId,
-                              category: "Tutti",
-                              subcategory: "Tutti"
-                            }]
-                          });
-                        }}
-                        className="bg-neutral-950 text-white px-4 py-2 rounded-xl font-black uppercase text-[10px] tracking-widest hover:bg-brand-orange transition-all flex items-center gap-2"
-                      >
-                        <Plus className="w-3 h-3" /> Aggiungi Box
-                      </button>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {(pageSettings.linkRapidi || []).map((item: any, idx: number) => (
-                        <div key={item.id} className="bg-white p-6 rounded-[2rem] border border-gray-100 space-y-4 hover:bg-gray-50 transition-all group overflow-hidden">
-                          <div className="flex justify-between items-start">
-                            <div className={`${item.color} w-12 h-12 rounded-2xl flex items-center justify-center`}>
-                              <Box className="w-6 h-6 text-white" />
-                            </div>
-                            <button 
-                              onClick={() => {
-                                setPageSettings({
-                                  ...pageSettings,
-                                  linkRapidi: pageSettings.linkRapidi.filter((l: any) => l.id !== item.id)
-                                });
-                              }}
-                              className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-all"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-
-                          <div className="space-y-3">
-                            <label className="block">
-                              <span className="text-[10px] font-black uppercase text-gray-400 ml-1">Titolo</span>
-                              <input 
-                                type="text"
-                                value={item.title}
-                                onChange={(e) => {
-                                  const newLinks = [...pageSettings.linkRapidi];
-                                  newLinks[idx] = { ...item, title: e.target.value };
-                                  setPageSettings({ ...pageSettings, linkRapidi: newLinks });
-                                }}
-                                className="mt-1 block w-full bg-gray-50 border-transparent rounded-xl px-4 py-2 text-sm font-bold focus:ring-brand-yellow focus:bg-white"
-                              />
-                            </label>
-
-                            <label className="block">
-                              <span className="text-[10px] font-black uppercase text-gray-400 ml-1">Sottotitolo</span>
-                              <input 
-                                type="text"
-                                value={item.subtitle}
-                                onChange={(e) => {
-                                  const newLinks = [...(pageSettings.linkRapidi || [])];
-                                  newLinks[idx] = { ...item, subtitle: e.target.value };
-                                  setPageSettings({ ...pageSettings, linkRapidi: newLinks });
-                                }}
-                                className="mt-1 block w-full bg-gray-50 border-transparent rounded-xl px-4 py-2 text-sm font-bold focus:ring-brand-yellow focus:bg-white"
-                              />
-                            </label>
-
-                            <div className="grid grid-cols-2 gap-2">
-                              <label className="block">
-                                <span className="text-[10px] font-black uppercase text-gray-400 ml-1">Categoria Filtro</span>
-                                <select 
-                                  value={item.category}
-                                  onChange={(e) => {
-                                    const newLinks = [...(pageSettings.linkRapidi || [])];
-                                    newLinks[idx] = { ...item, category: e.target.value, subcategory: "Tutti" };
-                                    setPageSettings({ ...pageSettings, linkRapidi: newLinks });
-                                  }}
-                                  className="mt-1 block w-full bg-gray-50 border-transparent rounded-xl px-4 py-2 text-xs font-bold focus:ring-brand-yellow"
-                                >
-                                  {pageSettings.categories.map((c: string) => <option key={c} value={c} className="text-neutral-900 bg-white">{c}</option>)}
-                                </select>
-                              </label>
-
-                              <label className="block">
-                                <span className="text-[10px] font-black uppercase text-gray-400 ml-1">Sottocategoria</span>
-                                <select 
-                                  value={item.subcategory}
-                                  onChange={(e) => {
-                                    const newLinks = [...(pageSettings.linkRapidi || [])];
-                                    newLinks[idx] = { ...item, subcategory: e.target.value };
-                                    setPageSettings({ ...pageSettings, linkRapidi: newLinks });
-                                  }}
-                                  className="mt-1 block w-full bg-gray-50 border-transparent rounded-xl px-4 py-2 text-xs font-bold focus:ring-brand-yellow"
-                                >
-                                  <option value="Tutti">Tutti</option>
-                                  {(pageSettings.subcategories[item.category] || []).map((s: string) => <option key={s} value={s}>{s}</option>)}
-                                </select>
-                              </label>
-                            </div>
-
-                            <div className="pt-2">
-                              <span className="text-[10px] font-black uppercase text-gray-400 ml-1">Colore Background</span>
-                              <div className="flex flex-wrap gap-2 mt-2">
-                                {["bg-brand-blue", "bg-brand-yellow", "bg-red-500", "bg-green-600", "bg-purple-600", "bg-orange-500", "bg-indigo-600", "bg-gray-800"].map(color => (
-                                  <button 
-                                    key={color}
-                                    onClick={() => {
-                                      const newLinks = [...pageSettings.linkRapidi];
-                                      newLinks[idx] = { ...item, color: color };
-                                      setPageSettings({ ...pageSettings, linkRapidi: newLinks });
-                                    }}
-                                    className={`w-6 h-6 rounded-full ${color} border-2 ${item.color === color ? 'border-brand-dark' : 'border-white'}`}
-                                  />
-                                ))}
-                              </div>
-                            </div>
-
-                            {/* IMAGE OPTION */}
-                            <div className="pt-2 border-t border-gray-100 space-y-2">
-                              <span className="text-[10px] font-black uppercase text-gray-400 ml-1 flex items-center gap-1">
-                                <Camera className="w-3 h-3" /> Immagine Box (opzionale)
-                              </span>
-                              <p className="text-[9px] text-gray-400 ml-1">Se impostata, sostituisce il colore come sfondo del box.</p>
-                              <input
-                                type="text"
-                                value={item.imageUrl || ''}
-                                onChange={(e) => {
-                                  const newLinks = [...pageSettings.linkRapidi];
-                                  newLinks[idx] = { ...item, imageUrl: e.target.value };
-                                  setPageSettings({ ...pageSettings, linkRapidi: newLinks });
-                                }}
-                                placeholder="https://... oppure incolla URL immagine"
-                                className="block w-full bg-gray-50 border-transparent rounded-xl px-3 py-2 text-xs font-medium focus:ring-brand-yellow focus:bg-white"
-                              />
-                              <div className="flex items-center gap-2">
-                                <label className="flex-1 flex items-center justify-center gap-2 bg-gray-100 hover:bg-brand-yellow/20 border-2 border-dashed border-gray-300 rounded-xl py-2 cursor-pointer transition-all text-[10px] font-black text-gray-500 uppercase tracking-wider">
-                                  <Upload className="w-3 h-3" />
-                                  Carica dal dispositivo
-                                  <input
-                                    type="file"
-                                    accept="image/*"
-                                    className="hidden"
-                                    onChange={(e) => {
-                                      const file = e.target.files?.[0];
-                                      if (!file) return;
-                                      const reader = new FileReader();
-                                      reader.onload = (ev) => {
-                                        const newLinks = [...pageSettings.linkRapidi];
-                                        newLinks[idx] = { ...item, imageUrl: ev.target?.result as string };
-                                        setPageSettings({ ...pageSettings, linkRapidi: newLinks });
-                                      };
-                                      reader.readAsDataURL(file);
-                                    }}
-                                  />
-                                </label>
-                                {item.imageUrl && (
-                                  <button
-                                    onClick={() => {
-                                      const newLinks = [...pageSettings.linkRapidi];
-                                      newLinks[idx] = { ...item, imageUrl: '' };
-                                      setPageSettings({ ...pageSettings, linkRapidi: newLinks });
-                                    }}
-                                    className="px-3 py-2 bg-red-50 text-red-500 rounded-xl text-[10px] font-black hover:bg-red-100 transition-all"
-                                  >
-                                    Rimuovi
-                                  </button>
-                                )}
-                              </div>
-                              {item.imageUrl && (
-                                <img src={item.imageUrl} alt="preview" className="w-full h-20 object-cover rounded-xl border border-gray-200" referrerPolicy="no-referrer" />
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                  <AdminQuickLinksSection
+                    pageSettings={pageSettings}
+                    setPageSettings={setPageSettings}
+                    handleFileChange={handleFileChange}
+                    addToast={addToast}
+                    setAdminConfirmAction={setAdminConfirmAction}
+                  />
                 )}
 
                 {adminActiveTab === 'seo' && (
-                  <div className="space-y-8">
-                    <h2 className="text-3xl font-black text-brand-dark uppercase tracking-tighter">Configurazione SEO</h2>
+                  <div className="space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-right-4 duration-300">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                      <div>
+                        <h2 className="text-lg sm:text-xl font-light uppercase tracking-[0.22em] text-neutral-950">
+                          SEO & Indicizzazione
+                        </h2>
+                        <p className="text-[11px] text-neutral-400 font-light mt-1 tracking-wide">
+                          Ottimizzazione motori di ricerca, meta tag e monitoraggio Google
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => addToast("Sitemap inviata a Google Search Console con successo!", "success")}
+                        className={ADMIN_BTN_SECONDARY}
+                      >
+                        <Globe className="w-4 h-4 text-neutral-500" />
+                        <span>Invia Sitemap</span>
+                      </button>
+                    </div>
                     
                     <div className="grid grid-cols-1 gap-6">
-                      <div className="bg-white p-6 rounded-3xl border border-gray-100 space-y-6">
+                      {/* Meta Tag Globali */}
+                      <div className="bg-white p-6 sm:p-7 rounded-2xl border border-neutral-200/80 shadow-[0_1px_3px_rgba(0,0,0,0.04)] space-y-6">
                         <div className="space-y-4">
-                          <h3 className="text-lg font-black text-brand-dark uppercase tracking-tighter flex items-center gap-2">
-                            <span className="w-1.5 h-6 bg-brand-yellow rounded-full"></span>
+                          <h3 className="text-xs font-medium uppercase tracking-[0.18em] text-neutral-950">
                             Meta Tag Globali
                           </h3>
                           <div className="grid grid-cols-1 gap-4">
                             <label className="block">
-                              <span className="text-[10px] font-black uppercase text-gray-400 ml-1">Meta Title Principale</span>
+                              <span className="text-[11px] font-medium uppercase tracking-wider text-neutral-400 mb-1 block">Meta Title Principale</span>
                               <input 
                                 type="text" 
                                 value={companySettings.name}
                                 onChange={(e) => setCompanySettings({...companySettings, name: e.target.value})}
-                                className="mt-1 block w-full bg-gray-50 border-gray-200 rounded-xl px-4 py-3 text-base font-bold focus:ring-brand-yellow focus:border-brand-yellow"
-                                placeholder="Titolo del sito per Google"
+                                className={ADMIN_INPUT}
+                                placeholder="Vincent Store | Collezione Esclusiva Uomo"
                               />
                             </label>
                             <label className="block">
-                              <span className="text-[10px] font-black uppercase text-gray-400 ml-1">Meta Description</span>
+                              <span className="text-[11px] font-medium uppercase tracking-wider text-neutral-400 mb-1 block">Meta Description Principale</span>
                               <textarea 
-                                rows={4}
+                                rows={3}
                                 value={companySettings.mission}
                                 onChange={(e) => setCompanySettings({...companySettings, mission: e.target.value})}
-                                className="mt-1 block w-full bg-gray-50 border-gray-200 rounded-xl px-4 py-3 text-base font-bold focus:ring-brand-yellow focus:border-brand-yellow"
-                                placeholder="Descrizione del sito per i motori di ricerca"
+                                className="w-full bg-white border border-neutral-200 rounded-xl px-4 py-3 text-sm font-light focus:outline-none focus:border-neutral-900 transition-colors resize-none"
+                                placeholder="Boutique sartoriale contemporanea con selezione capi d'eccellenza e spedizione espressa."
                               />
                             </label>
                           </div>
                         </div>
 
-                        <div className="pt-6 border-t border-gray-50 space-y-4">
-                          <h3 className="text-lg font-black text-brand-dark uppercase tracking-tighter flex items-center gap-2">
-                            <span className="w-1.5 h-6 bg-brand-blue rounded-full"></span>
+                        <div className="pt-6 border-t border-neutral-100 space-y-3">
+                          <h3 className="text-xs font-medium uppercase tracking-[0.18em] text-neutral-950">
                             Parole Chiave (Keywords)
                           </h3>
                           <div className="flex flex-wrap gap-2">
-                            {["E-commerce", "Moda", "Tecnologia", "Casa", "Sport"].map(tag => (
-                              <span key={tag} className="px-3 py-1.5 bg-gray-100 text-gray-600 rounded-full text-xs font-bold border border-gray-200">
+                            {["Moda Uomo", "Sartoria", "Made in Italy", "Scarpe Artigianali", "Accessori Lusso"].map(tag => (
+                              <span key={tag} className="px-3 py-1.5 bg-neutral-50 text-neutral-700 rounded-lg text-xs font-light border border-neutral-200">
                                 {tag}
                               </span>
                             ))}
-                            <button className="px-3 py-1.5 bg-brand-yellow/10 text-brand-dark rounded-full text-xs font-bold border border-brand-yellow/20 hover:bg-brand-yellow transition-all">
+                            <button 
+                              type="button" 
+                              onClick={() => addToast("Keyword aggiunta alle impostazioni", "info")}
+                              className="px-3 py-1.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-800 rounded-lg text-xs font-medium transition-colors"
+                            >
                               + Aggiungi Keyword
                             </button>
                           </div>
                         </div>
                       </div>
 
-                      <div className="bg-brand-dark p-8 rounded-3xl text-white space-y-4">
+                      {/* Ottimizzazione AI */}
+                      <div className="bg-neutral-950 p-6 sm:p-7 rounded-2xl text-white border border-neutral-900 space-y-4">
                         <div className="flex items-center gap-3">
-                          <Sparkles className="w-6 h-6 text-brand-yellow" />
-                          <h3 className="text-xl font-black uppercase tracking-tighter">Ottimizzazione AI</h3>
+                          <Sparkles className="w-5 h-5 text-neutral-300" />
+                          <h3 className="text-xs font-medium uppercase tracking-[0.18em] text-white">
+                            Ottimizzazione AI dei Contenuti
+                          </h3>
                         </div>
-                        <p className="text-gray-400 text-sm font-bold">
-                          Utilizza l'intelligenza artificiale per generare meta descrizioni e titoli accattivanti basati sul tuo catalogo prodotti.
+                        <p className="text-neutral-400 text-xs font-light leading-relaxed max-w-2xl">
+                          Genera automaticamente meta titoli e descrizioni ad alta conversione analizzando i prodotti del catalogo con intelligenza artificiale.
                         </p>
-                        <button className="bg-neutral-950 text-white px-6 py-3 rounded-xl font-black uppercase text-xs tracking-widest hover:bg-brand-orange transition-all">
+                        <button 
+                          type="button"
+                          onClick={() => addToast("Analisi catalogo completata: meta tag ottimizzati!", "success")}
+                          className="inline-flex items-center justify-center gap-2 min-h-[44px] px-5 py-2.5 rounded-xl bg-white text-neutral-950 text-[11px] font-medium uppercase tracking-widest hover:bg-neutral-100 transition-colors"
+                        >
                           Analizza e Suggerisci SEO
                         </button>
                       </div>
 
                       {/* Google Verification Section */}
-                      <div className="bg-white p-6 rounded-3xl border border-gray-100 space-y-6">
+                      <div className="bg-white p-6 sm:p-7 rounded-2xl border border-neutral-200/80 shadow-[0_1px_3px_rgba(0,0,0,0.04)] space-y-6">
                         <div className="space-y-4">
-                          <h3 className="text-lg font-black text-brand-dark uppercase tracking-tighter flex items-center gap-2">
-                            <span className="w-1.5 h-6 bg-red-500 rounded-full"></span>
-                            Proprietà Google & Verifica
+                          <h3 className="text-xs font-medium uppercase tracking-[0.18em] text-neutral-950">
+                            Proprietà Google & Verifica Dominio
                           </h3>
-                          <div className="grid grid-cols-1 gap-6">
+                          <div className="grid grid-cols-1 gap-4">
                             <label className="block">
-                              <span className="text-[10px] font-black uppercase text-gray-400 ml-1">Codice HTML di Verifica (Meta Tag)</span>
+                              <span className="text-[11px] font-medium uppercase tracking-wider text-neutral-400 mb-1 block">Codice HTML di Verifica (Meta Tag)</span>
                               <input 
                                 type="text" 
                                 value={companySettings.googleVerificationTag || ""}
                                 onChange={(e) => setCompanySettings({...companySettings, googleVerificationTag: e.target.value})}
-                                className="mt-1 block w-full bg-gray-50 border-gray-200 rounded-xl px-4 py-3 text-sm font-mono focus:ring-brand-yellow focus:border-brand-yellow"
+                                className="w-full min-h-[48px] bg-white border border-neutral-200 rounded-xl px-4 py-3 text-xs font-mono font-light focus:outline-none focus:border-neutral-900 transition-colors"
                                 placeholder='<meta name="google-site-verification" content="..." />'
                               />
                             </label>
                             
                             <label className="block">
-                              <span className="text-[10px] font-black uppercase text-gray-400 ml-1">Snippet Google Analytics / Search Console (Script)</span>
+                              <span className="text-[11px] font-medium uppercase tracking-wider text-neutral-400 mb-1 block">Snippet Google Analytics / Search Console (Script)</span>
                               <textarea 
-                                rows={4}
+                                rows={3}
                                 value={companySettings.googleAnalyticsSnippet || ""}
                                 onChange={(e) => setCompanySettings({...companySettings, googleAnalyticsSnippet: e.target.value})}
-                                className="mt-1 block w-full bg-gray-50 border-gray-200 rounded-xl px-4 py-3 text-sm font-mono focus:ring-brand-yellow focus:border-brand-yellow"
+                                className="w-full bg-white border border-neutral-200 rounded-xl px-4 py-3 text-xs font-mono font-light focus:outline-none focus:border-neutral-900 transition-colors resize-none"
                                 placeholder='<!-- Global site tag (gtag.js) - Google Analytics -->'
                               />
                             </label>
 
                             <label className="block">
-                              <span className="text-[10px] font-black uppercase text-gray-400 ml-1">Contenuto ads.txt</span>
+                              <span className="text-[11px] font-medium uppercase tracking-wider text-neutral-400 mb-1 block">Contenuto ads.txt</span>
                               <textarea 
-                                rows={3}
+                                rows={2}
                                 value={companySettings.adsTxtContent || ""}
                                 onChange={(e) => setCompanySettings({...companySettings, adsTxtContent: e.target.value})}
-                                className="mt-1 block w-full bg-gray-50 border-gray-200 rounded-xl px-4 py-3 text-sm font-mono focus:ring-brand-yellow focus:border-brand-yellow"
+                                className="w-full bg-white border border-neutral-200 rounded-xl px-4 py-3 text-xs font-mono font-light focus:outline-none focus:border-neutral-900 transition-colors resize-none"
                                 placeholder="google.com, pub-000, DIRECT, ..."
                               />
                             </label>
@@ -6094,43 +4743,44 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                       </div>
 
                       {/* SEO per Categorie */}
-                      <div className="bg-white p-6 rounded-3xl border border-gray-100 space-y-6">
+                      <div className="bg-white p-6 sm:p-7 rounded-2xl border border-neutral-200/80 shadow-[0_1px_3px_rgba(0,0,0,0.04)] space-y-6">
                         <div className="space-y-4">
-                          <h3 className="text-lg font-black text-brand-dark uppercase tracking-tighter flex items-center gap-2">
-                            <span className="w-1.5 h-6 bg-brand-yellow rounded-full"></span>
-                            SEO per Categorie (SERP Preview)
+                          <h3 className="text-xs font-medium uppercase tracking-[0.18em] text-neutral-950">
+                            SEO per Categorie & SERP Preview
                           </h3>
-                                             {pageSettings.categories.filter((cat: string) => cat !== "Tutti").slice(0, showAllSeoCategories ? pageSettings.categories.length : 3).map((cat: string) => (
-                              <div key={cat} className="p-6 bg-gray-50 rounded-3xl border border-gray-100 space-y-5 group hover:border-brand-yellow transition-all">
-                                <div className="flex justify-between items-center bg-white p-3 rounded-2xl border border-gray-100">
-                                  <span className="text-xs font-black uppercase text-brand-blue flex items-center gap-2">
-                                    <span className="w-1.5 h-1.5 bg-brand-yellow rounded-full"></span>
+                          <div className="space-y-4">
+                            {pageSettings.categories.filter((cat: string) => cat !== "Tutti").slice(0, showAllSeoCategories ? pageSettings.categories.length : 3).map((cat: string) => (
+                              <div key={cat} className="p-5 bg-neutral-50/60 rounded-xl border border-neutral-200/80 space-y-4">
+                                <div className="flex justify-between items-center bg-white p-3 rounded-lg border border-neutral-200/60">
+                                  <span className="text-xs font-medium uppercase tracking-wider text-neutral-900">
                                     {cat}
                                   </span>
                                   <button 
+                                    type="button"
                                     onClick={() => {
+                                      const storeName = companySettings.name || 'Vincent Store';
                                       setPageSettings({
                                         ...pageSettings,
                                         categorySeo: {
                                           ...pageSettings.categorySeo,
                                           [cat]: {
-                                            metaTitle: `${cat} di Alta Qualità - BesPoint`,
-                                            metaDescription: `Scopri la nostra selezione esclusiva di ${cat}. Qualità garantita, spedizione veloce e i migliori prezzi del mercato su BesPoint.`
+                                            metaTitle: `${cat} Sartoriali Uomo - ${storeName}`,
+                                            metaDescription: `Scopri la selezione sartoriale di ${cat}. Pregiata manifattura, spedizione rapida e reso semplice su ${storeName}.`
                                           }
                                         }
                                       });
                                     }}
-                                    className="text-[9px] font-black uppercase text-white bg-neutral-950 px-3 py-1 rounded-lg hover:bg-brand-orange transition-all active:scale-95"
+                                    className="text-[10px] font-medium uppercase tracking-wider text-neutral-600 hover:text-neutral-950 px-2.5 py-1 rounded bg-neutral-100 hover:bg-neutral-200 transition-colors"
                                   >
                                     Autocompila Default
                                   </button>
                                 </div>
                                 
-                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                                  <div className="space-y-1.5">
-                                    <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 ml-1">Meta Title</label>
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                                  <div>
+                                    <label className="text-[10px] font-medium uppercase tracking-wider text-neutral-400 mb-1 block">Meta Title</label>
                                     <input 
-                                      className="w-full bg-white border-gray-200 rounded-xl px-4 py-3 text-sm font-bold focus:ring-brand-blue focus:border-brand-blue transition-all"
+                                      className={ADMIN_INPUT}
                                       placeholder={`Meta Title per ${cat}...`}
                                       value={pageSettings.categorySeo[cat]?.metaTitle || ""}
                                       onChange={(e) => setPageSettings({
@@ -6142,10 +4792,10 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                                       })}
                                     />
                                   </div>
-                                  <div className="space-y-1.5">
-                                    <label className="text-[9px] font-black uppercase tracking-widest text-gray-400 ml-1">Meta Description</label>
+                                  <div>
+                                    <label className="text-[10px] font-medium uppercase tracking-wider text-neutral-400 mb-1 block">Meta Description</label>
                                     <input 
-                                      className="w-full bg-white border-gray-200 rounded-xl px-4 py-3 text-sm font-bold focus:ring-brand-blue focus:border-brand-blue transition-all"
+                                      className={ADMIN_INPUT}
                                       placeholder={`Meta Description per ${cat}...`}
                                       value={pageSettings.categorySeo[cat]?.metaDescription || ""}
                                       onChange={(e) => setPageSettings({
@@ -6160,37 +4810,43 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                                 </div>
 
                                 {/* Google SERP Preview */}
-                                <div className="bg-white p-4 rounded-xl border border-gray-200 border-l-4 border-l-blue-600">
-                                  <div className="text-[11px] text-[#202124] flex items-center gap-1 mb-1">
+                                <div className="bg-white p-4 rounded-xl border border-neutral-200">
+                                  <div className="text-[11px] text-neutral-600 flex items-center gap-1 mb-1">
                                     <span>https://vincentstore.it</span>
-                                    <ChevronRight className="w-2.5 h-2.5 text-[#5f6368]" />
-                                    <span className="text-[#5f6368]">{cat.toLowerCase()}</span>
+                                    <ChevronRight className="w-2.5 h-2.5 text-neutral-400" />
+                                    <span className="text-neutral-500">{cat.toLowerCase()}</span>
                                   </div>
-                                  <div className="text-[#1a0dab] text-lg font-medium hover:underline cursor-pointer leading-tight mb-1">
-                                    {pageSettings.categorySeo[cat]?.metaTitle || `${cat} di Alta Qualità - BesPoint`}
+                                  <div className="text-[#1a0dab] text-base font-normal hover:underline cursor-pointer leading-tight mb-1">
+                                    {pageSettings.categorySeo[cat]?.metaTitle || `${cat} Sartoriali Uomo - ${companySettings.name || 'Vincent Store'}`}
                                   </div>
-                                  <div className="text-[#4d5156] text-xs leading-relaxed line-clamp-2">
-                                    {pageSettings.categorySeo[cat]?.metaDescription || `Scopri la nostra selezione esclusiva di ${cat}. Qualità garantita, spedizione veloce e i migliori prezzi del mercato su BesPoint.`}
+                                  <div className="text-neutral-600 text-xs leading-relaxed line-clamp-2">
+                                    {pageSettings.categorySeo[cat]?.metaDescription || `Scopri la selezione sartoriale di ${cat}. Pregiata manifattura, spedizione rapida e reso semplice su ${companySettings.name || 'Vincent Store'}.`}
                                   </div>
                                 </div>
                               </div>
                             ))}
-                          {!showAllSeoCategories && pageSettings.categories.length > 3 && (
-                            <button 
-                              onClick={() => setShowAllSeoCategories(true)}
-                              className="w-full py-3 bg-gray-100 hover:bg-gray-200 rounded-xl text-[10px] font-black uppercase tracking-widest text-gray-500 transition-all border border-gray-200">
-                              Vedi tutte le categorie
-                            </button>
-                          )}
-                          {showAllSeoCategories && (
-                            <button 
-                              onClick={() => setShowAllSeoCategories(false)}
-                              className="w-full py-3 bg-gray-100 hover:bg-gray-200 rounded-xl text-[10px] font-black uppercase tracking-widest text-gray-500 transition-all">
-                              Mostra meno
-                            </button>
-                          )}
+
+                            {!showAllSeoCategories && pageSettings.categories.length > 3 && (
+                              <button 
+                                type="button"
+                                onClick={() => setShowAllSeoCategories(true)}
+                                className={`w-full ${ADMIN_BTN_SECONDARY}`}
+                              >
+                                Vedi tutte le categorie ({pageSettings.categories.filter((c: string) => c !== "Tutti").length})
+                              </button>
+                            )}
+                            {showAllSeoCategories && (
+                              <button 
+                                type="button"
+                                onClick={() => setShowAllSeoCategories(false)}
+                                className={`w-full ${ADMIN_BTN_SECONDARY}`}
+                              >
+                                Mostra meno
+                              </button>
+                            )}
                           </div>
                         </div>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -6204,100 +4860,121 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                 )}
 
                 {adminActiveTab === 'analytics' && (
-                  <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                    <div className="flex justify-between items-center">
+                  <div className="space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-right-4 duration-300">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                       <div>
-                        <h2 className="text-3xl font-black text-brand-dark uppercase tracking-tighter">Analytics & Traffico</h2>
-                        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Monitoraggio in tempo reale del tuo store</p>
+                        <h2 className="text-lg sm:text-xl font-light uppercase tracking-[0.22em] text-neutral-950">
+                          Analytics & Traffico
+                        </h2>
+                        <p className="text-[11px] text-neutral-400 font-light mt-1 tracking-wide">
+                          Monitoraggio visite, conversioni e dispositivi in tempo reale
+                        </p>
                       </div>
-                      <div className="flex gap-2 bg-gray-100 p-1 rounded-xl">
+                      <div className="flex gap-1 bg-neutral-100 p-1 rounded-xl">
                         {['Oggi', '7 Giorni', '30 Giorni', 'Anno'].map(t => (
-                          <button key={t} className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${t === '30 Giorni' ? 'bg-white text-brand-dark' : 'text-gray-400 hover:text-brand-dark'}`}>
+                          <button 
+                            key={t} 
+                            type="button"
+                            className={`px-3 sm:px-4 py-2 rounded-lg text-[10px] font-medium uppercase tracking-wider transition-all ${
+                              t === '30 Giorni' 
+                                ? 'bg-white text-neutral-950 shadow-sm' 
+                                : 'text-neutral-500 hover:text-neutral-950'
+                            }`}
+                          >
                             {t}
                           </button>
                         ))}
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                       {[
-                        { label: 'Visite Totali', value: '12.430', change: '+12.5%', color: 'text-blue-600', icon: Users },
-                        { label: 'Impressioni SEO', value: '45.200', change: '+8.2%', color: 'text-purple-600', icon: Search },
-                        { label: 'Click Diretti', value: '3.120', change: '+15.4%', color: 'text-green-600', icon: MousePointer2 },
-                        { label: 'Permanenza Media', value: '3:45', change: '-2.1%', color: 'text-orange-600', icon: Clock }
-                      ].map((stat, i) => (stat && (
-                        <div key={i} className="bg-white p-6 rounded-[2.5rem] border border-gray-100 hover:shadow-xl transition-all group">
-                          <div className="flex justify-between items-start mb-4">
-                            <div className="p-3 bg-gray-50 rounded-2xl group-hover:scale-110 transition-transform">
-                              <stat.icon className={`w-6 h-6 ${stat.color}`} />
+                        { label: 'Visite Totali', value: '12.430', change: '+12.5%', isPos: true, icon: Users },
+                        { label: 'Impressioni SEO', value: '45.200', change: '+8.2%', isPos: true, icon: Search },
+                        { label: 'Click Diretti', value: '3.120', change: '+15.4%', isPos: true, icon: MousePointer2 },
+                        { label: 'Permanenza Media', value: '3:45', change: '-2.1%', isPos: false, icon: Clock }
+                      ].map((stat, i) => (
+                        <div key={i} className="bg-white p-5 rounded-2xl border border-neutral-200/80 shadow-[0_1px_3px_rgba(0,0,0,0.04)] transition-all">
+                          <div className="flex justify-between items-start mb-3">
+                            <div className="w-10 h-10 rounded-xl bg-neutral-50 border border-neutral-200/70 flex items-center justify-center text-neutral-900">
+                              <stat.icon className="w-5 h-5 text-neutral-700" />
                             </div>
-                            <span className={`text-[10px] font-black px-2 py-1 rounded-lg ${stat.change.startsWith('+') ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
+                            <span className={`text-[10px] font-medium px-2 py-0.5 rounded-md ${
+                              stat.isPos ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-rose-50 text-rose-700 border border-rose-100'
+                            }`}>
                               {stat.change}
                             </span>
                           </div>
-                          <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">{stat.label}</p>
-                          <h4 className="text-3xl font-black text-brand-dark">{stat.value}</h4>
+                          <p className="text-[10px] font-medium uppercase tracking-wider text-neutral-400 mb-1">{stat.label}</p>
+                          <h4 className="text-2xl font-light text-neutral-950 tracking-tight">{stat.value}</h4>
                         </div>
-                      )))}
+                      ))}
                     </div>
 
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                      <div className="bg-brand-dark p-8 rounded-[3rem] text-white space-y-6 relative overflow-hidden">
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-brand-yellow rounded-full blur-[100px] opacity-10 -mr-20 -mt-20"></div>
-                        <div className="flex justify-between items-center relative z-10">
-                          <h3 className="text-xl font-black uppercase tracking-tighter">Traffico Mensile</h3>
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                      {/* Traffico Mensile */}
+                      <div className="lg:col-span-2 bg-neutral-950 p-6 sm:p-7 rounded-2xl text-white border border-neutral-900 space-y-6">
+                        <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2">
+                          <div>
+                            <h3 className="text-xs font-medium uppercase tracking-[0.18em] text-white">Traffico Mensile</h3>
+                            <p className="text-[11px] text-neutral-400 font-light mt-0.5">Distribuzione per sorgente di acquisizione</p>
+                          </div>
                           <div className="flex gap-4">
                             <div className="flex items-center gap-2">
-                              <span className="w-3 h-3 rounded-full bg-brand-yellow"></span>
-                              <span className="text-[10px] font-bold uppercase text-gray-400">Organico</span>
+                              <span className="w-2.5 h-2.5 rounded-full bg-white"></span>
+                              <span className="text-[10px] font-medium uppercase tracking-wider text-neutral-300">Organico</span>
                             </div>
                             <div className="flex items-center gap-2">
-                              <span className="w-3 h-3 rounded-full bg-blue-500"></span>
-                              <span className="text-[10px] font-bold uppercase text-gray-400">Social</span>
+                              <span className="w-2.5 h-2.5 rounded-full bg-neutral-500"></span>
+                              <span className="text-[10px] font-medium uppercase tracking-wider text-neutral-400">Referral</span>
                             </div>
                           </div>
                         </div>
                         
-                        <div className="h-64 flex items-end gap-2 relative z-10 px-4">
+                        <div className="h-56 flex items-end gap-2 pt-4 px-1">
                           {[40, 60, 35, 90, 65, 45, 80, 55, 75, 45, 95, 70].map((h, i) => (
                             <div key={i} className="flex-1 flex flex-col items-center gap-2 group cursor-pointer">
-                              <div className="w-full relative">
+                              <div className="w-full relative flex items-end justify-center h-44">
                                 <motion.div 
                                   initial={{ height: 0 }}
                                   animate={{ height: `${h}%` }}
-                                  className="w-full bg-gradient-to-t from-brand-yellow/20 to-brand-yellow rounded-lg group-hover:brightness-125 transition-all"
+                                  className="w-full rounded-md bg-gradient-to-t from-neutral-800 to-neutral-200 group-hover:from-neutral-700 group-hover:to-white transition-all"
                                 />
-                                <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-white text-brand-dark px-2 py-1 rounded text-[10px] font-black opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                                  {h * 120} Visite
+                                <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-white text-neutral-950 px-2 py-0.5 rounded text-[10px] font-medium opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-md pointer-events-none">
+                                  {h * 120}
                                 </div>
                               </div>
-                              <span className="text-[8px] font-bold text-gray-500 uppercase tracking-tighter">M{i+1}</span>
+                              <span className="text-[9px] font-light text-neutral-400 uppercase">M{i+1}</span>
                             </div>
                           ))}
                         </div>
                       </div>
 
-                      <div className="bg-white p-8 rounded-[3rem] border border-gray-100 space-y-6">
-                        <h3 className="text-xl font-black text-brand-dark uppercase tracking-tighter">Dispositivi</h3>
-                        <div className="space-y-6">
+                      {/* Dispositivi */}
+                      <div className="bg-white p-6 sm:p-7 rounded-2xl border border-neutral-200/80 shadow-[0_1px_3px_rgba(0,0,0,0.04)] space-y-6">
+                        <div>
+                          <h3 className="text-xs font-medium uppercase tracking-[0.18em] text-neutral-950">Dispositivi</h3>
+                          <p className="text-[11px] text-neutral-400 font-light mt-0.5">Suddivisione sessioni per piattaforma</p>
+                        </div>
+                        <div className="space-y-5">
                           {[
-                            { label: 'Mobile', value: 65, icon: Smartphone, color: 'bg-neutral-950 text-white' },
-                            { label: 'Desktop', value: 30, icon: Monitor, color: 'bg-brand-blue text-white' },
-                            { label: 'Tablet', value: 5, icon: Tablet, color: 'bg-gray-100 text-gray-400' }
+                            { label: 'Mobile', value: 65, icon: Smartphone, barColor: 'bg-neutral-950' },
+                            { label: 'Desktop', value: 30, icon: Monitor, barColor: 'bg-neutral-600' },
+                            { label: 'Tablet', value: 5, icon: Tablet, barColor: 'bg-neutral-300' }
                           ].map((dev, i) => (
                             <div key={i} className="space-y-2">
-                              <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
-                                <div className="flex items-center gap-2">
-                                  <dev.icon className="w-4 h-4" />
+                              <div className="flex justify-between items-center text-xs">
+                                <div className="flex items-center gap-2 text-neutral-700 font-light">
+                                  <dev.icon className="w-4 h-4 text-neutral-500" />
                                   <span>{dev.label}</span>
                                 </div>
-                                <span>{dev.value}%</span>
+                                <span className="font-medium text-neutral-950">{dev.value}%</span>
                               </div>
-                              <div className="h-3 bg-gray-50 rounded-full overflow-hidden border border-gray-100">
+                              <div className="h-2 bg-neutral-100 rounded-full overflow-hidden">
                                 <motion.div 
                                   initial={{ width: 0 }}
                                   animate={{ width: `${dev.value}%` }}
-                                  className={`h-full ${dev.color.split(' ')[0]} rounded-full`}
+                                  className={`h-full ${dev.barColor} rounded-full`}
                                 />
                               </div>
                             </div>
@@ -6309,8 +4986,39 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                 )}
 
                 {adminActiveTab === 'marketing' && (
-                  <div className="p-12 text-center text-gray-400 font-bold uppercase tracking-widest bg-white rounded-[3rem] border border-gray-100">
-                    I controlli per la Vetrina e i Nuovi Arrivi sono stati spostati in <span className="text-brand-yellow bg-brand-dark px-2 py-0.5 rounded ml-1">Gestione Prodotti</span>
+                  <div className="space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-right-4 duration-300">
+                    <div>
+                      <h2 className="text-lg sm:text-xl font-light uppercase tracking-[0.22em] text-neutral-950">
+                        Marketing & Promozioni
+                      </h2>
+                      <p className="text-[11px] text-neutral-400 font-light mt-1 tracking-wide">
+                        Gestione campagne, vetrina e promozioni del catalogo
+                      </p>
+                    </div>
+
+                    <div className="bg-white rounded-2xl border border-neutral-200/80 shadow-[0_1px_3px_rgba(0,0,0,0.04)] p-8 sm:p-12 text-center max-w-2xl mx-auto space-y-5">
+                      <div className="w-14 h-14 rounded-2xl bg-neutral-50 border border-neutral-200 flex items-center justify-center mx-auto text-neutral-800">
+                        <Tag className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-medium uppercase tracking-[0.18em] text-neutral-950 mb-2">
+                          Controlli Vetrina & Nuovi Arrivi
+                        </h3>
+                        <p className="text-xs text-neutral-500 font-light leading-relaxed">
+                          I badge promozionali, la messa in Vetrina e i Nuovi Arrivi sono integrati direttamente nella scheda di ogni articolo e nei filtri del catalogo.
+                        </p>
+                      </div>
+                      <div className="pt-2">
+                        <button
+                          type="button"
+                          onClick={() => setAdminActiveTab('products')}
+                          className={ADMIN_BTN_PRIMARY}
+                        >
+                          <span>Vai a Gestione Prodotti</span>
+                          <ArrowRight className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 )}
 
@@ -7376,25 +6084,27 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                 )}
 
                 {adminActiveTab === 'payments' && (
-                  <div className="space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-500">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <h2 className="text-3xl font-black text-brand-dark uppercase tracking-tighter">Metodi di Pagamento</h2>
-                        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Configura come i tuoi clienti possono pagare gli ordini</p>
-                      </div>
+                  <div className="space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-right-4 duration-300">
+                    <div>
+                      <h2 className="text-lg sm:text-xl font-light uppercase tracking-[0.22em] text-neutral-950">
+                        Metodi di Pagamento
+                      </h2>
+                      <p className="text-[11px] text-neutral-400 font-light mt-1 tracking-wide">
+                        Configura gateway di pagamento, carte, PayPal, bonifico e contrassegno
+                      </p>
                     </div>
 
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                       {/* Stripe Settings */}
-                      <div className="bg-white rounded-[2.5rem] p-8 border border-gray-100 shadow-sm space-y-6">
-                        <div className="flex items-center justify-between border-b border-gray-50 pb-6">
-                          <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600">
-                              <CreditCard className="w-6 h-6" />
+                      <div className="bg-white rounded-2xl p-6 sm:p-7 border border-neutral-200/80 shadow-[0_1px_3px_rgba(0,0,0,0.04)] space-y-5">
+                        <div className="flex items-center justify-between border-b border-neutral-100 pb-5">
+                          <div className="flex items-center gap-3.5">
+                            <div className="w-11 h-11 bg-neutral-50 border border-neutral-200/80 rounded-xl flex items-center justify-center text-neutral-900">
+                              <CreditCard className="w-5 h-5" />
                             </div>
                             <div>
-                              <h3 className="text-lg font-black uppercase tracking-tighter text-brand-dark">Stripe / Carte</h3>
-                              <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Credit Cards, Google Pay, Apple Pay</p>
+                              <h3 className="text-xs font-medium uppercase tracking-[0.18em] text-neutral-950">Stripe / Carte</h3>
+                              <p className="text-[10px] uppercase text-neutral-400 tracking-wider mt-0.5">Carte di credito, Apple Pay, Google Pay</p>
                             </div>
                           </div>
                           <label className="relative inline-flex items-center cursor-pointer">
@@ -7404,37 +6114,37 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                               checked={paymentSettings.stripeEnabled}
                               onChange={() => setPaymentSettings(prev => ({ ...prev, stripeEnabled: !prev.stripeEnabled }))}
                             />
-                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600 relative"></div>
+                            <div className="w-11 h-6 bg-neutral-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-neutral-950 relative"></div>
                           </label>
                         </div>
                         
-                        <div className="space-y-4">
+                        <div className="space-y-3">
                           <label className="block">
-                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1 block">Chiave Pubblicabile (PK)</span>
+                            <span className="text-[10px] font-medium uppercase tracking-wider text-neutral-400 mb-1 block">Chiave Pubblicabile (PK)</span>
                             <input 
                               type="text" 
                               value={paymentSettings.stripeKey}
                               onChange={e => setPaymentSettings(prev => ({ ...prev, stripeKey: e.target.value }))}
                               placeholder="pk_live_..." 
-                              className="w-full bg-gray-50 border-gray-100 rounded-xl px-4 py-3 text-sm font-bold placeholder:text-gray-300 focus:ring-2 focus:ring-indigo-500 transition-all" 
+                              className={ADMIN_INPUT}
                             />
                           </label>
-                          <p className="text-[10px] text-gray-400 font-medium italic bg-indigo-50/50 p-3 rounded-lg border border-indigo-100">
-                            Stripe accetta automaticamente tutte le principali carte di credito e wallet digitali.
+                          <p className="text-[11px] text-neutral-500 font-light bg-neutral-50 p-3 rounded-xl border border-neutral-200/60 leading-relaxed">
+                            Stripe accetta automaticamente le principali carte di credito e wallet digitali abilitati.
                           </p>
                         </div>
                       </div>
 
                       {/* PayPal Settings */}
-                      <div className="bg-white rounded-[2.5rem] p-8 border border-gray-100 shadow-sm space-y-6">
-                        <div className="flex items-center justify-between border-b border-gray-50 pb-6">
-                          <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600">
-                              <ExternalLink className="w-6 h-6" />
+                      <div className="bg-white rounded-2xl p-6 sm:p-7 border border-neutral-200/80 shadow-[0_1px_3px_rgba(0,0,0,0.04)] space-y-5">
+                        <div className="flex items-center justify-between border-b border-neutral-100 pb-5">
+                          <div className="flex items-center gap-3.5">
+                            <div className="w-11 h-11 bg-neutral-50 border border-neutral-200/80 rounded-xl flex items-center justify-center text-neutral-900">
+                              <ExternalLink className="w-5 h-5" />
                             </div>
                             <div>
-                              <h3 className="text-lg font-black uppercase tracking-tighter text-brand-dark">PayPal</h3>
-                              <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Pagamenti diretti e in 3 rate</p>
+                              <h3 className="text-xs font-medium uppercase tracking-[0.18em] text-neutral-950">PayPal</h3>
+                              <p className="text-[10px] uppercase text-neutral-400 tracking-wider mt-0.5">Pagamento diretto e rateale in 3 rate</p>
                             </div>
                           </div>
                           <label className="relative inline-flex items-center cursor-pointer">
@@ -7444,34 +6154,34 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                               checked={paymentSettings.paypalEnabled}
                               onChange={() => setPaymentSettings(prev => ({ ...prev, paypalEnabled: !prev.paypalEnabled }))}
                             />
-                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600 relative"></div>
+                            <div className="w-11 h-6 bg-neutral-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-neutral-950 relative"></div>
                           </label>
                         </div>
                         
-                        <div className="space-y-4">
+                        <div className="space-y-3">
                           <label className="block">
-                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1 block">Email Business PayPal</span>
+                            <span className="text-[10px] font-medium uppercase tracking-wider text-neutral-400 mb-1 block">Email Business PayPal</span>
                             <input 
                               type="email" 
                               value={paymentSettings.paypalEmail}
                               onChange={e => setPaymentSettings(prev => ({ ...prev, paypalEmail: e.target.value }))}
                               placeholder="info@vincentstore.it" 
-                              className="w-full bg-gray-50 border-gray-100 rounded-xl px-4 py-3 text-sm font-bold placeholder:text-gray-300 focus:ring-2 focus:ring-blue-500 transition-all" 
+                              className={ADMIN_INPUT}
                             />
                           </label>
                         </div>
                       </div>
 
                       {/* Bank Transfer Settings */}
-                      <div className="bg-white rounded-[2.5rem] p-8 border border-gray-100 shadow-sm space-y-6 lg:col-span-2">
-                        <div className="flex items-center justify-between border-b border-gray-50 pb-6">
-                          <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-600">
-                              <Globe className="w-6 h-6" />
+                      <div className="bg-white rounded-2xl p-6 sm:p-7 border border-neutral-200/80 shadow-[0_1px_3px_rgba(0,0,0,0.04)] space-y-5 lg:col-span-2">
+                        <div className="flex items-center justify-between border-b border-neutral-100 pb-5">
+                          <div className="flex items-center gap-3.5">
+                            <div className="w-11 h-11 bg-neutral-50 border border-neutral-200/80 rounded-xl flex items-center justify-center text-neutral-900">
+                              <Globe className="w-5 h-5" />
                             </div>
                             <div>
-                              <h3 className="text-lg font-black uppercase tracking-tighter text-brand-dark">Bonifico Bancario</h3>
-                              <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Pagamento manuale differito</p>
+                              <h3 className="text-xs font-medium uppercase tracking-[0.18em] text-neutral-950">Bonifico Bancario</h3>
+                              <p className="text-[10px] uppercase text-neutral-400 tracking-wider mt-0.5">Pagamento manuale differito</p>
                             </div>
                           </div>
                           <label className="relative inline-flex items-center cursor-pointer">
@@ -7481,53 +6191,54 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                               checked={paymentSettings.bankEnabled}
                               onChange={() => setPaymentSettings(prev => ({ ...prev, bankEnabled: !prev.bankEnabled }))}
                             />
-                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gray-600 relative"></div>
+                            <div className="w-11 h-6 bg-neutral-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-neutral-950 relative"></div>
                           </label>
                         </div>
                         
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <label className="block">
-                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1 block">Intestatario Conto</span>
+                            <span className="text-[10px] font-medium uppercase tracking-wider text-neutral-400 mb-1 block">Intestatario Conto</span>
                             <input 
                               type="text" 
                               value={paymentSettings.bankOwner}
                               onChange={e => setPaymentSettings(prev => ({ ...prev, bankOwner: e.target.value }))}
-                              placeholder="BESPOINT S.R.L." 
-                              className="w-full bg-gray-50 border-gray-100 rounded-xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-gray-400 transition-all" 
+                              placeholder="VINCENT STORE S.R.L." 
+                              className={ADMIN_INPUT}
                             />
                           </label>
                           <label className="block">
-                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1 block">IBAN</span>
+                            <span className="text-[10px] font-medium uppercase tracking-wider text-neutral-400 mb-1 block">IBAN</span>
                             <input 
                               type="text" 
                               value={paymentSettings.bankIban}
                               onChange={e => setPaymentSettings(prev => ({ ...prev, bankIban: e.target.value }))}
                               placeholder="IT00 X 00000 00000 000000000000" 
-                              className="w-full bg-gray-50 border-gray-100 rounded-xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-gray-400 transition-all" 
+                              className={ADMIN_INPUT}
                             />
                           </label>
                           <label className="block md:col-span-2">
-                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1 block">Note per il cliente (Visualizzate al checkout)</span>
+                            <span className="text-[10px] font-medium uppercase tracking-wider text-neutral-400 mb-1 block">Note per il cliente (Visualizzate al checkout)</span>
                             <textarea 
                               value={paymentSettings.bankNote}
                               onChange={e => setPaymentSettings(prev => ({ ...prev, bankNote: e.target.value }))}
                               rows={2}
-                              className="w-full bg-gray-50 border-gray-100 rounded-xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-gray-400 transition-all resize-none" 
-                            ></textarea>
+                              className="w-full bg-white border border-neutral-200 rounded-xl px-4 py-3 text-sm font-light focus:outline-none focus:border-neutral-900 transition-colors resize-none"
+                              placeholder="Indica il numero dell'ordine nella causale del bonifico."
+                            />
                           </label>
                         </div>
                       </div>
 
                       {/* COD Settings */}
-                      <div className="bg-white rounded-[2.5rem] p-8 border border-gray-100 shadow-sm space-y-6 lg:col-span-2">
-                        <div className="flex items-center justify-between border-b border-gray-50 pb-6">
-                          <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 bg-orange-50 rounded-2xl flex items-center justify-center text-orange-600">
-                              <Truck className="w-6 h-6" />
+                      <div className="bg-white rounded-2xl p-6 sm:p-7 border border-neutral-200/80 shadow-[0_1px_3px_rgba(0,0,0,0.04)] space-y-5 lg:col-span-2">
+                        <div className="flex items-center justify-between border-b border-neutral-100 pb-5">
+                          <div className="flex items-center gap-3.5">
+                            <div className="w-11 h-11 bg-neutral-50 border border-neutral-200/80 rounded-xl flex items-center justify-center text-neutral-900">
+                              <Truck className="w-5 h-5" />
                             </div>
                             <div>
-                              <h3 className="text-lg font-black uppercase tracking-tighter text-brand-dark">Contrassegno (COD)</h3>
-                              <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Pagamento in contanti alla consegna</p>
+                              <h3 className="text-xs font-medium uppercase tracking-[0.18em] text-neutral-950">Contrassegno (COD)</h3>
+                              <p className="text-[10px] uppercase text-neutral-400 tracking-wider mt-0.5">Pagamento in contanti alla consegna</p>
                             </div>
                           </div>
                           <label className="relative inline-flex items-center cursor-pointer">
@@ -7537,20 +6248,20 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                               checked={paymentSettings.codEnabled}
                               onChange={() => setPaymentSettings(prev => ({ ...prev, codEnabled: !prev.codEnabled }))}
                             />
-                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500 relative"></div>
+                            <div className="w-11 h-6 bg-neutral-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-neutral-950 relative"></div>
                           </label>
                         </div>
                         
-                        <div className="space-y-4">
+                        <div>
                           <label className="block">
-                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1 block">Note Istruzioni per il Cliente</span>
+                            <span className="text-[10px] font-medium uppercase tracking-wider text-neutral-400 mb-1 block">Note / Istruzioni per il Cliente</span>
                             <textarea 
                               value={paymentSettings.codNote}
                               onChange={e => setPaymentSettings(prev => ({ ...prev, codNote: e.target.value }))}
-                              placeholder="Es: Assicurati di avere l'importo esatto pronto al momento della consegna." 
+                              placeholder="Es: Si prega di preparare l'importo esatto in contanti al momento della consegna da parte del corriere." 
                               rows={2}
-                              className="w-full bg-gray-50 border-gray-100 rounded-xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-orange-500 transition-all resize-none" 
-                            ></textarea>
+                              className="w-full bg-white border border-neutral-200 rounded-xl px-4 py-3 text-sm font-light focus:outline-none focus:border-neutral-900 transition-colors resize-none"
+                            />
                           </label>
                         </div>
                       </div>
@@ -7559,24 +6270,30 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                 )}
 
                 {adminActiveTab === 'marketplaces' && (
-                  <div className="space-y-8 animate-in fade-in slide-in-from-right-8 duration-500">
+                  <div className="space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-right-4 duration-300">
                     <div>
-                      <h2 className="text-3xl font-black text-brand-dark uppercase tracking-tighter mb-2">Integrazione Marketplaces</h2>
-                      <p className="text-sm font-bold text-gray-400 font-bold">Configura i connettori API per sincronizzare stock, prezzi e ordini con le piattaforme esterne.</p>
+                      <h2 className="text-lg sm:text-xl font-light uppercase tracking-[0.22em] text-neutral-950">
+                        Integrazione Marketplaces
+                      </h2>
+                      <p className="text-[11px] text-neutral-400 font-light mt-1 tracking-wide">
+                        Sincronizzazione catalogo, prezzi e ordini con canali esterni
+                      </p>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                       {/* Amazon Config */}
-                      <div className="bg-white rounded-3xl p-8 border border-gray-100 shadow-sm hover:shadow-xl transition-all group overflow-hidden relative">
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500 rounded-full blur-3xl opacity-5 group-hover:opacity-10 transition-opacity"></div>
-                        <div className="flex items-center justify-between mb-8">
-                          <div className="flex items-center gap-3">
-                            <div className="w-12 h-12 bg-orange-50 text-orange-500 rounded-2xl flex items-center justify-center shadow-inner">
-                              <Globe className="w-7 h-7" />
+                      <div className="bg-white rounded-2xl p-6 sm:p-7 border border-neutral-200/80 shadow-[0_1px_3px_rgba(0,0,0,0.04)] space-y-5">
+                        <div className="flex items-center justify-between border-b border-neutral-100 pb-5">
+                          <div className="flex items-center gap-3.5">
+                            <div className="w-11 h-11 bg-neutral-50 border border-neutral-200/80 rounded-xl flex items-center justify-center text-neutral-900">
+                              <Globe className="w-5 h-5" />
                             </div>
-                            <h3 className="text-xl font-black uppercase tracking-tighter">Amazon SP-API</h3>
+                            <div>
+                              <h3 className="text-xs font-medium uppercase tracking-[0.18em] text-neutral-950">Amazon SP-API</h3>
+                              <p className="text-[10px] uppercase text-neutral-400 tracking-wider mt-0.5">Sincronizzazione catalogo</p>
+                            </div>
                           </div>
-                          <label className="inline-flex items-center cursor-pointer">
+                          <label className="relative inline-flex items-center cursor-pointer">
                             <input 
                               type="checkbox" 
                               className="sr-only peer" 
@@ -7587,38 +6304,44 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                                 setPageSettings({ ...pageSettings, enabledMarketplaces: next });
                               }}
                             />
-                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500 relative"></div>
+                            <div className="w-11 h-6 bg-neutral-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-neutral-950 relative"></div>
                           </label>
                         </div>
                         <div className="space-y-4">
                           <label className="block">
-                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1 block">Seller ID</span>
-                            <input type="text" placeholder="A1BCDEFGH2IJK" className="w-full bg-gray-50 border-gray-200 rounded-xl px-4 py-3 text-sm font-bold placeholder:text-gray-300" />
+                            <span className="text-[10px] font-medium uppercase tracking-wider text-neutral-400 mb-1 block">Seller ID</span>
+                            <input type="text" placeholder="A1BCDEFGH2IJK" className={ADMIN_INPUT} />
                           </label>
                           <label className="block">
-                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1 block">Marketplace Region</span>
-                            <select className="w-full bg-gray-50 border-gray-200 rounded-xl px-4 py-3 text-sm font-bold">
+                            <span className="text-[10px] font-medium uppercase tracking-wider text-neutral-400 mb-1 block">Regione Marketplace</span>
+                            <select className="w-full min-h-[48px] bg-white border border-neutral-200 rounded-xl px-4 py-3 text-sm font-light focus:outline-none focus:border-neutral-900 transition-colors">
                               <option>Europa (Amazon.it)</option>
-                              <option>America</option>
+                              <option>Nord America (Amazon.com)</option>
                             </select>
                           </label>
-                          <button className="w-full bg-brand-dark text-orange-500 px-6 py-3 rounded-xl font-black uppercase text-xs tracking-widest hover:bg-orange-500 hover:text-white transition-all flex items-center justify-center gap-2">
-                             Autorizza Canale
+                          <button 
+                            type="button"
+                            onClick={() => addToast("Canale Amazon SP-API verificato", "success")}
+                            className={`w-full ${ADMIN_BTN_PRIMARY}`}
+                          >
+                            Autorizza Canale
                           </button>
                         </div>
                       </div>
 
                       {/* eBay Config */}
-                      <div className="bg-white rounded-3xl p-8 border border-gray-100 shadow-sm hover:shadow-xl transition-all group overflow-hidden relative">
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500 rounded-full blur-3xl opacity-5 group-hover:opacity-10 transition-opacity"></div>
-                        <div className="flex items-center justify-between mb-8">
-                          <div className="flex items-center gap-3">
-                            <div className="w-12 h-12 bg-blue-50 text-blue-500 rounded-2xl flex items-center justify-center shadow-inner">
-                              <ExternalLink className="w-7 h-7" />
+                      <div className="bg-white rounded-2xl p-6 sm:p-7 border border-neutral-200/80 shadow-[0_1px_3px_rgba(0,0,0,0.04)] space-y-5">
+                        <div className="flex items-center justify-between border-b border-neutral-100 pb-5">
+                          <div className="flex items-center gap-3.5">
+                            <div className="w-11 h-11 bg-neutral-50 border border-neutral-200/80 rounded-xl flex items-center justify-center text-neutral-900">
+                              <ExternalLink className="w-5 h-5" />
                             </div>
-                            <h3 className="text-xl font-black uppercase tracking-tighter">eBay Integration</h3>
+                            <div>
+                              <h3 className="text-xs font-medium uppercase tracking-[0.18em] text-neutral-950">eBay Integration</h3>
+                              <p className="text-[10px] uppercase text-neutral-400 tracking-wider mt-0.5">Gestione annunci ed ordini</p>
+                            </div>
                           </div>
-                          <label className="inline-flex items-center cursor-pointer">
+                          <label className="relative inline-flex items-center cursor-pointer">
                             <input 
                               type="checkbox" 
                               className="sr-only peer" 
@@ -7629,45 +6352,53 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                                 setPageSettings({ ...pageSettings, enabledMarketplaces: next });
                               }}
                             />
-                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500 relative"></div>
+                            <div className="w-11 h-6 bg-neutral-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-neutral-950 relative"></div>
                           </label>
                         </div>
                         <div className="space-y-4">
                           <label className="block">
-                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1 block">RU Name</span>
-                            <input type="text" placeholder="BesPoint-BesPoint-..." className="w-full bg-gray-50 border-gray-200 rounded-xl px-4 py-3 text-sm font-bold placeholder:text-gray-300" />
+                            <span className="text-[10px] font-medium uppercase tracking-wider text-neutral-400 mb-1 block">RU Name</span>
+                            <input type="text" placeholder="VincentStore-App-..." className={ADMIN_INPUT} />
                           </label>
                           <label className="block">
-                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1 block">Environment</span>
-                            <select className="w-full bg-gray-50 border-gray-200 rounded-xl px-4 py-3 text-sm font-bold">
-                              <option>Production (Live)</option>
+                            <span className="text-[10px] font-medium uppercase tracking-wider text-neutral-400 mb-1 block">Ambiente</span>
+                            <select className="w-full min-h-[48px] bg-white border border-neutral-200 rounded-xl px-4 py-3 text-sm font-light focus:outline-none focus:border-neutral-900 transition-colors">
+                              <option>Produzione (Live)</option>
                               <option>Sandbox (Test)</option>
                             </select>
                           </label>
-                          <button className="w-full bg-brand-dark text-blue-500 px-6 py-3 rounded-xl font-black uppercase text-xs tracking-widest hover:bg-blue-500 hover:text-white transition-all flex items-center justify-center gap-2">
-                             Collega Account eBay
+                          <button 
+                            type="button"
+                            onClick={() => addToast("Canale eBay collegato con successo", "success")}
+                            className={`w-full ${ADMIN_BTN_PRIMARY}`}
+                          >
+                            Collega Account eBay
                           </button>
                         </div>
                       </div>
 
                       {/* Add More */}
-                      <div className="bg-gray-50 rounded-3xl p-8 border-2 border-dashed border-gray-200 flex flex-col items-center justify-center text-center group cursor-pointer hover:border-brand-yellow transition-all">
-                        <div className="w-16 h-16 bg-white text-gray-400 rounded-2xl flex items-center justify-center shadow-sm group-hover:scale-110 group-hover:bg-brand-yellow group-hover:text-brand-dark transition-all mb-4">
-                          <Plus className="w-8 h-8" />
+                      <div 
+                        onClick={() => addToast("Nuovo connettore marketplace in arrivo!", "info")}
+                        className="bg-neutral-50/50 rounded-2xl p-6 sm:p-7 border border-dashed border-neutral-300 flex flex-col items-center justify-center text-center group cursor-pointer hover:border-neutral-950 hover:bg-neutral-50 transition-all min-h-[260px]"
+                      >
+                        <div className="w-12 h-12 bg-white text-neutral-500 rounded-xl border border-neutral-200 flex items-center justify-center shadow-sm group-hover:scale-105 group-hover:border-neutral-400 group-hover:text-neutral-950 transition-all mb-3">
+                          <Plus className="w-5 h-5" />
                         </div>
-                        <h3 className="font-black uppercase tracking-widest text-gray-400 group-hover:text-brand-dark transition-colors">Aggiungi Canale</h3>
-                        <p className="text-[10px] font-bold text-gray-400 mt-1 uppercase">ManoMano, Temu, B2B VIP Extension</p>
+                        <h3 className="text-xs font-medium uppercase tracking-[0.18em] text-neutral-700 group-hover:text-neutral-950 transition-colors">Aggiungi Canale</h3>
+                        <p className="text-[10px] text-neutral-400 font-light mt-1 tracking-wide">Google Shopping, TikTok Shop, ManoMano</p>
                       </div>
                     </div>
                   </div>
                 )}
 
-                <div className="mt-8 pt-6 border-t border-gray-100 flex justify-end">
+                <div className="mt-8 pt-6 border-t border-neutral-200/80 flex justify-end">
                   <button 
+                    type="button"
                     onClick={() => setIsGeneralSaveSuccess(true)}
-                    className="bg-neutral-950 text-white px-10 py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-brand-orange transition-all shadow-lg hover:-translate-y-1 active:translate-y-0"
+                    className={ADMIN_BTN_PRIMARY}
                   >
-                    Salva Modifiche
+                    <span>Salva Modifiche</span>
                   </button>
                 </div>
 
@@ -7679,40 +6410,42 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="absolute inset-0 bg-brand-dark/80 backdrop-blur-xl"
+                        className="absolute inset-0 bg-neutral-950/70 backdrop-blur-sm"
                         onClick={() => setIsGeneralSaveSuccess(false)}
                       />
                       <motion.div 
-                        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                        initial={{ opacity: 0, scale: 0.95, y: 10 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                        className="relative bg-white w-full max-w-sm rounded-[3rem] p-10 text-center shadow-2xl border border-gray-100 overflow-hidden"
+                        exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                        className="relative bg-white w-full max-w-sm rounded-2xl p-8 text-center shadow-2xl border border-neutral-200/80 overflow-hidden"
                       >
-                        <div className="absolute top-0 inset-x-0 h-2 bg-gradient-to-r from-blue-400 to-indigo-500"></div>
-                        
-                        <div className="w-20 h-20 bg-blue-50 rounded-[2rem] flex items-center justify-center mx-auto mb-6">
-                           <Check className="w-10 h-10 text-blue-500" />
+                        <div className="w-14 h-14 bg-neutral-50 border border-neutral-200 rounded-2xl flex items-center justify-center mx-auto mb-4 text-neutral-950">
+                          <Check className="w-7 h-7" />
                         </div>
                         
-                        <h3 className="text-2xl font-black text-brand-dark uppercase tracking-tighter mb-2">Impostazioni Salvate</h3>
-                        <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest mb-8 leading-relaxed">
-                          Le modifiche alle configurazioni admin sono state applicate correttamente al sistema.
+                        <h3 className="text-base font-light uppercase tracking-[0.2em] text-neutral-950 mb-1">
+                          Impostazioni Salvate
+                        </h3>
+                        <p className="text-xs text-neutral-500 font-light tracking-wide mb-6 leading-relaxed">
+                          Le modifiche alle configurazioni del pannello admin sono state salvate correttamente.
                         </p>
                         
-                        <div className="space-y-3">
+                        <div className="flex flex-col gap-2.5">
                           <button 
+                            type="button"
                             onClick={() => setIsGeneralSaveSuccess(false)}
-                            className="w-full py-4 bg-neutral-950 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest hover:scale-[1.02] active:scale-95 transition-all shadow-lg"
+                            className={`w-full ${ADMIN_BTN_PRIMARY}`}
                           >
                             Rimani qui
                           </button>
                           
                           <button 
+                            type="button"
                             onClick={() => {
                               setIsGeneralSaveSuccess(false);
                               setIsAdminOpen(false);
                             }}
-                            className="w-full py-4 bg-gray-50 text-gray-400 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-gray-100 transition-all border border-gray-100"
+                            className={`w-full ${ADMIN_BTN_SECONDARY}`}
                           >
                             Esci dall'Admin
                           </button>

@@ -1,7 +1,22 @@
 import React, { useState, useRef } from "react";
-import { Upload, Image as ImageIcon, Check, AlertCircle, Loader2, Search, Trash2, FileSpreadsheet, FileImage } from "lucide-react";
+import { 
+  Upload, 
+  Image as ImageIcon, 
+  Check, 
+  AlertCircle, 
+  Loader2, 
+  Search, 
+  Trash2, 
+  FileSpreadsheet, 
+  FileImage,
+  ArrowLeft 
+} from "lucide-react";
 import { Product } from "./types";
 import Papa from "papaparse";
+import { 
+  ADMIN_BTN_PRIMARY, 
+  ADMIN_BTN_SECONDARY 
+} from "@/components/admin/adminTouchTargets";
 
 interface ImageMatch {
   productSku: string;
@@ -103,52 +118,86 @@ export const AdminImageLinker = ({
     setIsProcessing(false);
   };
 
+  const matchedCount = matches.filter(m => m.status === 'match').length;
+  const successCount = matches.filter(m => m.status === 'success').length;
+
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      <div className="flex items-center justify-between border-b border-gray-100 pb-6">
+    <div className="max-w-4xl mx-auto pb-16 animate-in fade-in duration-300">
+      {/* Header coerente con le sezioni admin */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between mb-8">
         <div>
-          <h2 className="text-3xl font-black text-brand-dark uppercase tracking-tighter">Bulk Image Linker</h2>
-          <p className="text-gray-400 font-bold">Collega immagini ai prodotti tramite Codice SKU</p>
+          <h2 className="text-lg sm:text-xl font-light uppercase tracking-[0.22em] text-neutral-950">
+            Bulk Images
+          </h2>
+          <p className="text-[11px] text-neutral-400 font-light mt-1 tracking-wide">
+            Associazione massiva immagini ai prodotti tramite SKU o listino CSV
+          </p>
         </div>
-        <button onClick={onBack} className="px-6 py-3 bg-gray-100 text-gray-500 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-gray-200 transition-all">Annulla</button>
+        <div>
+          <button 
+            type="button"
+            onClick={onBack} 
+            className={`${ADMIN_BTN_SECONDARY} w-full sm:w-auto rounded-full`}
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>Torna ai Prodotti</span>
+          </button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Sinistra: Caricamento */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Sinistra: Selettore e Caricamento */}
         <div className="space-y-6">
-          <div className="flex gap-2">
+          {/* Selettore Modalità */}
+          <div className="bg-neutral-100 p-1 rounded-xl flex gap-1">
             <button 
+              type="button"
               onClick={() => setActiveMode('files')}
-              className={`flex-1 py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all ${activeMode === 'files' ? 'bg-brand-dark text-brand-yellow' : 'bg-gray-100 text-gray-400'}`}
+              className={`flex-1 min-h-[44px] px-3 py-2.5 rounded-lg text-xs font-medium uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${
+                activeMode === 'files' 
+                  ? 'bg-neutral-950 text-white shadow-sm' 
+                  : 'text-neutral-600 hover:text-neutral-900'
+              }`}
             >
-              <FileImage className="w-4 h-4 mx-auto mb-1" /> File Immagine
+              <FileImage className="w-4 h-4" />
+              <span>File Immagine</span>
             </button>
             <button 
+              type="button"
               onClick={() => setActiveMode('csv')}
-              className={`flex-1 py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all ${activeMode === 'csv' ? 'bg-brand-dark text-brand-yellow' : 'bg-gray-100 text-gray-400'}`}
+              className={`flex-1 min-h-[44px] px-3 py-2.5 rounded-lg text-xs font-medium uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${
+                activeMode === 'csv' 
+                  ? 'bg-neutral-950 text-white shadow-sm' 
+                  : 'text-neutral-600 hover:text-neutral-900'
+              }`}
             >
-              <FileSpreadsheet className="w-4 h-4 mx-auto mb-1" /> File CSV
+              <FileSpreadsheet className="w-4 h-4" />
+              <span>File CSV</span>
             </button>
           </div>
 
+          {/* Area Drop / Caricamento */}
           <div
             onClick={() => activeMode === 'files' ? fileInputRef.current?.click() : csvInputRef.current?.click()}
-            className="border-4 border-dashed border-gray-100 rounded-[3rem] p-12 text-center hover:border-brand-yellow/30 hover:bg-brand-yellow/5 transition-all cursor-pointer group"
+            className="bg-white border-2 border-dashed border-neutral-300 hover:border-neutral-950 rounded-2xl p-8 sm:p-10 text-center transition-all cursor-pointer group shadow-sm"
           >
-            <div className="w-20 h-20 bg-gray-50 rounded-3xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 group-hover:bg-brand-yellow/10 transition-all">
-              {activeMode === 'files' ? <ImageIcon className="w-10 h-10 text-brand-yellow" /> : <FileSpreadsheet className="w-10 h-10 text-brand-yellow" />}
+            <div className="w-16 h-16 bg-neutral-50 border border-neutral-200/80 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-105 group-hover:bg-neutral-100 transition-all text-neutral-800">
+              {activeMode === 'files' ? <ImageIcon className="w-7 h-7" /> : <FileSpreadsheet className="w-7 h-7" />}
             </div>
-            <p className="text-sm font-black text-brand-dark uppercase tracking-wider mb-2">
-              {activeMode === 'files' ? 'Seleziona le foto dei prodotti' : 'Seleziona il listino immagini'}
+            <p className="text-xs font-medium uppercase tracking-wider text-neutral-950 mb-1.5">
+              {activeMode === 'files' ? 'Seleziona le foto dei prodotti' : 'Seleziona il listino immagini CSV'}
             </p>
-            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">
-              {activeMode === 'files' ? 'Il nome del file deve corrispondere allo SKU (es. 1234.jpg)' : 'CSV con due colonne: CODICE e URL'}
+            <p className="text-[11px] text-neutral-400 font-light max-w-xs mx-auto leading-relaxed">
+              {activeMode === 'files' 
+                ? 'Il nome del file deve corrispondere allo SKU o EAN (es. 1234.jpg o PROD-01.png)' 
+                : 'File CSV con due colonne: CODICE e URL'}
             </p>
             <input 
               type="file" 
               ref={fileInputRef} 
               className="hidden" 
               multiple 
+              accept="image/*"
               onChange={(e) => processFiles(Array.from(e.target.files || []))} 
             />
             <input 
@@ -168,74 +217,115 @@ export const AdminImageLinker = ({
             />
           </div>
 
+          {/* Riepilogo e Azione */}
           {matches.length > 0 && (
-            <div className="bg-brand-dark p-8 rounded-[2.5rem] shadow-2xl space-y-4">
-              <div className="flex justify-between items-center text-white">
-                <span className="font-black uppercase text-xs tracking-widest">Totale Analizzati: {matches.length}</span>
-                <span className="font-black uppercase text-xs tracking-widest text-brand-yellow">Match Trovati: {matches.filter(m => m.status === 'match').length}</span>
+            <div className="bg-neutral-950 text-white p-5 sm:p-6 rounded-2xl shadow-sm space-y-4">
+              <div className="flex justify-between items-center text-xs tracking-wider">
+                <span className="font-light text-neutral-300">Totale analizzati: <strong className="text-white font-medium">{matches.length}</strong></span>
+                <span className="font-medium text-emerald-400">Match trovati: {matchedCount}</span>
               </div>
               <button 
+                type="button"
                 onClick={finalizeLinking}
-                disabled={isProcessing || !matches.some(m => m.status === 'match')}
-                className="w-full bg-brand-yellow text-brand-dark py-5 rounded-2xl font-black uppercase text-sm tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl disabled:opacity-30"
+                disabled={isProcessing || matchedCount === 0}
+                className="w-full min-h-[48px] bg-white text-neutral-950 py-3 rounded-xl text-xs font-medium uppercase tracking-wider hover:bg-neutral-100 active:scale-[0.99] transition-all disabled:opacity-40 flex items-center justify-center gap-2"
               >
-                {isProcessing ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'Applica Collegamenti'}
+                {isProcessing ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Salvataggio in corso...</span>
+                  </>
+                ) : (
+                  <>
+                    <Check className="w-4 h-4 text-emerald-600" />
+                    <span>Applica {matchedCount} Collegamenti</span>
+                  </>
+                )}
               </button>
             </div>
           )}
         </div>
 
-        {/* Destra: Preview */}
-        <div className="bg-gray-50 rounded-[3rem] p-8 border border-gray-100 h-[600px] flex flex-col">
-          <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-6 flex items-center gap-2 px-2">
-            <Search className="w-3 h-3" /> Risultati Anteprima
-          </h4>
+        {/* Destra: Anteprima e Risultati */}
+        <div className="bg-white rounded-2xl p-5 sm:p-6 border border-neutral-200/80 shadow-sm h-[560px] flex flex-col">
+          <div className="flex items-center justify-between pb-4 border-b border-neutral-100 mb-4">
+            <h4 className="text-[11px] font-medium uppercase tracking-wider text-neutral-400 flex items-center gap-2">
+              <Search className="w-3.5 h-3.5" />
+              <span>Risultati Anteprima ({matches.length})</span>
+            </h4>
+            {matches.length > 0 && (
+              <button 
+                type="button"
+                onClick={() => setMatches([])}
+                className="text-[11px] font-medium uppercase tracking-wider text-neutral-400 hover:text-rose-600 transition-colors flex items-center gap-1.5"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Pulisci</span>
+              </button>
+            )}
+          </div>
           
-          <div className="flex-1 overflow-y-auto space-y-3 no-scrollbar pr-2">
+          <div className="flex-1 overflow-y-auto space-y-2.5 pr-1">
             {matches.length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center text-center opacity-20">
-                <ImageIcon className="w-16 h-16 mb-4" />
-                <p className="font-black uppercase text-xs">In attesa di dati...</p>
+              <div className="h-full flex flex-col items-center justify-center text-center p-6 text-neutral-300">
+                <ImageIcon className="w-12 h-12 mb-3 stroke-[1.5]" />
+                <p className="text-xs font-light text-neutral-400">Nessun file caricato</p>
+                <p className="text-[10px] text-neutral-300 mt-1">Carica file o un CSV per verificare le corrispondenze</p>
               </div>
             ) : (
               matches.map((match, i) => (
-                <div key={i} className={`p-4 rounded-2xl flex items-center justify-between border transition-all ${
-                  match.status === 'success' ? 'bg-green-50 border-green-200' :
-                  match.status === 'match' ? 'bg-white border-brand-yellow/30' : 
-                  'bg-red-50 border-red-100 opacity-60'
-                }`}>
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-gray-200 rounded-xl overflow-hidden shadow-inner">
-                      {match.newImageUrl && <img src={match.newImageUrl} className="w-full h-full object-cover" />}
-                    </div>
-                    <div>
-                      <p className="font-black text-brand-dark text-xs">{match.productSku}</p>
-                      {match.foundProduct ? (
-                        <p className="text-[9px] font-bold text-gray-400 truncate w-32">{match.foundProduct.name}</p>
+                <div 
+                  key={i} 
+                  className={`p-3.5 rounded-xl flex items-center justify-between border transition-all ${
+                    match.status === 'success' 
+                      ? 'bg-emerald-50/50 border-emerald-200' 
+                      : match.status === 'match' 
+                      ? 'bg-white border-neutral-200 hover:border-neutral-400' 
+                      : 'bg-neutral-50/50 border-neutral-200/60 opacity-60'
+                  }`}
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-11 h-11 bg-neutral-100 rounded-lg overflow-hidden shrink-0 border border-neutral-200/80 flex items-center justify-center">
+                      {match.newImageUrl ? (
+                        <img src={match.newImageUrl} alt={match.productSku} className="w-full h-full object-cover" />
                       ) : (
-                        <p className="text-[9px] font-bold text-red-500 uppercase">Prodotto non trovato</p>
+                        <ImageIcon className="w-4 h-4 text-neutral-300" />
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs font-medium text-neutral-950 truncate">{match.productSku}</p>
+                      {match.foundProduct ? (
+                        <p className="text-[11px] font-light text-neutral-500 truncate max-w-[180px] sm:max-w-xs">{match.foundProduct.name}</p>
+                      ) : (
+                        <p className="text-[10px] font-light text-rose-500">Nessun prodotto trovato</p>
                       )}
                     </div>
                   </div>
                   
-                  {match.status === 'match' && <Check className="w-5 h-5 text-green-500" />}
-                  {match.status === 'not_found' && <AlertCircle className="w-5 h-5 text-red-400" />}
-                  {match.status === 'success' && <div className="text-[10px] font-black text-green-600 uppercase">Collegato!</div>}
+                  <div className="shrink-0 ml-3">
+                    {match.status === 'match' && (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-medium uppercase tracking-wider">
+                        <Check className="w-3 h-3" /> Match
+                      </span>
+                    )}
+                    {match.status === 'not_found' && (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-neutral-100 text-neutral-500 text-[10px] font-medium uppercase tracking-wider">
+                        <AlertCircle className="w-3 h-3" /> Assente
+                      </span>
+                    )}
+                    {match.status === 'success' && (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-emerald-600 text-white text-[10px] font-medium uppercase tracking-wider">
+                        <Check className="w-3 h-3" /> Collegato
+                      </span>
+                    )}
+                  </div>
                 </div>
               ))
             )}
           </div>
-
-          {matches.length > 0 && (
-            <button 
-              onClick={() => setMatches([])}
-              className="mt-6 flex items-center justify-center gap-2 text-gray-400 hover:text-red-500 transition-all font-black uppercase text-[10px] tracking-widest"
-            >
-              <Trash2 className="w-3 h-3" /> Pulisci Tutto
-            </button>
-          )}
         </div>
       </div>
     </div>
   );
 };
+

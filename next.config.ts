@@ -12,11 +12,12 @@ const nextConfig: NextConfig = {
     ],
   },
 
+  compress: true,
+
   experimental: {
-    optimizePackageImports: ["lucide-react"],
+    optimizePackageImports: ["lucide-react", "motion"],
   },
   turbopack: {
-    root: path.resolve(__dirname),
     resolveAlias: {
       "react-router-dom": "./src/lib/router-shim.tsx",
       "@vincent-src": "./src/original-src",
