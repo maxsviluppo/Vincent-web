@@ -218,23 +218,49 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [cartTrigger, setCartTrigger] = useState(0);
 
   const addToCart = useCallback((p: Product) => {
+    const passedSize = (p as any).selectedSize || (
+      p.category === 'Scarpe' ? '42' : (p.category === 'Jeans' || p.category === 'Pantalone') ? '48' : 'M'
+    );
+    const passedColor = (p as any).selectedColor || (p.colors && p.colors[0]) || 'Nero';
+    const cartItemId = (p as any).cartItemId || `${p.id}__${passedSize}__${passedColor}`;
+
     setCart((prev) => {
-      const existing = prev.find((i) => i.id === p.id);
-      if (existing) return prev.map((i) => i.id === p.id ? { ...i, quantity: i.quantity + 1 } : i);
-      return [...prev, { ...p, quantity: 1 }];
+      const existing = prev.find((i) => (i.cartItemId || `${i.id}__${i.selectedSize}__${i.selectedColor}`) === cartItemId);
+      if (existing) {
+        return prev.map((i) => (i.cartItemId || `${i.id}__${i.selectedSize}__${i.selectedColor}`) === cartItemId ? { ...i, quantity: i.quantity + 1 } : i);
+      }
+      return [
+        ...prev,
+        {
+          ...p,
+          quantity: 1,
+          selectedSize: passedSize,
+          selectedColor: passedColor,
+          cartItemId,
+        },
+      ];
     });
     setCartTrigger((t) => t + 1);
   }, []);
 
   const removeFromCart = useCallback((id: string) => {
-    setCart((prev) => prev.filter((i) => i.id !== id));
+    setCart((prev) => prev.filter((i) => {
+      const currentKey = i.cartItemId || `${i.id}__${i.selectedSize}__${i.selectedColor}`;
+      return currentKey !== id && (i.cartItemId ? true : i.id !== id);
+    }));
   }, []);
 
   const updateQuantity = useCallback((id: string, qty: number) => {
     if (qty <= 0) {
-      setCart((prev) => prev.filter((i) => i.id !== id));
+      setCart((prev) => prev.filter((i) => {
+        const currentKey = i.cartItemId || `${i.id}__${i.selectedSize}__${i.selectedColor}`;
+        return currentKey !== id && (i.cartItemId ? true : i.id !== id);
+      }));
     } else {
-      setCart((prev) => prev.map((i) => (i.id === id ? { ...i, quantity: qty } : i)));
+      setCart((prev) => prev.map((i) => {
+        const currentKey = i.cartItemId || `${i.id}__${i.selectedSize}__${i.selectedColor}`;
+        return currentKey === id || (!i.cartItemId && i.id === id) ? { ...i, quantity: qty } : i;
+      }));
     }
   }, []);
 

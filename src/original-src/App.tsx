@@ -13,6 +13,7 @@ import {
   ChevronLeft,
   ChevronDown,
   ChevronUp,
+  SlidersHorizontal,
   ArrowLeft,
   ArrowRight,
   Home,
@@ -100,6 +101,7 @@ import { AdminReturns } from "./AdminReturns";
 import { AdminUsers } from "./AdminUsers";
 import { AdminReviews } from "./AdminReviews";
 import { ADMIN_BTN_PRIMARY, ADMIN_BTN_SECONDARY, ADMIN_INPUT } from "../components/admin/adminTouchTargets";
+import { getProductVariantInfo, getColorHex as getVariantColorHex } from "@/lib/productVariants";
 import { useApp } from "@/context/AppProvider";
 import {
   authDeleteAccount,
@@ -397,6 +399,15 @@ function ProductCard({ product, onClick, onAddToCart, index, reviews = [], isFav
       >
         {product.name}
       </motion.h3>
+      {(product.material?.trim() || product.features?.trim() || (product.description && product.description.replace(/<[^>]*>/g, '').trim())) && (
+        <p className="text-[11px] text-gray-500 font-normal line-clamp-1 mb-1 leading-tight">
+          {product.material?.trim() 
+            ? product.material.trim() 
+            : product.features?.trim() 
+              ? product.features.trim() 
+              : product.description.replace(/<[^>]*>/g, '').trim()}
+        </p>
+      )}
       <motion.div 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -475,6 +486,19 @@ function MiniProductCard({ product, onClick, onRemove, index, isCarousel = false
 
 const ProductSheet = ({ product, onClose, onAddToCart, isDesktop, reviews = [], favorites = [], toggleFavorite, onShare, onSelectProduct, allProducts = [] }: { product: Product; onClose: () => void; onAddToCart: (p: Product) => void; isDesktop: boolean; reviews?: any[]; favorites?: string[]; toggleFavorite?: (id: string) => void; onShare?: (p: Product) => void; onSelectProduct?: (p: Product) => void; allProducts?: Product[]; key?: any }) => {
   const [quantity, setQuantity] = useState(1);
+  const variantInfo = useMemo(() => getProductVariantInfo(product), [product]);
+  const [selectedColor, setSelectedColor] = useState<string>(() => variantInfo.colors[0] || 'Nero');
+  const [selectedSize, setSelectedSize] = useState<string>(() => variantInfo.sizes[0] || 'M');
+
+  useEffect(() => {
+    if (variantInfo.colors.length > 0 && !variantInfo.colors.includes(selectedColor)) {
+      setSelectedColor(variantInfo.colors[0]);
+    }
+    if (variantInfo.sizes.length > 0 && !variantInfo.sizes.includes(selectedSize)) {
+      setSelectedSize(variantInfo.sizes[0]);
+    }
+  }, [variantInfo]);
+
   const [selectedVariants, setSelectedVariants] = useState<Record<string, string>>(() => {
     // Auto-seleziona la prima opzione per ogni tipo
     const initial: Record<string, string> = {};
@@ -709,9 +733,11 @@ const ProductSheet = ({ product, onClose, onAddToCart, isDesktop, reviews = [], 
                     </>
                   )}
                 </div>
-                <h2 className="text-2xl lg:text-3xl font-black text-brand-dark leading-tight">
-                  {(selectedVariantObject && selectedVariantObject.title) ? selectedVariantObject.title : product.name}
-                </h2>
+                {Boolean((selectedVariantObject && selectedVariantObject.title) || product.name) && (
+                  <h2 className="text-2xl lg:text-3xl font-black text-brand-dark leading-tight">
+                    {(selectedVariantObject && selectedVariantObject.title) ? selectedVariantObject.title : product.name}
+                  </h2>
+                )}
                 {selectedVariantObject?.note && (
                   <div className="mt-3 p-3 bg-brand-yellow/10 border border-brand-yellow/30 rounded-2xl">
                     <p className="text-[9px] font-black uppercase text-brand-orange tracking-wider">NOTA</p>
@@ -721,36 +747,76 @@ const ProductSheet = ({ product, onClose, onAddToCart, isDesktop, reviews = [], 
                 {/* Peso nascosto lato utente */}
               </div>
 
-              {/* Description */}
-              <div className="space-y-4">
-                <h4 className="font-black text-sm uppercase tracking-widest text-brand-dark border-l-4 border-brand-yellow pl-3">Descrizione</h4>
-                <div className="text-gray-600 text-sm leading-relaxed space-y-4">
-                  <div 
-                    dangerouslySetInnerHTML={{ __html: product.description }} 
-                    className="rich-content"
-                  />
+              {/* Dettagli Sartoriali (Materiale, Manifattura, Vestibilità) - Mostrati solo se compilati */}
+              {(Boolean(product.material?.trim()) || Boolean(product.manufacturing?.trim()) || Boolean(product.fit?.trim())) && (
+                <div className="space-y-3">
+                  <h4 className="font-black text-sm uppercase tracking-widest text-brand-dark border-l-4 border-brand-yellow pl-3">
+                    Dettagli Sartoriali
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {product.material?.trim() && (
+                      <div className="bg-gray-50 p-3 rounded-2xl border border-gray-100">
+                        <p className="text-[9px] text-gray-400 uppercase font-black mb-0.5">Materiale</p>
+                        <p className="text-xs font-bold text-brand-dark">{product.material.trim()}</p>
+                      </div>
+                    )}
+                    {product.manufacturing?.trim() && (
+                      <div className="bg-gray-50 p-3 rounded-2xl border border-gray-100">
+                        <p className="text-[9px] text-gray-400 uppercase font-black mb-0.5">Manifattura</p>
+                        <p className="text-xs font-bold text-brand-dark">{product.manufacturing.trim()}</p>
+                      </div>
+                    )}
+                    {product.fit?.trim() && (
+                      <div className="bg-gray-50 p-3 rounded-2xl border border-gray-100 sm:col-span-2">
+                        <p className="text-[9px] text-gray-400 uppercase font-black mb-0.5">Vestibilità</p>
+                        <p className="text-xs font-bold text-brand-dark">{product.fit.trim()}</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
 
-              {/* Technical Specs */}
-              <div className="space-y-6">
-                <h4 className="font-black text-sm uppercase tracking-widest text-brand-dark border-l-4 border-brand-yellow pl-3">Caratteristiche</h4>
-                <div className="grid grid-cols-2 gap-3">
-                  {((selectedVariantObject && selectedVariantObject.showEan !== false && selectedVariantObject.ean) || 
-                    (!selectedVariantObject && product.showEan && product.ean)) && (
-                    <div className="bg-brand-blue text-white p-3 rounded-2xl border border-brand-blue shadow-lg shadow-brand-blue/10">
-                      <p className="text-[9px] text-white/60 uppercase font-black mb-0.5">Codice EAN</p>
-                      <p className="text-xs font-black tracking-widest">{selectedVariantObject?.ean || product.ean}</p>
+              {/* Description - Mostrata solo se presente e non vuota */}
+              {Boolean(product.description && product.description.replace(/<[^>]*>/g, '').trim().length > 0) && (
+                <div className="space-y-4">
+                  <h4 className="font-black text-sm uppercase tracking-widest text-brand-dark border-l-4 border-brand-yellow pl-3">Descrizione</h4>
+                  <div className="text-gray-600 text-sm leading-relaxed space-y-4">
+                    <div 
+                      dangerouslySetInnerHTML={{ __html: product.description }} 
+                      className="rich-content"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Technical Specs & Caratteristiche - Mostrate solo se presenti */}
+              {(Boolean(product.features?.trim()) || (product?.specs && Object.keys(product.specs).length > 0) || ((selectedVariantObject && selectedVariantObject.showEan !== false && selectedVariantObject.ean) || (!selectedVariantObject && product.showEan && product.ean))) && (
+                <div className="space-y-6">
+                  <h4 className="font-black text-sm uppercase tracking-widest text-brand-dark border-l-4 border-brand-yellow pl-3">Caratteristiche</h4>
+                  {product.features?.trim() && (
+                    <div className="p-3.5 bg-gray-50 rounded-2xl border border-gray-100 text-xs text-gray-700 leading-relaxed font-medium">
+                      {product.features.trim()}
                     </div>
                   )}
-                  {Object.entries(product?.specs || {}).map(([key, value]) => (
-                    <div key={key} className="bg-gray-50 p-3 rounded-2xl border border-gray-100">
-                      <p className="text-[9px] text-gray-400 uppercase font-black mb-0.5">{key}</p>
-                      <p className="text-xs font-bold text-brand-dark">{value}</p>
+                  {(((selectedVariantObject && selectedVariantObject.showEan !== false && selectedVariantObject.ean) || (!selectedVariantObject && product.showEan && product.ean)) || (product?.specs && Object.keys(product.specs).length > 0)) && (
+                    <div className="grid grid-cols-2 gap-3">
+                      {((selectedVariantObject && selectedVariantObject.showEan !== false && selectedVariantObject.ean) || 
+                        (!selectedVariantObject && product.showEan && product.ean)) && (
+                        <div className="bg-brand-blue text-white p-3 rounded-2xl border border-brand-blue shadow-lg shadow-brand-blue/10 col-span-2">
+                          <p className="text-[9px] text-white/60 uppercase font-black mb-0.5">Codice EAN</p>
+                          <p className="text-xs font-black tracking-widest">{selectedVariantObject?.ean || product.ean}</p>
+                        </div>
+                      )}
+                      {Object.entries(product?.specs || {}).map(([key, value]) => (
+                        <div key={key} className="bg-gray-50 p-3 rounded-2xl border border-gray-100">
+                          <p className="text-[9px] text-gray-400 uppercase font-black mb-0.5">{key}</p>
+                          <p className="text-xs font-bold text-brand-dark">{value}</p>
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  )}
                 </div>
-              </div>
+              )}
               {/* Energy Label Preview */}
               {product.energyLabel && (
                 <div className="space-y-4">
@@ -861,22 +927,85 @@ const ProductSheet = ({ product, onClose, onAddToCart, isDesktop, reviews = [], 
                   <span className="text-[10px] font-black text-brand-dark uppercase tracking-widest">{selectedVariantObject?.sku || product.sku || 'N/A'}</span>
                 </div>
                 
-                {/* Variant Selection UI */}
-                {Object.entries(variantsByType).map(([type, options]) => (
-                  <div key={type} className="space-y-3 pt-2">
-                    <h4 className="font-black text-[10px] uppercase tracking-widest text-brand-dark flex items-center gap-2">
-                      {type} 
-                      {selectedVariants[type] && <span className="text-brand-blue">— {selectedVariants[type]}</span>}
+                {/* Selettore Colori (Pallini rotondi senza testo) */}
+                <div className="space-y-2 pt-2">
+                  <h4 className="font-medium text-[11px] uppercase tracking-wider text-neutral-900 flex items-center gap-2">
+                    <span>Colore</span>
+                    <span className="text-neutral-500 font-normal">— {selectedColor}</span>
+                  </h4>
+                  <div className="flex flex-wrap items-center gap-2.5">
+                    {variantInfo.colors.map((col) => {
+                      const isSelected = selectedColor === col;
+                      const hex = getVariantColorHex(col);
+                      const isWhite = hex.toLowerCase() === '#ffffff';
+
+                      return (
+                        <button
+                          key={col}
+                          type="button"
+                          onClick={() => setSelectedColor(col)}
+                          title={col}
+                          aria-label={`Colore ${col}`}
+                          className={`w-7 h-7 rounded-full transition-all cursor-pointer shrink-0 ${
+                            isWhite ? 'border border-neutral-300' : 'border border-black/10'
+                          } ${
+                            isSelected
+                              ? 'ring-2 ring-neutral-950 ring-offset-2 ring-offset-white scale-110 shadow-sm'
+                              : 'hover:scale-105 opacity-85 hover:opacity-100'
+                          }`}
+                          style={{ backgroundColor: hex }}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Selettore Taglie */}
+                <div className="space-y-2 pt-2">
+                  <h4 className="font-medium text-[11px] uppercase tracking-wider text-neutral-900 flex items-center gap-2">
+                    <span>Taglia</span>
+                    <span className="text-neutral-500 font-normal">— {selectedSize}</span>
+                  </h4>
+                  <div className="flex flex-wrap gap-2">
+                    {variantInfo.sizes.map((sz) => {
+                      const isSelected = selectedSize === sz;
+
+                      return (
+                        <button
+                          key={sz}
+                          type="button"
+                          onClick={() => setSelectedSize(sz)}
+                          className={`min-w-[42px] px-3.5 py-2 rounded-xl text-xs uppercase tracking-tight transition-all border cursor-pointer ${
+                            isSelected
+                              ? 'border-neutral-950 bg-neutral-950 text-white font-medium shadow-xs'
+                              : 'border-neutral-200 hover:border-neutral-400 text-neutral-700 bg-white font-normal hover:bg-neutral-50'
+                          }`}
+                        >
+                          {sz}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Eventuali Altre Varianti Personalizzate */}
+                {Object.entries(variantInfo.customGroups).map(([type, options]) => (
+                  <div key={type} className="space-y-2 pt-2">
+                    <h4 className="font-semibold text-[10px] uppercase tracking-wider text-neutral-900 flex items-center gap-2">
+                      {type}
+                      {selectedVariants[type] && (
+                        <span className="text-neutral-500 font-normal">— {selectedVariants[type]}</span>
+                      )}
                     </h4>
                     <div className="flex flex-wrap gap-2">
-                      {options.map((opt) => (
+                      {options.map((opt: any) => (
                         <button
-                          key={opt.id}
+                          key={opt.id || opt.value}
                           onClick={() => setSelectedVariants({ ...selectedVariants, [type]: opt.value })}
-                          className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-tight transition-all border-2 ${
+                          className={`px-3 py-1.5 rounded-lg text-xs uppercase tracking-tight transition-all border cursor-pointer ${
                             selectedVariants[type] === opt.value
-                              ? "border-brand-yellow bg-brand-yellow/5 text-brand-dark shadow-lg shadow-brand-yellow/10"
-                              : "border-gray-100 hover:border-gray-200 text-gray-400"
+                              ? 'border-neutral-950 bg-neutral-950 text-white font-semibold shadow-xs'
+                              : 'border-neutral-200 hover:border-neutral-400 text-neutral-600 bg-white font-normal'
                           }`}
                         >
                           {opt.value}
@@ -988,9 +1117,12 @@ const ProductSheet = ({ product, onClose, onAddToCart, isDesktop, reviews = [], 
                   ...product,
                   price: displayPrice,
                   sku: selectedVariantObject?.sku || product.sku,
-                  name: selectedVariantObject ? `${product.name} - ${selectedVariantObject.value}` : product.name
+                  name: selectedVariantObject ? `${product.name} - ${selectedVariantObject.value}` : product.name,
+                  selectedSize,
+                  selectedColor,
+                  cartItemId: `${product.id}-${selectedSize}-${selectedColor}`,
                 };
-                for(let i=0; i<quantity; i++) onAddToCart(itemToAddToCart);
+                for(let i=0; i<quantity; i++) onAddToCart(itemToAddToCart as any);
                 onClose();
               }}
               className="flex-[2] bg-neutral-950 hover:bg-neutral-800 text-white h-14 lg:h-16 rounded-2xl font-black flex items-center justify-center gap-3 active:scale-95 transition-all uppercase text-sm tracking-widest shadow-xl shadow-brand-yellow/20"
@@ -2020,15 +2152,56 @@ const CheckoutSheet = ({
   );
 };
 
-const CartDrawer = ({ items, onClose, onUpdateQuantity, onRemove, onCheckout }: { 
+const CartDrawer = ({ 
+  items, 
+  onClose, 
+  onUpdateQuantity, 
+  onRemove, 
+  onCheckout,
+  onUpdateVariant
+}: { 
   items: CartItem[]; 
   onClose: () => void;
   onUpdateQuantity: (id: string, delta: number) => void;
   onRemove: (id: string) => void;
   onCheckout: () => void;
+  onUpdateVariant?: (id: string, size: string, color: string) => void;
   key?: string;
 }) => {
+  const [expandedItemKeys, setExpandedItemKeys] = useState<Record<string, boolean>>({});
   const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+
+  const getAvailableSizes = (item: CartItem) => {
+    const fromVariants = item.variants?.map((v: any) => v.size || v.value).filter(Boolean) || [];
+    if (fromVariants.length > 0) return Array.from(new Set(fromVariants));
+    if (item.category === 'Scarpe') return ['40', '41', '42', '43', '44', '45'];
+    if (item.category === 'Jeans' || item.category === 'Pantalone') return ['46', '48', '50', '52', '54'];
+    return ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
+  };
+
+  const getAvailableColors = (item: CartItem) => {
+    const fromVariants = item.variants?.map((v: any) => v.color).filter(Boolean) || [];
+    if (fromVariants.length > 0) return Array.from(new Set(fromVariants));
+    return ['Nero', 'Blu Notte', 'Grigio', 'Bianco'];
+  };
+
+  const getColorHex = (name: string): string => {
+    const n = (name || '').toLowerCase().trim();
+    if (n.includes('nero') || n.includes('black')) return '#171717';
+    if (n.includes('bianco') || n.includes('white')) return '#ffffff';
+    if (n.includes('blu') || n.includes('navy')) return '#1e293b';
+    if (n.includes('grigio') || n.includes('grey') || n.includes('gray')) return '#64748b';
+    if (n.includes('antracite') || n.includes('charcoal')) return '#334155';
+    if (n.includes('marrone') || n.includes('brown')) return '#5a3825';
+    if (n.includes('beige') || n.includes('cammello') || n.includes('camel')) return '#d4b996';
+    if (n.includes('verde') || n.includes('green') || n.includes('salvia') || n.includes('kaki') || n.includes('khaki')) return '#2d4a3e';
+    if (n.includes('bordeaux') || n.includes('burgundy') || n.includes('rosso') || n.includes('red')) return '#7f1d1d';
+    if (n.includes('azzurro') || n.includes('celeste') || n.includes('sky')) return '#7dd3fc';
+    if (n.includes('giallo') || n.includes('yellow')) return '#ca8a04';
+    if (n.includes('arancione') || n.includes('orange')) return '#c2410c';
+    if (n.includes('rosa') || n.includes('pink')) return '#f472b6';
+    return '#262626';
+  };
 
   return (
     <>
@@ -2037,78 +2210,236 @@ const CartDrawer = ({ items, onClose, onUpdateQuantity, onRemove, onCheckout }: 
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         onClick={onClose}
-        className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50"
+        className="fixed inset-0 bg-neutral-950/60 backdrop-blur-sm z-50"
       />
       <motion.div 
         initial={{ x: "100%" }}
         animate={{ x: 0 }}
         exit={{ x: "100%" }}
         transition={{ type: "spring", damping: 25, stiffness: 200 }}
-        className="fixed top-0 right-0 bottom-0 w-full max-w-md bg-white z-50 shadow-2xl flex flex-col"
+        className="fixed top-0 right-0 bottom-0 w-full max-w-md bg-white z-50 shadow-2xl flex flex-col font-['Montserrat',sans-serif]"
       >
-        <div className="p-6 flex items-center justify-between border-b border-gray-100">
-          <h2 className="text-xl font-bold">Il tuo Carrello</h2>
-          <button onClick={onClose} className="p-2 bg-gray-100 rounded-full">
-            <X className="w-5 h-5" />
+        <div className="p-5 sm:p-6 flex items-center justify-between border-b border-neutral-100">
+          <div>
+            <h2 className="text-sm sm:text-base font-light uppercase tracking-[0.22em] text-neutral-950">
+              Il tuo Carrello
+            </h2>
+            <p className="text-[11px] text-neutral-400 font-light tracking-wide mt-0.5">
+              {items.reduce((acc, it) => acc + it.quantity, 0)} articoli selezionati
+            </p>
+          </div>
+          <button 
+            type="button"
+            onClick={onClose} 
+            className="p-2 bg-neutral-100 hover:bg-neutral-200 text-neutral-800 rounded-full transition-colors cursor-pointer"
+            aria-label="Chiudi carrello"
+          >
+            <X className="w-5 h-5 stroke-[1.4]" />
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
           {items.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-center">
-              <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mb-4">
-                <ShoppingCart className="w-10 h-10 text-gray-300" />
+            <div className="h-full flex flex-col items-center justify-center text-center p-6">
+              <div className="w-16 h-16 bg-neutral-50 border border-neutral-200 rounded-2xl flex items-center justify-center mb-4 text-neutral-400">
+                <ShoppingCart className="w-8 h-8 stroke-[1.3]" />
               </div>
-              <p className="text-gray-500 font-medium">Il carrello è vuoto</p>
-              <button onClick={onClose} className="mt-4 text-accent font-bold">Inizia lo shopping</button>
+              <p className="text-sm font-light uppercase tracking-wider text-neutral-950 mb-1">Il carrello è vuoto</p>
+              <p className="text-xs text-neutral-400 font-light mb-5">Aggiungi i tuoi capi preferiti per procedere.</p>
+              <button 
+                type="button"
+                onClick={onClose} 
+                className="inline-flex items-center justify-center px-6 py-3 rounded-xl bg-neutral-950 text-white text-xs font-medium uppercase tracking-[0.18em] hover:bg-neutral-800 transition-colors"
+              >
+                Inizia lo shopping
+              </button>
             </div>
           ) : (
-            items.map((item, idx) => (
-              <motion.div 
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: idx * 0.1 }}
-                key={item.id} 
-                className="flex gap-4"
-              >
-                <div className="w-20 h-20 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0">
-                  {item.image && (
-                    <img src={item.image} alt={item.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                  )}
-                </div>
-                <div className="flex-1 flex flex-col justify-between">
-                  <div>
-                    <h4 className="font-bold text-sm line-clamp-1">{item.name}</h4>
-                    <p className="text-accent font-bold text-sm">€{item.price.toFixed(2)}</p>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
-                      <button onClick={() => onUpdateQuantity(item.id, -1)} className="p-1 hover:bg-white rounded-md transition-colors"><Minus className="w-3 h-3" /></button>
-                      <span className="w-8 text-center text-xs font-bold">{item.quantity}</span>
-                      <button onClick={() => onUpdateQuantity(item.id, 1)} className="p-1 hover:bg-white rounded-md transition-colors"><Plus className="w-3 h-3" /></button>
+            items.map((item, idx) => {
+              const defaultSize = item.category === 'Scarpe' ? '42' : (item.category === 'Jeans' || item.category === 'Pantalone') ? '48' : 'M';
+              const currentSize = (item as any).selectedSize || defaultSize;
+              const currentColor = (item as any).selectedColor || 'Nero';
+              const itemKey = (item as any).cartItemId || `${item.id}__${currentSize}__${currentColor}`;
+              const isExpanded = !!expandedItemKeys[itemKey];
+              const availableSizes = getAvailableSizes(item);
+              const availableColors = getAvailableColors(item);
+
+              const handleVariantChange = (newSize: string, newColor: string) => {
+                const newKey = `${item.id}__${newSize}__${newColor}`;
+                setExpandedItemKeys(prev => {
+                  const updated = { ...prev };
+                  delete updated[itemKey];
+                  updated[newKey] = true;
+                  return updated;
+                });
+                if (onUpdateVariant) {
+                  onUpdateVariant(itemKey, newSize, newColor);
+                }
+              };
+
+              return (
+                <motion.div 
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: idx * 0.05 }}
+                  key={itemKey} 
+                  className="p-4 bg-white rounded-2xl border border-neutral-200/80 shadow-[0_1px_3px_rgba(0,0,0,0.03)] space-y-3"
+                >
+                  <div className="flex gap-3.5">
+                    <div className="w-20 h-24 rounded-xl overflow-hidden bg-neutral-100 flex-shrink-0 border border-neutral-200/60">
+                      {item.image && (
+                        <img src={item.image} alt={item.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                      )}
                     </div>
-                    <button onClick={() => onRemove(item.id)} className="text-xs text-red-500 font-medium">Rimuovi</button>
+                    <div className="flex-1 flex flex-col justify-between min-w-0">
+                      <div>
+                        <h4 className="font-light text-xs sm:text-sm text-neutral-950 line-clamp-1 uppercase tracking-wide">
+                          {item.name}
+                        </h4>
+                        <p className="text-xs font-medium text-neutral-900 mt-1">
+                          €{item.price.toFixed(2)}
+                        </p>
+                        
+                        {/* Indicazione Taglia & Colore corrente */}
+                        <div className="flex flex-wrap items-center gap-1.5 mt-1.5 text-[11px] text-neutral-500 font-light">
+                          <span className="bg-neutral-100 px-2 py-0.5 rounded text-neutral-800">
+                            Taglia: <strong className="font-medium text-neutral-950">{currentSize}</strong>
+                          </span>
+                          <span className="bg-neutral-100 px-2 py-0.5 rounded text-neutral-800">
+                            Colore: <strong className="font-medium text-neutral-950">{currentColor}</strong>
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-2">
+                        <div className="flex items-center bg-neutral-100 rounded-lg p-0.5 border border-neutral-200/60">
+                          <button 
+                            type="button"
+                            onClick={() => onUpdateQuantity(itemKey, -1)} 
+                            className="p-1.5 hover:bg-white rounded-md transition-colors text-neutral-700 hover:text-neutral-950"
+                            aria-label="Diminuisci quantità"
+                          >
+                            <Minus className="w-3 h-3" />
+                          </button>
+                          <span className="w-7 text-center text-xs font-medium text-neutral-900">{item.quantity}</span>
+                          <button 
+                            type="button"
+                            onClick={() => onUpdateQuantity(itemKey, 1)} 
+                            className="p-1.5 hover:bg-white rounded-md transition-colors text-neutral-700 hover:text-neutral-950"
+                            aria-label="Aumenta quantità"
+                          >
+                            <Plus className="w-3 h-3" />
+                          </button>
+                        </div>
+                        <button 
+                          type="button"
+                          onClick={() => onRemove(itemKey)} 
+                          className="text-[11px] text-neutral-400 hover:text-rose-500 font-light tracking-wide transition-colors"
+                        >
+                          Rimuovi
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </motion.div>
-            ))
+
+                  {/* Estensione chiusa di default per scegliere taglia e colore */}
+                  <div className="pt-1 border-t border-neutral-100">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setExpandedItemKeys(prev => ({
+                          ...prev,
+                          [itemKey]: !prev[itemKey]
+                        }));
+                      }}
+                      className="w-full flex items-center justify-between py-1.5 px-1 text-[11px] font-medium tracking-wide text-neutral-600 hover:text-neutral-950 transition-colors cursor-pointer rounded-lg hover:bg-neutral-50"
+                    >
+                      <span className="flex items-center gap-1.5">
+                        <SlidersHorizontal className="w-3 h-3 text-neutral-400" />
+                        <span>{isExpanded ? 'Chiudi selezione' : 'Modifica taglia e colore'}</span>
+                      </span>
+                      {isExpanded ? <ChevronUp className="w-3.5 h-3.5 text-neutral-400" /> : <ChevronDown className="w-3.5 h-3.5 text-neutral-400" />}
+                    </button>
+
+                    {isExpanded && onUpdateVariant && (
+                      <div className="mt-2.5 p-3 bg-neutral-50 rounded-xl border border-neutral-200/70 space-y-3 animate-in fade-in duration-200">
+                        {/* Selettore Taglie */}
+                        <div>
+                          <span className="text-[10px] font-medium uppercase tracking-wider text-neutral-400 block mb-1.5">
+                            Scegli Taglia
+                          </span>
+                          <div className="flex flex-wrap gap-1.5">
+                            {availableSizes.map(sz => (
+                              <button
+                                key={sz}
+                                type="button"
+                                onClick={() => handleVariantChange(sz, currentColor)}
+                                className={`px-2.5 py-1 text-xs rounded-lg transition-all cursor-pointer ${
+                                  currentSize === sz
+                                    ? 'bg-neutral-950 text-white font-medium shadow-sm'
+                                    : 'bg-white hover:bg-neutral-200/80 text-neutral-700 border border-neutral-200/80'
+                                }`}
+                              >
+                                {sz}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Selettore Colori (pallini senza testo) */}
+                        <div>
+                          <span className="text-[10px] font-medium uppercase tracking-wider text-neutral-400 block mb-1.5">
+                            Colore
+                          </span>
+                          <div className="flex flex-wrap items-center gap-2">
+                            {availableColors.map(col => {
+                              const isSelected = currentColor === col;
+                              const hex = getColorHex(col);
+                              const isWhite = hex.toLowerCase() === '#ffffff';
+
+                              return (
+                                <button
+                                  key={col}
+                                  type="button"
+                                  onClick={() => handleVariantChange(currentSize, col)}
+                                  title={col}
+                                  aria-label={col}
+                                  className={`w-6 h-6 rounded-full transition-all cursor-pointer shrink-0 ${
+                                    isWhite ? 'border border-neutral-300' : 'border border-black/10'
+                                  } ${
+                                    isSelected
+                                      ? 'ring-2 ring-neutral-950 ring-offset-2 ring-offset-neutral-50 scale-110 shadow-sm'
+                                      : 'hover:scale-105 opacity-80 hover:opacity-100'
+                                  }`}
+                                  style={{ backgroundColor: hex }}
+                                />
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              );
+            })
           )}
         </div>
 
         {items.length > 0 && (
           <motion.div 
-            initial={{ y: 50, opacity: 0 }}
+            initial={{ y: 30, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.3 }}
-            className="p-6 bg-gray-50 border-t border-gray-100 space-y-4"
+            className="p-5 sm:p-6 bg-white border-t border-neutral-100 space-y-4"
           >
-            <div className="flex justify-between items-center">
-              <span className="text-gray-500 font-medium">Totale</span>
-              <span className="text-2xl font-bold">€{total.toFixed(2)}</span>
+            <div className="flex justify-between items-baseline">
+              <span className="text-xs font-light uppercase tracking-wider text-neutral-500">Subtotale</span>
+              <span className="text-xl sm:text-2xl font-light text-neutral-950 tracking-tight">€{total.toFixed(2)}</span>
             </div>
             <button 
+              type="button"
               onClick={onCheckout}
-              className="w-full bg-neutral-950 hover:bg-neutral-800 text-white h-14 rounded-2xl font-bold text-lg active:scale-95 transition-transform"
+              className="w-full bg-neutral-950 hover:bg-neutral-800 text-white min-h-[50px] rounded-xl font-medium text-xs uppercase tracking-[0.2em] active:scale-[0.99] transition-all shadow-sm flex items-center justify-center cursor-pointer"
             >
               Procedi al Pagamento
             </button>
@@ -3109,17 +3440,47 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
     }
   };
 
-  const addToCart = (product: Product) => {
+  const addToCart = (product: Product, customSize?: string, customColor?: string) => {
+    const passedSize = (product as any).selectedSize || customSize;
+    const passedColor = (product as any).selectedColor || customColor;
+    const defaultSize = passedSize || (
+      product.variants?.find((v: any) => v.size)?.size ||
+      product.variants?.[0]?.value ||
+      (product.category === 'Scarpe' ? '42' : (product.category === 'Jeans' || product.category === 'Pantalone') ? '48' : 'M')
+    );
+    const defaultColor = passedColor || (
+      product.variants?.find((v: any) => v.color)?.color || 'Nero'
+    );
+    const cartItemId = `${product.id}__${defaultSize}__${defaultColor}`;
+
     setCart(prev => {
-      const existing = prev.find(item => item.id === product.id);
-      if (existing) {
-        return prev.map(item => item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item);
+      // Due articoli si accorpano SOLO se ID, taglia E colore sono esattamente identici!
+      const existingIndex = prev.findIndex(item => 
+        item.id === product.id && 
+        (item.selectedSize || defaultSize) === defaultSize && 
+        (item.selectedColor || defaultColor) === defaultColor
+      );
+
+      if (existingIndex !== -1) {
+        return prev.map((item, idx) => 
+          idx === existingIndex 
+            ? { ...item, quantity: item.quantity + 1 } 
+            : item
+        );
       }
-      return [...prev, { ...product, quantity: 1 }];
+      return [
+        ...prev, 
+        { 
+          ...product, 
+          quantity: 1, 
+          cartItemId, 
+          selectedSize: defaultSize, 
+          selectedColor: defaultColor 
+        }
+      ];
     });
     setCartTrigger(prev => prev + 1);
   };
-
 
   const getProductCount = (category: string, subcategory?: string | null) => {
     return products.filter(p => {
@@ -3129,9 +3490,10 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
     }).length;
   };
 
-  const updateQuantity = (id: string, delta: number) => {
+  const updateQuantity = (cartItemIdOrId: string, delta: number) => {
     setCart(prev => prev.map(item => {
-      if (item.id === id) {
+      const currentKey = item.cartItemId || `${item.id}__${item.selectedSize || 'M'}__${item.selectedColor || 'Nero'}`;
+      if (currentKey === cartItemIdOrId) {
         const newQty = Math.max(1, item.quantity + delta);
         return { ...item, quantity: newQty };
       }
@@ -3139,8 +3501,62 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
     }));
   };
 
-  const removeFromCart = (id: string) => {
-    setCart(prev => prev.filter(item => item.id !== id));
+  const removeFromCart = (cartItemIdOrId: string) => {
+    setCart(prev => prev.filter(item => {
+      const currentKey = item.cartItemId || `${item.id}__${item.selectedSize || 'M'}__${item.selectedColor || 'Nero'}`;
+      return currentKey !== cartItemIdOrId;
+    }));
+  };
+
+  const updateCartItemVariant = (targetCartItemId: string, newSize: string, newColor: string) => {
+    setCart(prev => {
+      const targetIndex = prev.findIndex(it => (it.cartItemId || `${it.id}__${it.selectedSize || 'M'}__${it.selectedColor || 'Nero'}`) === targetCartItemId);
+      if (targetIndex === -1) return prev;
+      
+      const currentItem = prev[targetIndex];
+      const productId = currentItem.id;
+      
+      // Controlla se nel carrello c'è già un ALTRO articolo dello stesso prodotto con la STESSA identica taglia E colore
+      const existingSameIndex = prev.findIndex((it, idx) => 
+        idx !== targetIndex && 
+        it.id === productId && 
+        ((it.selectedSize || '') === newSize) && 
+        ((it.selectedColor || '') === newColor)
+      );
+      
+      if (existingSameIndex !== -1) {
+        // ACCORPA GLI ARTICOLI SOLO SE TAGLIA E COLORE SONO ENTRAMBI IDENTICI!
+        const mergedQty = prev[existingSameIndex].quantity + currentItem.quantity;
+        const targetKey = currentItem.cartItemId || `${currentItem.id}__${currentItem.selectedSize || 'M'}__${currentItem.selectedColor || 'Nero'}`;
+        const existingKey = prev[existingSameIndex].cartItemId || `${prev[existingSameIndex].id}__${prev[existingSameIndex].selectedSize || 'M'}__${prev[existingSameIndex].selectedColor || 'Nero'}`;
+        
+        addToast(`Articoli con stessa variante (${newSize} - ${newColor}) accorpati (Totale: ${mergedQty} pz)`, 'info');
+        
+        return prev
+          .filter(it => (it.cartItemId || `${it.id}__${it.selectedSize || 'M'}__${it.selectedColor || 'Nero'}`) !== targetKey)
+          .map(it => {
+            if ((it.cartItemId || `${it.id}__${it.selectedSize || 'M'}__${it.selectedColor || 'Nero'}`) === existingKey) {
+              return { ...it, quantity: mergedQty };
+            }
+            return it;
+          });
+      }
+      
+      // Nessun duplicato: aggiorna la variante dell'articolo
+      const updatedCartItemId = `${productId}__${newSize}__${newColor}`;
+      return prev.map((it, idx) => {
+        if (idx === targetIndex) {
+          return {
+            ...it,
+            cartItemId: updatedCartItemId,
+            selectedSize: newSize,
+            selectedColor: newColor
+          };
+        }
+        return it;
+      });
+    });
+    setCartTrigger(prev => prev + 1);
   };
 
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
@@ -3967,6 +4383,7 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
               setIsCartOpen(false);
               setIsCheckoutOpen(true);
             }}
+            onUpdateVariant={updateCartItemVariant}
           />
         )}
       </AnimatePresence>
@@ -4076,19 +4493,18 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                 width: isSidebarCollapsed ? 83 : 256,
               }}
               transition={{ type: 'spring', stiffness: 400, damping: 35 }}
-              className={`bg-gray-50 border-r border-gray-100 flex flex-col relative z-[55] h-full overflow-hidden flex-shrink-0
+              className={`bg-neutral-950 border-r border-neutral-900 text-white flex flex-col relative z-[55] h-full overflow-hidden flex-shrink-0
                 max-md:fixed max-md:left-0 max-md:top-12 max-md:bottom-0 max-md:!w-[min(82vw,16.5rem)] max-md:max-h-[calc(100dvh-3rem)] max-md:shadow-2xl max-md:transition-transform max-md:duration-300 max-md:ease-out
-                max-md:bg-neutral-950 max-md:border-r max-md:border-neutral-900 max-md:text-white
                 ${isMobileAdminMenuOpen ? 'max-md:translate-x-0' : 'max-md:-translate-x-full max-md:pointer-events-none'}
                 md:relative md:top-auto md:translate-x-0 md:pointer-events-auto md:max-h-none`}
             >
                 <button 
                   onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-                  className="hidden md:flex absolute -right-4 top-1/2 -translate-y-1/2 w-[43px] h-[43px] bg-white border-2 border-brand-yellow rounded-full items-center justify-center z-[70] hover:scale-110 transition-all group active:scale-95"
+                  className="hidden md:flex absolute -right-3.5 top-1/2 -translate-y-1/2 w-7 h-7 bg-neutral-900 border border-neutral-700 text-neutral-300 hover:text-white hover:bg-neutral-800 rounded-full items-center justify-center z-[70] transition-all shadow-md active:scale-95 cursor-pointer"
                   title={isSidebarCollapsed ? "Espandi Menu" : "Contrai Menu"}
                 >
-                  <div className="flex items-center justify-center mr-0.5">
-                    {isSidebarCollapsed ? <Plus className="w-5 h-5 text-brand-dark rotate-45" /> : <ChevronLeft className="w-5 h-5 text-brand-dark" />}
+                  <div className="flex items-center justify-center">
+                    {isSidebarCollapsed ? <Plus className="w-3.5 h-3.5 rotate-45" /> : <ChevronLeft className="w-3.5 h-3.5" />}
                   </div>
                 </button>
 
@@ -4101,33 +4517,36 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                   </span>
                 </div>
 
-                <div className={`hidden md:flex items-center ${isSidebarCollapsed ? 'justify-center' : 'gap-3 px-6'} mt-6 mb-10 overflow-hidden`}>
-                  <div className="w-10 h-10 bg-brand-blue rounded-xl flex-shrink-0 flex items-center justify-center">
-                    <Shield className="w-6 h-6 text-brand-yellow" />
+                <div className={`hidden md:flex items-center ${isSidebarCollapsed ? 'justify-center' : 'gap-3 px-6'} mt-6 mb-8 overflow-hidden`}>
+                  <div className="w-9 h-9 bg-neutral-900 border border-neutral-800 rounded-xl flex-shrink-0 flex items-center justify-center">
+                    <Shield className="w-4 h-4 text-neutral-200" />
                   </div>
                   {!isSidebarCollapsed && (
-                    <h3 className="font-black text-brand-dark uppercase tracking-tighter whitespace-nowrap">Admin Panel</h3>
+                    <div>
+                      <h3 className="font-light text-white text-xs uppercase tracking-[0.2em] whitespace-nowrap">Admin Panel</h3>
+                      <p className="text-[10px] text-neutral-500 font-light tracking-wider">Vincent Store</p>
+                    </div>
                   )}
                 </div>
 
                 <nav className="space-y-1 max-md:space-y-0.5 flex-1 min-h-0 overflow-y-auto custom-scrollbar max-md:overscroll-contain p-0 max-md:p-2 max-md:pb-2">
                   {[
-                    { tab: 'dashboard', label: 'Panoramica', icon: Home, color: 'bg-brand-yellow text-brand-dark font-black shadow-sm' },
-                    { tab: 'company', label: 'Azienda', icon: Grid, color: 'bg-brand-yellow text-brand-dark font-black' },
-                    { tab: 'slides', label: 'Slide', icon: Play, color: 'bg-brand-yellow text-brand-dark' },
-                    { tab: 'link_rapidi', label: 'Link Rapidi', icon: Box, color: 'bg-brand-yellow text-brand-dark' },
-                    { tab: 'categories', label: 'Categorie', icon: Compass, color: 'bg-brand-yellow text-brand-dark' },
-                    { tab: 'products', label: 'Prodotti', icon: Package, color: 'bg-brand-yellow text-brand-dark' },
-                    { tab: 'image_linker', label: 'Bulk Images', icon: ImageIcon, color: 'bg-indigo-500 text-white' },
-                    { tab: 'couriers', label: 'Corrieri', icon: Truck, color: 'bg-brand-yellow text-brand-dark' },
-                    { tab: 'orders', label: 'Ordini', icon: ShoppingBag, color: 'bg-brand-blue text-white font-black' },
-                    { tab: 'users', label: 'Archivio Utenti', icon: Users, color: 'bg-blue-600 text-white' },
-                    { tab: 'returns', label: 'Gestione Resi', icon: RefreshCw, color: 'bg-red-500 text-white' },
-                    { tab: 'seo', label: 'SEO & Google', icon: Globe, color: 'bg-indigo-700 text-white' },
-                    { tab: 'analytics', label: 'Analytics', icon: BarChart2, color: 'bg-indigo-600 text-white' },
-                    { tab: 'marketplaces', label: 'Marketplace', icon: Globe, color: 'bg-amber-600 text-white' },
-                    { tab: 'payments', label: 'Pagamenti', icon: CreditCard, color: 'bg-green-600 text-white font-black' },
-                    { tab: 'marketing', label: 'Marketing', icon: Target, color: 'bg-orange-500 text-white' },
+                    { tab: 'dashboard', label: 'Panoramica', icon: Home },
+                    { tab: 'company', label: 'Azienda', icon: Grid },
+                    { tab: 'slides', label: 'Slide', icon: Play },
+                    { tab: 'link_rapidi', label: 'Link Rapidi', icon: Box },
+                    { tab: 'categories', label: 'Categorie', icon: Compass },
+                    { tab: 'products', label: 'Prodotti', icon: Package },
+                    { tab: 'image_linker', label: 'Bulk Images', icon: ImageIcon },
+                    { tab: 'couriers', label: 'Corrieri', icon: Truck },
+                    { tab: 'orders', label: 'Ordini', icon: ShoppingBag },
+                    { tab: 'users', label: 'Archivio Utenti', icon: Users },
+                    { tab: 'returns', label: 'Gestione Resi', icon: RefreshCw },
+                    { tab: 'seo', label: 'SEO & Google', icon: Globe },
+                    { tab: 'analytics', label: 'Analytics', icon: BarChart2 },
+                    { tab: 'marketplaces', label: 'Marketplace', icon: Globe },
+                    { tab: 'payments', label: 'Pagamenti', icon: CreditCard },
+                    { tab: 'marketing', label: 'Marketing', icon: Target },
                     /* Recensioni sospese */
                   ].map((item) => (
                     <div key={item.tab} className="px-3 max-md:px-0">
@@ -4138,17 +4557,17 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                         }}
                         className={`w-full flex items-center transition-all cursor-pointer
                           ${isSidebarCollapsed ? 'md:justify-center md:px-0 md:gap-0' : 'gap-3 px-4'}
-                          md:py-2.5 md:rounded-xl md:font-bold md:text-sm
+                          md:py-2.5 md:rounded-xl md:font-medium md:text-xs md:tracking-wider md:uppercase
                           max-md:gap-2.5 max-md:px-3 max-md:py-2 max-md:rounded-lg max-md:text-xs max-md:font-medium
                           ${
                             adminActiveTab === item.tab 
-                              ? `md:${item.color} max-md:bg-neutral-800 max-md:text-white max-md:font-bold max-md:border max-md:border-neutral-700 max-md:shadow-sm` 
-                              : `text-gray-400 hover:bg-gray-100/50 max-md:text-white max-md:hover:text-white max-md:hover:bg-neutral-900 max-md:active:bg-neutral-800`
+                              ? `bg-white text-neutral-950 font-medium shadow-sm max-md:bg-white max-md:text-neutral-950` 
+                              : `text-neutral-400 hover:text-white hover:bg-neutral-900/80 active:bg-neutral-900`
                           }`}
                         title={isSidebarCollapsed ? item.label : ''}
                       >
-                        <item.icon className="w-5 h-5 max-md:w-4 max-md:h-4 flex-shrink-0 text-current max-md:text-white" />
-                        <span className={`text-inherit max-md:text-white ${isSidebarCollapsed ? 'md:hidden' : ''}`}>{item.label}</span>
+                        <item.icon className="w-4 h-4 flex-shrink-0 text-current" />
+                        <span className={`text-inherit ${isSidebarCollapsed ? 'md:hidden' : ''}`}>{item.label}</span>
                       </button>
                     </div>
                   ))}
@@ -4166,185 +4585,184 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                 <button
                   type="button"
                   onClick={() => setIsAdminOpen(false)}
-                  className={`hidden md:flex mt-auto w-full items-center ${isSidebarCollapsed ? 'justify-center' : 'justify-center gap-2'} px-4 py-3 rounded-2xl font-bold text-sm text-red-500 hover:bg-red-50 transition-all`}
+                  className={`hidden md:flex mt-auto m-3 items-center ${isSidebarCollapsed ? 'justify-center' : 'justify-center gap-2'} px-3 py-2.5 rounded-xl font-medium text-xs tracking-wider uppercase text-neutral-400 hover:text-rose-400 hover:bg-neutral-900 border border-transparent hover:border-neutral-800 transition-all cursor-pointer`}
                 >
-                  <X className="w-5 h-5 flex-shrink-0" />
-                  {!isSidebarCollapsed && <span>Esci</span>}
+                  <X className="w-4 h-4 flex-shrink-0" />
+                  {!isSidebarCollapsed && <span>Esci dall'Admin</span>}
                 </button>
             </motion.div>
 
               {/* Content Area */}
               <div className="admin-mobile-content flex-1 min-w-0 min-h-0 w-full overflow-y-auto overflow-x-hidden pt-14 px-3 pb-8 md:pt-0 md:p-10 bg-gray-50/50 overscroll-contain">
                 {adminActiveTab === 'dashboard' && (
-                  <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-                    {/* Welcome & Command Bar Banner */}
-                    <div className="flex flex-col gap-5 lg:flex-row lg:justify-between lg:items-center bg-white p-6 md:p-8 rounded-[2.5rem] border border-gray-100 shadow-sm relative overflow-hidden">
-                      <div className="flex items-center gap-4 relative z-10">
-                        <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-amber-400 via-amber-300 to-yellow-200 flex items-center justify-center shadow-lg shadow-amber-400/25 text-brand-dark flex-shrink-0">
-                          <Sparkles className="w-7 h-7" />
+                  <div className="space-y-6 sm:space-y-8 animate-in fade-in duration-300">
+                    {/* Header Panoramica */}
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                      <div>
+                        <div className="flex items-center gap-2.5 flex-wrap">
+                          <h2 className="text-lg sm:text-xl font-light uppercase tracking-[0.22em] text-neutral-950">
+                            Panoramica
+                          </h2>
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-medium uppercase tracking-wider bg-emerald-50 text-emerald-800 border border-emerald-200/80">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse"></span>
+                            Store Attivo
+                          </span>
                         </div>
-                        <div>
-                          <div className="flex items-center gap-2 mb-1 flex-wrap">
-                            <h2 className="text-2xl md:text-3xl font-black text-brand-dark tracking-tight uppercase">Bentornato nel Control Center</h2>
-                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200">
-                              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                              Store Attivo
-                            </span>
-                          </div>
-                          <p className="text-xs md:text-sm font-semibold text-gray-400">Panoramica strategica • Vendite in tempo reale, magazzino e spedizioni</p>
-                        </div>
+                        <p className="text-[11px] text-neutral-400 font-light mt-1 tracking-wide">
+                          Vendite in tempo reale, statistiche principali e performance dello store
+                        </p>
                       </div>
 
-                      <div className="flex flex-wrap items-center gap-3 relative z-10">
+                      <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
                         <button 
+                          type="button"
                           onClick={() => setAdminActiveTab('products')}
-                          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-brand-dark text-white hover:bg-black font-black text-xs uppercase tracking-wider transition-all shadow-md active:scale-95 hover:shadow-lg"
+                          className={`${ADMIN_BTN_PRIMARY} flex-1 sm:flex-initial`}
                         >
-                          <Package className="w-4 h-4 text-brand-yellow" />
+                          <Package className="w-4 h-4 text-white" />
                           <span>+ Nuovo Prodotto</span>
                         </button>
                         <button 
+                          type="button"
                           onClick={() => setAdminActiveTab('orders')}
-                          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-50 text-indigo-900 hover:bg-indigo-100 border border-indigo-200 font-black text-xs uppercase tracking-wider transition-all active:scale-95"
+                          className={`${ADMIN_BTN_SECONDARY} flex-1 sm:flex-initial`}
                         >
-                          <ShoppingBag className="w-4 h-4 text-indigo-600" />
+                          <ShoppingBag className="w-4 h-4 text-neutral-500" />
                           <span>Tutti gli Ordini</span>
                         </button>
-                        <div className="hidden xl:flex items-center gap-3 pl-3 border-l border-gray-100 text-right">
-                          <div>
-                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">In tempo reale</p>
-                            <p className="text-sm font-black text-brand-dark flex items-center gap-1.5 justify-end">
-                              <Activity className="w-4 h-4 text-emerald-500 animate-pulse" />
-                              38 Utenti Online
-                            </p>
-                          </div>
+                        <div className="hidden lg:flex items-center gap-2 px-3 py-2 bg-white rounded-xl border border-neutral-200/80 text-right">
+                          <Activity className="w-3.5 h-3.5 text-emerald-600 animate-pulse" />
+                          <span className="text-[11px] font-medium text-neutral-900">38 Online</span>
                         </div>
                       </div>
-                      <div className="absolute right-0 top-0 w-80 h-full bg-gradient-to-l from-amber-50/50 via-transparent to-transparent pointer-events-none"></div>
                     </div>
 
-                    {/* 4 Dynamic Distinct Color Metric Cards */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                      {/* 1. Fatturato Totale - Warm Amber / Gold */}
-                      <div className="bg-gradient-to-br from-amber-500/10 via-amber-100/30 to-white p-7 rounded-[2.5rem] hover:-translate-y-1.5 transition-all duration-300 relative overflow-hidden group border border-amber-300/80 shadow-lg shadow-amber-500/5">
-                        <div className="flex justify-between items-start relative z-10">
-                          <div className="p-3.5 bg-gradient-to-tr from-amber-400 to-yellow-300 text-neutral-950 rounded-2xl shadow-md shadow-amber-400/30 group-hover:rotate-12 transition-transform">
-                            <DollarSign className="w-6 h-6" />
+                    {/* 4 Card Metriche KPI Minimal */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+                      {/* 1. Fatturato Totale */}
+                      <div className="bg-white p-5 sm:p-6 rounded-2xl border border-neutral-200/80 shadow-[0_1px_3px_rgba(0,0,0,0.04)] hover:border-neutral-300 transition-all flex flex-col justify-between">
+                        <div className="flex justify-between items-start">
+                          <div className="w-10 h-10 rounded-xl bg-neutral-100 flex items-center justify-center text-neutral-800">
+                            <DollarSign className="w-5 h-5" />
                           </div>
-                          <span className="text-[10px] font-black px-3 py-1 rounded-full bg-amber-500/20 text-amber-950 border border-amber-300/70 shadow-sm flex items-center gap-1">
-                            <TrendingUp className="w-3 h-3 text-amber-900" />
+                          <span className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200/80 flex items-center gap-1">
+                            <TrendingUp className="w-3 h-3 text-emerald-700" />
                             +18.4%
                           </span>
                         </div>
-                        <div className="mt-6 relative z-10">
-                          <p className="text-[10px] font-black uppercase tracking-widest text-amber-900/60 mb-1">Fatturato Complessivo</p>
-                          <h4 className="text-[32px] font-black tracking-tight text-amber-950">€128.430</h4>
-                          <div className="mt-3 flex items-center justify-between text-[11px] font-bold text-amber-900/75">
+                        <div className="mt-4">
+                          <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-neutral-400 mb-1">Fatturato Complessivo</p>
+                          <h4 className="text-2xl sm:text-3xl font-light tracking-tight text-neutral-950">€128.430</h4>
+                          <div className="mt-3 flex items-center justify-between text-[11px] font-light text-neutral-500">
                             <span>Target Mese: 88%</span>
-                            <span className="font-black">€145.000</span>
+                            <span className="font-medium text-neutral-900">€145.000</span>
                           </div>
-                          <div className="w-full h-1.5 bg-amber-200/60 rounded-full mt-1.5 overflow-hidden">
-                            <div className="h-full bg-amber-500 rounded-full w-[88%]"></div>
+                          <div className="w-full h-1 bg-neutral-100 rounded-full mt-2 overflow-hidden">
+                            <div className="h-full bg-neutral-950 rounded-full w-[88%]"></div>
                           </div>
                         </div>
-                        <div className="absolute -bottom-8 -right-8 w-28 h-28 bg-amber-300/30 rounded-full blur-2xl pointer-events-none"></div>
                       </div>
 
-                      {/* 2. Ordini Ricevuti - Electric Indigo / Cobalt */}
-                      <div className="bg-gradient-to-br from-blue-500/10 via-indigo-100/30 to-white p-7 rounded-[2.5rem] hover:-translate-y-1.5 transition-all duration-300 relative overflow-hidden group border border-blue-300/80 shadow-lg shadow-blue-500/5">
-                        <div className="flex justify-between items-start relative z-10">
-                          <div className="p-3.5 bg-gradient-to-tr from-blue-600 to-indigo-500 text-white rounded-2xl shadow-md shadow-blue-500/30 group-hover:rotate-12 transition-transform">
-                            <ShoppingBag className="w-6 h-6" />
+                      {/* 2. Ordini Ricevuti */}
+                      <div className="bg-white p-5 sm:p-6 rounded-2xl border border-neutral-200/80 shadow-[0_1px_3px_rgba(0,0,0,0.04)] hover:border-neutral-300 transition-all flex flex-col justify-between">
+                        <div className="flex justify-between items-start">
+                          <div className="w-10 h-10 rounded-xl bg-neutral-100 flex items-center justify-center text-neutral-800">
+                            <ShoppingBag className="w-5 h-5" />
                           </div>
-                          <span className="text-[10px] font-black px-3 py-1 rounded-full bg-blue-500/15 text-blue-900 border border-blue-300/70 shadow-sm flex items-center gap-1">
-                            <TrendingUp className="w-3 h-3 text-blue-800" />
+                          <span className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200/80 flex items-center gap-1">
+                            <TrendingUp className="w-3 h-3 text-emerald-700" />
                             +12.6%
                           </span>
                         </div>
-                        <div className="mt-6 relative z-10">
-                          <p className="text-[10px] font-black uppercase tracking-widest text-indigo-900/60 mb-1">Ordini Elaborati</p>
-                          <h4 className="text-[32px] font-black tracking-tight text-indigo-950">1.243</h4>
-                          <div className="mt-3 flex items-center justify-between text-[11px] font-bold text-indigo-900/75">
+                        <div className="mt-4">
+                          <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-neutral-400 mb-1">Ordini Elaborati</p>
+                          <h4 className="text-2xl sm:text-3xl font-light tracking-tight text-neutral-950">1.243</h4>
+                          <div className="mt-3 flex items-center justify-between text-[11px] font-light text-neutral-500">
                             <span>In Transito Corrieri</span>
-                            <span className="font-black text-indigo-600">34 ordini</span>
+                            <span className="font-medium text-neutral-900">34 ordini</span>
                           </div>
-                          <div className="w-full h-1.5 bg-blue-200/60 rounded-full mt-1.5 overflow-hidden">
-                            <div className="h-full bg-indigo-500 rounded-full w-[76%]"></div>
+                          <div className="w-full h-1 bg-neutral-100 rounded-full mt-2 overflow-hidden">
+                            <div className="h-full bg-neutral-950 rounded-full w-[76%]"></div>
                           </div>
                         </div>
-                        <div className="absolute -bottom-8 -right-8 w-28 h-28 bg-blue-300/30 rounded-full blur-2xl pointer-events-none"></div>
                       </div>
 
-                      {/* 3. Resi & Assistenza - Rose / Crimson */}
-                      <div className="bg-gradient-to-br from-rose-500/10 via-pink-100/30 to-white p-7 rounded-[2.5rem] hover:-translate-y-1.5 transition-all duration-300 relative overflow-hidden group border border-rose-300/80 shadow-lg shadow-rose-500/5">
-                        <div className="flex justify-between items-start relative z-10">
-                          <div className="p-3.5 bg-gradient-to-tr from-rose-500 to-pink-500 text-white rounded-2xl shadow-md shadow-rose-500/30 group-hover:rotate-12 transition-transform">
-                            <RefreshCw className="w-6 h-6" />
+                      {/* 3. Resi & Assistenza */}
+                      <div className="bg-white p-5 sm:p-6 rounded-2xl border border-neutral-200/80 shadow-[0_1px_3px_rgba(0,0,0,0.04)] hover:border-neutral-300 transition-all flex flex-col justify-between">
+                        <div className="flex justify-between items-start">
+                          <div className="w-10 h-10 rounded-xl bg-neutral-100 flex items-center justify-center text-neutral-800">
+                            <RefreshCw className="w-5 h-5" />
                           </div>
-                          <span className="text-[10px] font-black px-3 py-1 rounded-full bg-emerald-500/15 text-emerald-800 border border-emerald-300/70 shadow-sm flex items-center gap-1">
+                          <span className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200/80 flex items-center gap-1">
                             <TrendingDown className="w-3 h-3 text-emerald-700" />
                             -5.2%
                           </span>
                         </div>
-                        <div className="mt-6 relative z-10">
-                          <p className="text-[10px] font-black uppercase tracking-widest text-rose-900/60 mb-1">Resi Gestiti</p>
-                          <h4 className="text-[32px] font-black tracking-tight text-rose-950">12</h4>
-                          <div className="mt-3 flex items-center justify-between text-[11px] font-bold text-rose-900/75">
+                        <div className="mt-4">
+                          <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-neutral-400 mb-1">Resi Gestiti</p>
+                          <h4 className="text-2xl sm:text-3xl font-light tracking-tight text-neutral-950">12</h4>
+                          <div className="mt-3 flex items-center justify-between text-[11px] font-light text-neutral-500">
                             <span>Tasso di Reso Store</span>
-                            <span className="font-black text-emerald-600">0.9% (Ottimo)</span>
+                            <span className="font-medium text-emerald-700">0.9% (Ottimo)</span>
                           </div>
-                          <div className="w-full h-1.5 bg-rose-200/60 rounded-full mt-1.5 overflow-hidden">
-                            <div className="h-full bg-rose-500 rounded-full w-[12%]"></div>
+                          <div className="w-full h-1 bg-neutral-100 rounded-full mt-2 overflow-hidden">
+                            <div className="h-full bg-neutral-950 rounded-full w-[12%]"></div>
                           </div>
                         </div>
-                        <div className="absolute -bottom-8 -right-8 w-28 h-28 bg-rose-300/30 rounded-full blur-2xl pointer-events-none"></div>
                       </div>
 
-                      {/* 4. Nuovi Clienti - Emerald Mint */}
-                      <div className="bg-gradient-to-br from-emerald-500/10 via-teal-100/30 to-white p-7 rounded-[2.5rem] hover:-translate-y-1.5 transition-all duration-300 relative overflow-hidden group border border-emerald-300/80 shadow-lg shadow-emerald-500/5">
-                        <div className="flex justify-between items-start relative z-10">
-                          <div className="p-3.5 bg-gradient-to-tr from-emerald-500 to-teal-400 text-white rounded-2xl shadow-md shadow-emerald-500/30 group-hover:rotate-12 transition-transform">
-                            <UserPlus className="w-6 h-6" />
+                      {/* 4. Nuovi Clienti */}
+                      <div className="bg-white p-5 sm:p-6 rounded-2xl border border-neutral-200/80 shadow-[0_1px_3px_rgba(0,0,0,0.04)] hover:border-neutral-300 transition-all flex flex-col justify-between">
+                        <div className="flex justify-between items-start">
+                          <div className="w-10 h-10 rounded-xl bg-neutral-100 flex items-center justify-center text-neutral-800">
+                            <UserPlus className="w-5 h-5" />
                           </div>
-                          <span className="text-[10px] font-black px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-950 border border-emerald-300/70 shadow-sm flex items-center gap-1">
-                            <TrendingUp className="w-3 h-3 text-emerald-800" />
+                          <span className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200/80 flex items-center gap-1">
+                            <TrendingUp className="w-3 h-3 text-emerald-700" />
                             +22.0%
                           </span>
                         </div>
-                        <div className="mt-6 relative z-10">
-                          <p className="text-[10px] font-black uppercase tracking-widest text-emerald-900/60 mb-1">Clienti Registrati</p>
-                          <h4 className="text-[32px] font-black tracking-tight text-emerald-950">342</h4>
-                          <div className="mt-3 flex items-center justify-between text-[11px] font-bold text-emerald-900/75">
+                        <div className="mt-4">
+                          <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-neutral-400 mb-1">Clienti Registrati</p>
+                          <h4 className="text-2xl sm:text-3xl font-light tracking-tight text-neutral-950">342</h4>
+                          <div className="mt-3 flex items-center justify-between text-[11px] font-light text-neutral-500">
                             <span>Scontrino Medio</span>
-                            <span className="font-black text-emerald-800">€103,50</span>
+                            <span className="font-medium text-neutral-900">€103,50</span>
                           </div>
-                          <div className="w-full h-1.5 bg-emerald-200/60 rounded-full mt-1.5 overflow-hidden">
-                            <div className="h-full bg-emerald-500 rounded-full w-[84%]"></div>
+                          <div className="w-full h-1 bg-neutral-100 rounded-full mt-2 overflow-hidden">
+                            <div className="h-full bg-neutral-950 rounded-full w-[84%]"></div>
                           </div>
                         </div>
-                        <div className="absolute -bottom-8 -right-8 w-28 h-28 bg-emerald-300/30 rounded-full blur-2xl pointer-events-none"></div>
                       </div>
                     </div>
 
-                    {/* Main Analytics Row: Interactive Sales Chart + Top Visual Products */}
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                      {/* Obsidian Glow Sales Trend Chart (Span 2) */}
-                      <div className="lg:col-span-2 bg-gradient-to-br from-neutral-950 via-neutral-900 to-neutral-950 text-white p-8 md:p-10 rounded-[3rem] border border-neutral-800 shadow-2xl relative overflow-hidden space-y-8 flex flex-col justify-between">
+                    {/* Sezione Grafico Vendite + Prodotti Top & Magazzino */}
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
+                      {/* Box Vendite Monocromatico Sartoriale Dark (Span 2) */}
+                      <div className="lg:col-span-2 bg-neutral-950 text-white p-6 sm:p-8 rounded-2xl border border-neutral-900 shadow-xl space-y-6 flex flex-col justify-between">
                         <div>
-                          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 relative z-10">
+                          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                             <div>
                               <div className="flex items-center gap-2">
-                                <h3 className="text-2xl font-black uppercase tracking-tight text-white">Andamento Vendite</h3>
-                                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-amber-400/20 text-amber-300 border border-amber-400/30">
+                                <h3 className="text-base sm:text-lg font-light uppercase tracking-[0.2em] text-white">Andamento Vendite</h3>
+                                <span className="px-2 py-0.5 rounded-full text-[9px] font-medium uppercase tracking-widest bg-white/10 text-neutral-300 border border-white/10">
                                   Live Analytics
                                 </span>
                               </div>
-                              <p className="text-xs font-semibold text-white/50 mt-1">Ricavi mensili distribuiti nell'anno fiscale corrente</p>
+                              <p className="text-[11px] font-light text-neutral-400 mt-1">Ricavi mensili distribuiti nell'anno fiscale corrente</p>
                             </div>
 
-                            <div className="flex p-1 bg-white/10 rounded-xl border border-white/10 backdrop-blur-md">
-                              {['Settimana', 'Mese', 'Anno'].map(t => (
-                                <button key={t} className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${t === 'Mese' ? 'bg-gradient-to-r from-amber-400 to-yellow-300 text-neutral-950 shadow-md font-black' : 'text-white/60 hover:text-white font-bold'}`}>
+                            <div className="flex p-0.5 bg-neutral-900 rounded-xl border border-neutral-800">
+                              {['Settimana', 'Mese', 'Anno'].map((t) => (
+                                <button 
+                                  key={t} 
+                                  type="button"
+                                  className={`px-3 py-1.5 rounded-lg text-[10px] font-medium uppercase tracking-wider transition-all ${
+                                    t === 'Mese' 
+                                      ? 'bg-white text-neutral-950 shadow-sm font-semibold' 
+                                      : 'text-neutral-400 hover:text-white'
+                                  }`}
+                                >
                                   {t}
                                 </button>
                               ))}
@@ -4352,20 +4770,20 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                           </div>
 
                           {/* Chart Bars */}
-                          <div className="h-72 flex items-end gap-2.5 sm:gap-3 px-2 sm:px-4 mt-8 relative z-10">
+                          <div className="h-64 sm:h-72 flex items-end gap-2 sm:gap-3 px-1 sm:px-2 mt-8">
                             {[35, 45, 30, 75, 90, 65, 85, 40, 60, 95, 70, 80].map((h, i) => (
-                              <div key={i} className="flex-1 flex flex-col items-center gap-3 group cursor-pointer h-full justify-end">
+                              <div key={i} className="flex-1 flex flex-col items-center gap-2.5 group cursor-pointer h-full justify-end">
                                 <div className="w-full relative h-[85%] flex items-end">
                                   <motion.div 
                                     initial={{ height: 0 }}
                                     animate={{ height: `${h}%` }}
-                                    className="w-full bg-gradient-to-t from-amber-400/30 via-amber-400/80 to-yellow-300 rounded-2xl group-hover:from-amber-400/60 group-hover:to-yellow-200 transition-all duration-300 shadow-sm"
+                                    className="w-full bg-gradient-to-t from-neutral-800 via-neutral-600 to-neutral-200 rounded-lg group-hover:from-neutral-700 group-hover:to-white transition-all duration-300"
                                   />
-                                  <div className="absolute -top-11 left-1/2 -translate-x-1/2 bg-neutral-900 border border-amber-400/50 text-amber-300 px-3 py-1.5 rounded-xl text-[11px] font-black opacity-0 group-hover:opacity-100 transition-all pointer-events-none whitespace-nowrap scale-75 group-hover:scale-100 shadow-2xl z-20">
+                                  <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-white text-neutral-950 font-medium px-2 py-1 rounded-lg text-[10px] opacity-0 group-hover:opacity-100 transition-all pointer-events-none whitespace-nowrap shadow-xl z-20">
                                     €{(h * 1500).toLocaleString('it-IT')}
                                   </div>
                                 </div>
-                                <span className="text-[10px] font-black text-white/50 uppercase tracking-tighter group-hover:text-amber-300 transition-colors">
+                                <span className="text-[10px] font-light text-neutral-500 uppercase group-hover:text-neutral-200 transition-colors">
                                   M{i+1}
                                 </span>
                               </div>
@@ -4373,55 +4791,49 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                           </div>
                         </div>
 
-                        {/* Chart Bottom KPI Strip */}
-                        <div className="pt-6 border-t border-white/10 grid grid-cols-2 sm:grid-cols-4 gap-4 relative z-10">
+                        {/* KPI Strip */}
+                        <div className="pt-5 border-t border-neutral-900 grid grid-cols-2 sm:grid-cols-4 gap-4">
                           <div>
-                            <p className="text-[10px] font-black uppercase tracking-widest text-white/40">Conversione</p>
-                            <p className="text-sm sm:text-base font-black text-white flex items-center gap-1 mt-0.5">
-                              <span className="text-emerald-400">3.84%</span>
-                              <span className="text-[10px] text-white/40 font-bold">+0.6%</span>
+                            <p className="text-[10px] font-medium uppercase tracking-wider text-neutral-500">Conversione</p>
+                            <p className="text-sm sm:text-base font-light text-white flex items-center gap-1 mt-0.5">
+                              <span className="text-emerald-400 font-medium">3.84%</span>
+                              <span className="text-[10px] text-neutral-500">+0.6%</span>
                             </p>
                           </div>
                           <div>
-                            <p className="text-[10px] font-black uppercase tracking-widest text-white/40">Scontrino Medio</p>
-                            <p className="text-sm sm:text-base font-black text-white mt-0.5">€103,30</p>
+                            <p className="text-[10px] font-medium uppercase tracking-wider text-neutral-500">Scontrino Medio</p>
+                            <p className="text-sm sm:text-base font-light text-white mt-0.5">€103,30</p>
                           </div>
                           <div>
-                            <p className="text-[10px] font-black uppercase tracking-widest text-white/40">Spediti in 24h</p>
-                            <p className="text-sm sm:text-base font-black text-white mt-0.5">98.2%</p>
+                            <p className="text-[10px] font-medium uppercase tracking-wider text-neutral-500">Spediti in 24h</p>
+                            <p className="text-sm sm:text-base font-light text-white mt-0.5">98.2%</p>
                           </div>
                           <div>
-                            <p className="text-[10px] font-black uppercase tracking-widest text-white/40">Picco Mese</p>
-                            <p className="text-sm sm:text-base font-black text-amber-400 mt-0.5">M10 (€142k)</p>
+                            <p className="text-[10px] font-medium uppercase tracking-wider text-neutral-500">Picco Mese</p>
+                            <p className="text-sm sm:text-base font-medium text-white mt-0.5">M10 (€142k)</p>
                           </div>
                         </div>
-
-                        <div className="absolute top-0 right-0 w-96 h-96 bg-amber-400/10 rounded-full blur-[100px] pointer-events-none"></div>
                       </div>
 
-                      {/* Right Column: Visual Product Showcases with REAL IMAGES */}
+                      {/* Colonna Destra: Top Venduti & Scorte Magazzino */}
                       <div className="space-y-6">
-                        {/* Top Bestseller Products with Images */}
-                        <div className="bg-white p-7 rounded-[2.5rem] border border-gray-100 shadow-sm space-y-5 relative overflow-hidden">
+                        {/* Top Bestseller */}
+                        <div className="bg-white p-5 sm:p-6 rounded-2xl border border-neutral-200/80 shadow-[0_1px_3px_rgba(0,0,0,0.04)] space-y-4">
                           <div className="flex justify-between items-center">
-                            <h3 className="text-lg font-black uppercase tracking-tight flex items-center gap-2 text-brand-dark">
-                              <Sparkles className="w-5 h-5 text-amber-500" /> Top Venduti
+                            <h3 className="text-xs font-medium uppercase tracking-[0.18em] text-neutral-950 flex items-center gap-2">
+                              <Sparkles className="w-3.5 h-3.5 text-neutral-700" /> Top Venduti
                             </h3>
                             <button 
+                              type="button"
                               onClick={() => setAdminActiveTab('products')}
-                              className="text-[10px] font-black uppercase tracking-widest text-amber-700 hover:text-amber-800 transition-colors"
+                              className="text-[10px] font-medium uppercase tracking-wider text-neutral-500 hover:text-neutral-950 transition-colors cursor-pointer"
                             >
                               Tutti &rarr;
                             </button>
                           </div>
 
-                          <div className="space-y-3.5">
+                          <div className="space-y-3">
                             {(products && products.length >= 3 ? products.slice(0, 3) : PRODUCTS.slice(0, 3)).map((p, i) => {
-                              const rankColors = [
-                                'bg-gradient-to-tr from-amber-400 to-yellow-300 text-neutral-950 shadow-amber-400/30',
-                                'bg-gradient-to-tr from-slate-300 to-slate-200 text-slate-800 shadow-slate-300/30',
-                                'bg-gradient-to-tr from-amber-700 to-amber-600 text-white shadow-amber-700/30'
-                              ];
                               const salesCount = [432, 285, 219][i] || 150;
                               const trends = ['+28%', '+19%', '+14%'][i] || '+10%';
 
@@ -4429,31 +4841,31 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                                 <div 
                                   key={p.id || i}
                                   onClick={() => handleProductSelect(p)}
-                                  className="group flex items-center justify-between p-3.5 bg-gray-50/70 hover:bg-amber-50/60 rounded-2xl border border-gray-100/80 hover:border-amber-200 transition-all cursor-pointer"
+                                  className="group flex items-center justify-between p-2.5 bg-neutral-50/70 hover:bg-neutral-100/70 rounded-xl border border-neutral-200/60 transition-all cursor-pointer"
                                 >
                                   <div className="flex items-center gap-3 min-w-0">
                                     <div className="relative flex-shrink-0">
                                       <img 
                                         src={p.image || 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?auto=format&fit=crop&w=400&q=80'} 
                                         alt={p.name}
-                                        className="w-13 h-13 rounded-xl object-cover border border-gray-200/80 shadow-sm group-hover:scale-105 transition-transform"
+                                        className="w-11 h-12 rounded-lg object-cover border border-neutral-200/80 group-hover:scale-105 transition-transform"
                                       />
-                                      <div className={`absolute -top-1.5 -left-1.5 w-6 h-6 rounded-full flex items-center justify-center font-black text-[10px] shadow-sm ${rankColors[i] || rankColors[0]}`}>
+                                      <div className="absolute -top-1.5 -left-1.5 w-5 h-5 rounded-full flex items-center justify-center font-medium text-[9px] bg-neutral-950 text-white shadow-sm">
                                         #{i + 1}
                                       </div>
                                     </div>
                                     <div className="min-w-0 pr-2">
-                                      <p className="text-xs font-black text-brand-dark truncate group-hover:text-amber-900 transition-colors">{p.name}</p>
-                                      <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-0.5">
-                                        {p.category} • <span className="text-brand-dark font-black">€{Number(p.price || 0).toFixed(2)}</span>
+                                      <p className="text-xs font-medium text-neutral-900 truncate">{p.name}</p>
+                                      <p className="text-[10px] text-neutral-400 font-light mt-0.5">
+                                        {p.category} • <span className="text-neutral-900 font-medium">€{Number(p.price || 0).toFixed(2)}</span>
                                       </p>
                                     </div>
                                   </div>
                                   <div className="text-right flex-shrink-0">
-                                    <span className="text-[10px] font-black text-emerald-800 bg-emerald-100/70 px-2 py-0.5 rounded-full">
+                                    <span className="text-[10px] font-medium text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200/60">
                                       {trends}
                                     </span>
-                                    <p className="text-[10px] text-gray-400 font-bold mt-1">{salesCount} ordini</p>
+                                    <p className="text-[10px] text-neutral-400 font-light mt-1">{salesCount} ordini</p>
                                   </div>
                                 </div>
                               );
@@ -4461,46 +4873,47 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                           </div>
                         </div>
 
-                        {/* Inventory & Actions Box with Images */}
-                        <div className="bg-white p-7 rounded-[2.5rem] border border-gray-100 shadow-sm space-y-5">
+                        {/* Scorte & Attenzioni */}
+                        <div className="bg-white p-5 sm:p-6 rounded-2xl border border-neutral-200/80 shadow-[0_1px_3px_rgba(0,0,0,0.04)] space-y-4">
                           <div className="flex justify-between items-center">
-                            <h3 className="text-lg font-black uppercase tracking-tight flex items-center gap-2 text-brand-dark">
-                              <AlertTriangle className="w-5 h-5 text-orange-500" /> Scorte & Attenzioni
+                            <h3 className="text-xs font-medium uppercase tracking-[0.18em] text-neutral-950 flex items-center gap-2">
+                              <AlertTriangle className="w-3.5 h-3.5 text-neutral-700" /> Scorte & Attenzioni
                             </h3>
-                            <span className="text-[10px] font-black uppercase tracking-widest text-orange-600 bg-orange-50 px-2 py-0.5 rounded-md border border-orange-200">
+                            <span className="text-[10px] font-medium uppercase tracking-wider text-neutral-700 bg-neutral-100 px-2 py-0.5 rounded-md">
                               Azione Rapida
                             </span>
                           </div>
 
-                          <div className="space-y-3.5">
+                          <div className="space-y-3">
                             {(products && products.length >= 5 ? products.slice(3, 5) : PRODUCTS.slice(3, 5)).map((p, i) => (
-                              <div key={p.id || i} className="flex items-center justify-between p-3.5 bg-gray-50 rounded-2xl border border-gray-100">
+                              <div key={p.id || i} className="flex items-center justify-between p-2.5 bg-neutral-50 rounded-xl border border-neutral-200/60">
                                 <div className="flex items-center gap-3 min-w-0">
                                   <img 
                                     src={p.image || 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?auto=format&fit=crop&w=400&q=80'} 
                                     alt={p.name}
-                                    className="w-12 h-12 rounded-xl object-cover border border-gray-200 shadow-sm flex-shrink-0"
+                                    className="w-11 h-12 rounded-lg object-cover border border-neutral-200 flex-shrink-0"
                                   />
                                   <div className="min-w-0 pr-2">
-                                    <p className="text-xs font-black text-brand-dark truncate">{p.name}</p>
-                                    <p className="text-[10px] text-red-500 font-bold uppercase tracking-wider mt-0.5">
+                                    <p className="text-xs font-medium text-neutral-900 truncate">{p.name}</p>
+                                    <p className="text-[10px] text-rose-600 font-light mt-0.5">
                                       {i === 0 ? 'Solo 3 pezzi rimasti' : 'Vendite basse (-40%)'}
                                     </p>
                                   </div>
                                 </div>
-                                <span className="text-[10px] font-black text-red-600 bg-red-50 px-2.5 py-1 rounded-full border border-red-200 flex-shrink-0">
+                                <span className="text-[10px] font-medium text-neutral-700 bg-white px-2.5 py-1 rounded-lg border border-neutral-200/80 flex-shrink-0">
                                   {i === 0 ? 'Rifornisci' : 'Sconto 20%'}
                                 </span>
                               </div>
                             ))}
 
                             <button 
+                              type="button"
                               onClick={() => {
                                 addToast("Campagna sconto strategico attivata sui prodotti a bassa rotazione!", "success");
                               }}
-                              className="w-full py-3 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-md active:scale-95 flex items-center justify-center gap-1.5"
+                              className={`${ADMIN_BTN_SECONDARY} w-full text-center py-2.5 !min-h-[42px] mt-2`}
                             >
-                              <Zap className="w-3.5 h-3.5" />
+                              <Zap className="w-3.5 h-3.5 text-neutral-700" />
                               <span>Attiva Sconto Strategico -20%</span>
                             </button>
                           </div>
@@ -4508,38 +4921,42 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                       </div>
                     </div>
 
-                    {/* Sales Channels & Fulfillment Logistics Strip */}
-                    <div className="bg-white p-7 rounded-[2.5rem] border border-gray-100 shadow-sm space-y-4">
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    {/* Distribuzione Canali di Vendita & Magazzino */}
+                    <div className="bg-white p-5 sm:p-6 rounded-2xl border border-neutral-200/80 shadow-[0_1px_3px_rgba(0,0,0,0.04)] space-y-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                         <div className="flex items-center gap-2">
-                          <Globe className="w-5 h-5 text-indigo-600" />
-                          <h4 className="text-sm font-black text-brand-dark uppercase tracking-tight">Distribuzione Canali di Vendita & Magazzino</h4>
+                          <Globe className="w-4 h-4 text-neutral-700" />
+                          <h4 className="text-xs font-medium uppercase tracking-[0.18em] text-neutral-950">
+                            Distribuzione Canali di Vendita & Magazzino
+                          </h4>
                         </div>
-                        <span className="text-[10px] font-bold text-gray-400">Aggiornato in tempo reale con i marketplace sincronizzati</span>
+                        <span className="text-[10px] text-neutral-400 font-light">
+                          Sincronizzato in tempo reale con i marketplace
+                        </span>
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <div className="p-4 rounded-2xl bg-amber-50/70 border border-amber-200/80">
-                          <p className="text-[10px] font-black uppercase tracking-wider text-amber-900/60">Vincent Direct Store</p>
-                          <p className="text-xl font-black text-amber-950 mt-1">72% <span className="text-xs font-bold text-amber-900/70">(€92.470)</span></p>
-                          <div className="w-full h-1.5 bg-amber-200 rounded-full mt-2 overflow-hidden">
-                            <div className="h-full bg-amber-500 rounded-full w-[72%]"></div>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                        <div className="p-4 rounded-xl bg-neutral-50/70 border border-neutral-200/70">
+                          <p className="text-[10px] font-medium uppercase tracking-wider text-neutral-500">Vincent Direct Store</p>
+                          <p className="text-lg font-light text-neutral-950 mt-1">72% <span className="text-xs font-normal text-neutral-400">(€92.470)</span></p>
+                          <div className="w-full h-1 bg-neutral-200/80 rounded-full mt-2.5 overflow-hidden">
+                            <div className="h-full bg-neutral-950 rounded-full w-[72%]"></div>
                           </div>
                         </div>
 
-                        <div className="p-4 rounded-2xl bg-blue-50/70 border border-blue-200/80">
-                          <p className="text-[10px] font-black uppercase tracking-wider text-blue-900/60">Amazon Brand Store</p>
-                          <p className="text-xl font-black text-blue-950 mt-1">18% <span className="text-xs font-bold text-blue-900/70">(€23.117)</span></p>
-                          <div className="w-full h-1.5 bg-blue-200 rounded-full mt-2 overflow-hidden">
-                            <div className="h-full bg-blue-500 rounded-full w-[18%]"></div>
+                        <div className="p-4 rounded-xl bg-neutral-50/70 border border-neutral-200/70">
+                          <p className="text-[10px] font-medium uppercase tracking-wider text-neutral-500">Amazon Brand Store</p>
+                          <p className="text-lg font-light text-neutral-950 mt-1">18% <span className="text-xs font-normal text-neutral-400">(€23.117)</span></p>
+                          <div className="w-full h-1 bg-neutral-200/80 rounded-full mt-2.5 overflow-hidden">
+                            <div className="h-full bg-neutral-950 rounded-full w-[18%]"></div>
                           </div>
                         </div>
 
-                        <div className="p-4 rounded-2xl bg-emerald-50/70 border border-emerald-200/80">
-                          <p className="text-[10px] font-black uppercase tracking-wider text-emerald-900/60">Ebay & Partner Marketplace</p>
-                          <p className="text-xl font-black text-emerald-950 mt-1">10% <span className="text-xs font-bold text-emerald-900/70">(€12.843)</span></p>
-                          <div className="w-full h-1.5 bg-emerald-200 rounded-full mt-2 overflow-hidden">
-                            <div className="h-full bg-emerald-500 rounded-full w-[10%]"></div>
+                        <div className="p-4 rounded-xl bg-neutral-50/70 border border-neutral-200/70">
+                          <p className="text-[10px] font-medium uppercase tracking-wider text-neutral-500">Ebay & Partner Marketplace</p>
+                          <p className="text-lg font-light text-neutral-950 mt-1">10% <span className="text-xs font-normal text-neutral-400">(€12.843)</span></p>
+                          <div className="w-full h-1 bg-neutral-200/80 rounded-full mt-2.5 overflow-hidden">
+                            <div className="h-full bg-neutral-950 rounded-full w-[10%]"></div>
                           </div>
                         </div>
                       </div>

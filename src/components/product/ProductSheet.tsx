@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { Product } from '@/lib/types';
 import { PRODUCTS } from '@/lib/data';
+import { getColorHex, getProductVariantInfo } from '@/lib/productVariants';
 
 interface ProductSheetProps {
   product: Product;
@@ -119,6 +120,19 @@ export function ProductSheet({
   allProducts = [],
 }: ProductSheetProps) {
   const [quantity, setQuantity] = useState(1);
+  const variantInfo = useMemo(() => getProductVariantInfo(product), [product]);
+  const [selectedColor, setSelectedColor] = useState<string>(() => variantInfo.colors[0] || 'Nero');
+  const [selectedSize, setSelectedSize] = useState<string>(() => variantInfo.sizes[0] || 'M');
+
+  useEffect(() => {
+    if (variantInfo.colors.length > 0 && !variantInfo.colors.includes(selectedColor)) {
+      setSelectedColor(variantInfo.colors[0]);
+    }
+    if (variantInfo.sizes.length > 0 && !variantInfo.sizes.includes(selectedSize)) {
+      setSelectedSize(variantInfo.sizes[0]);
+    }
+  }, [variantInfo]);
+
   const [selectedVariants, setSelectedVariants] = useState<Record<string, string>>(() => {
     const initial: Record<string, string> = {};
     product.variants?.forEach((v) => {
@@ -349,9 +363,11 @@ export function ProductSheet({
                     </>
                   )}
                 </div>
-                <h2 className="text-xl lg:text-2xl font-bold text-neutral-950 leading-snug">
-                  {selectedVariantObject?.title || product.name}
-                </h2>
+                {Boolean(selectedVariantObject?.title || product.name) && (
+                  <h2 className="text-xl lg:text-2xl font-bold text-neutral-950 leading-snug">
+                    {selectedVariantObject?.title || product.name}
+                  </h2>
+                )}
                 {selectedVariantObject?.note && (
                   <div className="mt-3 p-3 bg-neutral-50 border border-neutral-200 rounded-xl">
                     <p className="text-[9px] font-bold uppercase text-neutral-500 tracking-wider">NOTA</p>
@@ -360,37 +376,75 @@ export function ProductSheet({
                 )}
               </div>
 
-              {/* Description */}
-              <div className="space-y-3">
-                <h4 className="font-semibold text-xs uppercase tracking-[0.18em] text-neutral-900 border-l-3 border-neutral-950 pl-3">
-                  Descrizione
-                </h4>
-                <div className="text-neutral-600 text-xs sm:text-sm leading-relaxed space-y-3">
-                  <div dangerouslySetInnerHTML={{ __html: product.description }} className="rich-content" />
+              {/* Dettagli Sartoriali (Materiale, Manifattura, Vestibilità) - Mostrati solo se compilati */}
+              {(Boolean(product.material?.trim()) || Boolean(product.manufacturing?.trim()) || Boolean(product.fit?.trim())) && (
+                <div className="space-y-3">
+                  <h4 className="font-semibold text-xs uppercase tracking-[0.18em] text-neutral-900 border-l-3 border-neutral-950 pl-3">
+                    Dettagli Sartoriali
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    {product.material?.trim() && (
+                      <div className="bg-neutral-50/80 p-3 rounded-xl border border-neutral-200/60">
+                        <p className="text-[9px] text-neutral-400 uppercase font-bold tracking-wider mb-0.5">Materiale</p>
+                        <p className="text-xs font-semibold text-neutral-900">{product.material.trim()}</p>
+                      </div>
+                    )}
+                    {product.manufacturing?.trim() && (
+                      <div className="bg-neutral-50/80 p-3 rounded-xl border border-neutral-200/60">
+                        <p className="text-[9px] text-neutral-400 uppercase font-bold tracking-wider mb-0.5">Manifattura</p>
+                        <p className="text-xs font-semibold text-neutral-900">{product.manufacturing.trim()}</p>
+                      </div>
+                    )}
+                    {product.fit?.trim() && (
+                      <div className="bg-neutral-50/80 p-3 rounded-xl border border-neutral-200/60 sm:col-span-2">
+                        <p className="text-[9px] text-neutral-400 uppercase font-bold tracking-wider mb-0.5">Vestibilità</p>
+                        <p className="text-xs font-semibold text-neutral-900">{product.fit.trim()}</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
 
-              {/* Technical Specs */}
-              {product?.specs && Object.keys(product.specs).length > 0 && (
+              {/* Description - Mostrata solo se presente e non vuota */}
+              {Boolean(product.description && product.description.replace(/<[^>]*>/g, '').trim().length > 0) && (
+                <div className="space-y-3">
+                  <h4 className="font-semibold text-xs uppercase tracking-[0.18em] text-neutral-900 border-l-3 border-neutral-950 pl-3">
+                    Descrizione
+                  </h4>
+                  <div className="text-neutral-600 text-xs sm:text-sm leading-relaxed space-y-3">
+                    <div dangerouslySetInnerHTML={{ __html: product.description }} className="rich-content" />
+                  </div>
+                </div>
+              )}
+
+              {/* Caratteristiche / Specifiche - Mostrate solo se presenti */}
+              {(Boolean(product.features?.trim()) || (product?.specs && Object.keys(product.specs).length > 0) || ((selectedVariantObject && selectedVariantObject.showEan !== false && selectedVariantObject.ean) || (!selectedVariantObject && product.showEan && product.ean))) && (
                 <div className="space-y-4">
                   <h4 className="font-semibold text-xs uppercase tracking-[0.18em] text-neutral-900 border-l-3 border-neutral-950 pl-3">
                     Caratteristiche
                   </h4>
-                  <div className="grid grid-cols-2 gap-2.5">
-                    {((selectedVariantObject && selectedVariantObject.showEan !== false && selectedVariantObject.ean) ||
-                      (!selectedVariantObject && product.showEan && product.ean)) && (
-                      <div className="bg-neutral-950 text-white p-3 rounded-xl border border-neutral-800 shadow-sm col-span-2">
-                        <p className="text-[9px] text-white/60 uppercase font-semibold mb-0.5">Codice EAN</p>
-                        <p className="text-xs font-mono tracking-widest">{selectedVariantObject?.ean || product.ean}</p>
-                      </div>
-                    )}
-                    {Object.entries(product.specs).map(([key, value]) => (
-                      <div key={key} className="bg-neutral-50 p-3 rounded-xl border border-neutral-100">
-                        <p className="text-[9px] text-neutral-400 uppercase font-medium mb-0.5">{key}</p>
-                        <p className="text-xs font-semibold text-neutral-900">{value}</p>
-                      </div>
-                    ))}
-                  </div>
+                  {product.features?.trim() && (
+                    <div className="p-3.5 bg-neutral-50/90 rounded-xl border border-neutral-200/70 text-xs text-neutral-700 leading-relaxed font-medium">
+                      {product.features.trim()}
+                    </div>
+                  )}
+                  {(((selectedVariantObject && selectedVariantObject.showEan !== false && selectedVariantObject.ean) || (!selectedVariantObject && product.showEan && product.ean)) || (product?.specs && Object.keys(product.specs).length > 0)) && (
+                    <div className="grid grid-cols-2 gap-2.5">
+                      {((selectedVariantObject && selectedVariantObject.showEan !== false && selectedVariantObject.ean) ||
+                        (!selectedVariantObject && product.showEan && product.ean)) && (
+                        <div className="bg-neutral-950 text-white p-3 rounded-xl border border-neutral-800 shadow-sm col-span-2">
+                          <p className="text-[9px] text-white/60 uppercase font-semibold mb-0.5">Codice EAN</p>
+                          <p className="text-xs font-mono tracking-widest">{selectedVariantObject?.ean || product.ean}</p>
+                        </div>
+                      )}
+                      {product?.specs && Object.entries(product.specs).map(([key, value]) => (
+                        <div key={key} className="bg-neutral-50 p-3 rounded-xl border border-neutral-100">
+                          <p className="text-[9px] text-neutral-400 uppercase font-medium mb-0.5">{key}</p>
+                          <p className="text-xs font-semibold text-neutral-900">{value}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -458,8 +512,69 @@ export function ProductSheet({
                   </span>
                 </div>
 
-                {/* Variant Selection UI */}
-                {Object.entries(variantsByType).map(([type, options]) => (
+                {/* Selettore Colori (Pallini rotondi senza testo) */}
+                <div className="space-y-2 pt-2">
+                  <h4 className="font-medium text-[11px] uppercase tracking-wider text-neutral-900 flex items-center gap-2">
+                    <span>Colore</span>
+                    <span className="text-neutral-500 font-normal">— {selectedColor}</span>
+                  </h4>
+                  <div className="flex flex-wrap items-center gap-2.5">
+                    {variantInfo.colors.map((col) => {
+                      const isSelected = selectedColor === col;
+                      const hex = getColorHex(col);
+                      const isWhite = hex.toLowerCase() === '#ffffff';
+
+                      return (
+                        <button
+                          key={col}
+                          type="button"
+                          onClick={() => setSelectedColor(col)}
+                          title={col}
+                          aria-label={`Colore ${col}`}
+                          className={`w-7 h-7 rounded-full transition-all cursor-pointer shrink-0 ${
+                            isWhite ? 'border border-neutral-300' : 'border border-black/10'
+                          } ${
+                            isSelected
+                              ? 'ring-2 ring-neutral-950 ring-offset-2 ring-offset-white scale-110 shadow-sm'
+                              : 'hover:scale-105 opacity-85 hover:opacity-100'
+                          }`}
+                          style={{ backgroundColor: hex }}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Selettore Taglie */}
+                <div className="space-y-2 pt-2">
+                  <h4 className="font-medium text-[11px] uppercase tracking-wider text-neutral-900 flex items-center gap-2">
+                    <span>Taglia</span>
+                    <span className="text-neutral-500 font-normal">— {selectedSize}</span>
+                  </h4>
+                  <div className="flex flex-wrap gap-2">
+                    {variantInfo.sizes.map((sz) => {
+                      const isSelected = selectedSize === sz;
+
+                      return (
+                        <button
+                          key={sz}
+                          type="button"
+                          onClick={() => setSelectedSize(sz)}
+                          className={`min-w-[42px] px-3.5 py-2 rounded-xl text-xs uppercase tracking-tight transition-all border cursor-pointer ${
+                            isSelected
+                              ? 'border-neutral-950 bg-neutral-950 text-white font-medium shadow-xs'
+                              : 'border-neutral-200 hover:border-neutral-400 text-neutral-700 bg-white font-normal hover:bg-neutral-50'
+                          }`}
+                        >
+                          {sz}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Eventuali Altre Varianti Personalizzate */}
+                {Object.entries(variantInfo.customGroups).map(([type, options]) => (
                   <div key={type} className="space-y-2 pt-2">
                     <h4 className="font-semibold text-[10px] uppercase tracking-wider text-neutral-900 flex items-center gap-2">
                       {type}
@@ -468,7 +583,7 @@ export function ProductSheet({
                       )}
                     </h4>
                     <div className="flex flex-wrap gap-2">
-                      {options.map((opt) => (
+                      {options.map((opt: any) => (
                         <button
                           key={opt.id || opt.value}
                           onClick={() => setSelectedVariants({ ...selectedVariants, [type]: opt.value })}
@@ -587,8 +702,11 @@ export function ProductSheet({
                   price: displayPrice,
                   sku: selectedVariantObject?.sku || product.sku,
                   name: selectedVariantObject ? `${product.name} - ${selectedVariantObject.value}` : product.name,
+                  selectedSize,
+                  selectedColor,
+                  cartItemId: `${product.id}__${selectedSize}__${selectedColor}`,
                 };
-                for (let i = 0; i < quantity; i++) onAddToCart(itemToAddToCart);
+                for (let i = 0; i < quantity; i++) onAddToCart(itemToAddToCart as any);
                 onClose();
               }}
               className="flex-1 sm:flex-[2] bg-neutral-950 hover:bg-black text-white h-12 sm:h-14 rounded-xl font-bold flex items-center justify-center gap-2 sm:gap-3 active:scale-95 transition-all uppercase text-xs tracking-widest shadow-lg cursor-pointer"

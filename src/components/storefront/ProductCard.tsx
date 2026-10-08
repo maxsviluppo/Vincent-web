@@ -1,8 +1,9 @@
 'use client';
 
-import React, { memo } from 'react';
+import React, { memo, useMemo } from 'react';
 import { Heart, ShoppingCart } from 'lucide-react';
 import { Product } from '@/lib/types';
+import { getColorHex, getProductVariantInfo } from '@/lib/productVariants';
 
 interface ProductCardProps {
   product: Product;
@@ -29,6 +30,8 @@ export const ProductCard = memo(function ProductCard({
   const displayPrice = product.price || 0;
   const imageSrc =
     product.image && product.image.trim().length > 10 ? product.image : FALLBACK_IMG;
+
+  const variantInfo = useMemo(() => getProductVariantInfo(product), [product]);
 
   // Precarica le immagini della galleria in background all'hover per renderle istantanee al click
   const handleMouseEnter = () => {
@@ -90,15 +93,58 @@ export const ProductCard = memo(function ProductCard({
       {/* Fascia bianca inferiore con informazioni prodotto */}
       <div className="p-4 bg-white flex flex-col flex-1 justify-between border-t border-neutral-100">
         <div>
-          {product.brand && (
-            <p className="text-[10px] font-medium text-neutral-400 uppercase tracking-[0.22em] mb-1">
-              {product.brand}
+          <div className="flex items-center justify-between gap-1 mb-1">
+            {product.brand && (
+              <p className="text-[10px] font-medium text-neutral-400 uppercase tracking-[0.22em] truncate">
+                {product.brand}
+              </p>
+            )}
+
+            {/* Pallini Colore a cerchietto senza testo */}
+            {variantInfo.colors.length > 0 && (
+              <div className="flex items-center gap-1 shrink-0 ml-auto" title={variantInfo.colors.join(', ')}>
+                {variantInfo.colors.slice(0, 4).map((col) => {
+                  const hex = getColorHex(col);
+                  const isWhite = hex.toLowerCase() === '#ffffff';
+                  return (
+                    <span
+                      key={col}
+                      className={`w-2.5 h-2.5 rounded-full inline-block shrink-0 ${
+                        isWhite ? 'border border-neutral-300' : 'border border-black/10'
+                      }`}
+                      style={{ backgroundColor: hex }}
+                      title={col}
+                    />
+                  );
+                })}
+                {variantInfo.colors.length > 4 && (
+                  <span className="text-[8px] text-neutral-400 font-light">+{variantInfo.colors.length - 4}</span>
+                )}
+              </div>
+            )}
+          </div>
+
+          <h3 className="text-xs sm:text-sm font-normal text-neutral-900 line-clamp-2 mb-1 tracking-wide group-hover:text-black transition-colors leading-snug">
+            {product.name}
+          </h3>
+
+          {/* Anteprima Descrizione / Materiale in Home se presente */}
+          {(product.material?.trim() || product.features?.trim() || (product.description && product.description.replace(/<[^>]*>/g, '').trim())) && (
+            <p className="text-[11px] text-neutral-500 font-normal line-clamp-1 mb-1.5 leading-tight">
+              {product.material?.trim() 
+                ? product.material.trim() 
+                : product.features?.trim() 
+                  ? product.features.trim() 
+                  : product.description.replace(/<[^>]*>/g, '').trim()}
             </p>
           )}
 
-          <h3 className="text-xs sm:text-sm font-normal text-neutral-900 line-clamp-2 mb-2 tracking-wide group-hover:text-black transition-colors leading-snug">
-            {product.name}
-          </h3>
+          {/* Anteprima Taglie disponibili */}
+          {variantInfo.sizes.length > 0 && (
+            <p className="text-[10px] text-neutral-400 font-light truncate mb-2">
+              Taglie: <span className="text-neutral-600 font-medium">{variantInfo.sizes.join(' · ')}</span>
+            </p>
+          )}
         </div>
 
         <div className="pt-2 border-t border-neutral-100 flex items-center justify-between gap-2 mt-auto">
@@ -112,7 +158,14 @@ export const ProductCard = memo(function ProductCard({
           <button
             onClick={(e) => {
               e.stopPropagation();
-              onAddToCart(product);
+              const defaultSize = variantInfo.sizes[0] || 'M';
+              const defaultColor = variantInfo.colors[0] || 'Nero';
+              onAddToCart({
+                ...product,
+                selectedSize: defaultSize,
+                selectedColor: defaultColor,
+                cartItemId: `${product.id}__${defaultSize}__${defaultColor}`
+              } as any);
             }}
             className="w-8 h-8 rounded-full bg-neutral-950 hover:bg-black text-white flex items-center justify-center shadow-sm active:scale-90 transition-all cursor-pointer group/btn"
             aria-label="Aggiungi al carrello"

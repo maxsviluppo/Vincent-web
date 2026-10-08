@@ -313,6 +313,10 @@ export const AdminSingleProduct = ({ onBack, onSave, onDelete, initialData, exis
   const [ean, setEan] = useState<string>(initialData?.ean || "");
   const [brand, setBrand] = useState<string>(initialData?.brand || "");
   const [productDescription, setProductDescription] = useState<string>(initialData?.description || "");
+  const [material, setMaterial] = useState<string>(initialData?.material || "");
+  const [manufacturing, setManufacturing] = useState<string>(initialData?.manufacturing || "");
+  const [fit, setFit] = useState<string>(initialData?.fit || "");
+  const [features, setFeatures] = useState<string>(initialData?.features || "");
   const [weight, setWeight] = useState<number>(Number(initialData?.weight) || 0);
   const [length, setLength] = useState<number>(Number(initialData?.length) || 0);
   const [width, setWidth] = useState<number>(Number(initialData?.width) || 0);
@@ -786,6 +790,10 @@ Rispondi SOLO con JSON valido, nessun testo extra: { "title": "...", "descriptio
       brand: isAddingNewBrand ? newBrand : brand,
       name: title,
       description: productDescription || "",
+      material: material.trim(),
+      manufacturing: manufacturing.trim(),
+      fit: fit.trim(),
+      features: features.trim(),
       price: parseFloat(manualB2c || '0'),
       b2bPrice: b2bPriceFinal,
       b2bDiscount,
@@ -926,7 +934,7 @@ Rispondi SOLO con JSON valido, nessun testo extra: { "title": "...", "descriptio
             </div>
 
             <div className="flex justify-between items-end mb-1">
-              <span className="text-[10px] font-black uppercase tracking-widest text-brand-blue block">Titolo Prodotto (DB Interno & Sito) *</span>
+              <span className="text-[10px] font-black uppercase tracking-widest text-neutral-900 block">Nome del Prodotto (Titolo Vetrina & Negozio) *</span>
               <span className={`text-[9px] font-black px-2 py-0.5 rounded-md transition-all ${title.length > 90 ? 'bg-red-500 text-white shadow-lg animate-pulse' : 'bg-gray-100 text-gray-400'}`}>
                 {title.length} / 90
               </span>
@@ -936,7 +944,7 @@ Rispondi SOLO con JSON valido, nessun testo extra: { "title": "...", "descriptio
                 type="text" 
                 value={title}
                 onChange={e => setTitle(toProperCase(e.target.value))}
-                placeholder="Titolo gestionale per sito web..." 
+                placeholder="Nome e titolo del capo (es. Giacca Sartoriale Slim)..." 
                 className={`w-full bg-gray-50 border-gray-200 rounded-xl px-4 py-3 text-sm font-bold transition-all ${title.length > 90 ? 'border-red-500 ring-4 ring-red-500/10' : 'focus:ring-brand-blue focus:border-brand-blue'}`} 
               />
               {title.length > 90 && (
@@ -1016,6 +1024,76 @@ Rispondi SOLO con JSON valido, nessun testo extra: { "title": "...", "descriptio
               <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest px-2 italic">
                 Editor nativo ultra-stabile. Carica immagini da file o incolla URL esterni.
               </p>
+            </div>
+
+            {/* === DETTAGLI SARTORIALI & SPECIFICHE PRODOTTO === */}
+            <div className="bg-gray-50/80 rounded-2xl p-6 border border-gray-200/80 space-y-4">
+              <div className="border-b border-gray-200 pb-2.5">
+                <h3 className="text-xs sm:text-sm font-semibold uppercase tracking-[0.2em] text-neutral-900">
+                  Scheda Tecnica & Dettagli Sartoriali
+                </h3>
+                <p className="text-[11px] text-gray-500 mt-0.5">
+                  Inserisci i dettagli del capo. I campi lasciati vuoti non verranno mostrati nella scheda del prodotto.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Materiale */}
+                <div>
+                  <label className="text-[10px] font-black uppercase tracking-wider text-neutral-700 block mb-1.5">
+                    Materiale
+                  </label>
+                  <input
+                    type="text"
+                    value={material}
+                    onChange={(e) => setMaterial(e.target.value)}
+                    placeholder="es. 100% Cashmere, Cotone Pettinato, Lino Puro..."
+                    className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-xs font-medium text-neutral-900 focus:ring-2 focus:ring-neutral-950 focus:border-neutral-950 outline-none transition-all shadow-sm"
+                  />
+                </div>
+
+                {/* Manifattura */}
+                <div>
+                  <label className="text-[10px] font-black uppercase tracking-wider text-neutral-700 block mb-1.5">
+                    Manifattura
+                  </label>
+                  <input
+                    type="text"
+                    value={manufacturing}
+                    onChange={(e) => setManufacturing(e.target.value)}
+                    placeholder="es. Made in Italy, Fatto a mano, Sartoria Napoletana..."
+                    className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-xs font-medium text-neutral-900 focus:ring-2 focus:ring-neutral-950 focus:border-neutral-950 outline-none transition-all shadow-sm"
+                  />
+                </div>
+
+                {/* Vestibilità */}
+                <div>
+                  <label className="text-[10px] font-black uppercase tracking-wider text-neutral-700 block mb-1.5">
+                    Vestibilità
+                  </label>
+                  <input
+                    type="text"
+                    value={fit}
+                    onChange={(e) => setFit(e.target.value)}
+                    placeholder="es. Slim Fit, Regular Fit, Comfort, Taglio Sartoriale..."
+                    className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-xs font-medium text-neutral-900 focus:ring-2 focus:ring-neutral-950 focus:border-neutral-950 outline-none transition-all shadow-sm"
+                  />
+                </div>
+
+                {/* Caratteristiche */}
+                <div>
+                  <label className="text-[10px] font-black uppercase tracking-wider text-neutral-700 block mb-1.5">
+                    Caratteristiche
+                  </label>
+                  <input
+                    type="text"
+                    value={features}
+                    onChange={(e) => setFeatures(e.target.value)}
+                    placeholder="es. Rever a lancia, doppio spacco posteriore, tasche a filetto..."
+                    className="w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-xs font-medium text-neutral-900 focus:ring-2 focus:ring-neutral-950 focus:border-neutral-950 outline-none transition-all shadow-sm"
+                  />
+                </div>
+              </div>
             </div>
 
             {/* === BLOCCO PREZZI RIDISEGNATO === */}

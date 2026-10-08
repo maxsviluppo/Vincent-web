@@ -7,6 +7,10 @@ export interface Product {
   subcategory?: string;
   image: string;
   description: string;
+  material?: string;
+  manufacturing?: string;
+  fit?: string;
+  features?: string;
   rating: number;
   reviews: number;
   specs: Record<string, string>;
@@ -63,4 +67,7 @@ export interface Product {
 
 export interface CartItem extends Product {
   quantity: number;
+  cartItemId?: string;
+  selectedSize?: string;
+  selectedColor?: string;
 }

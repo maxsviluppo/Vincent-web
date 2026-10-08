@@ -7,6 +7,10 @@ export interface Product {
   subcategory?: string;
   image: string;
   description: string;
+  material?: string;
+  manufacturing?: string;
+  fit?: string;
+  features?: string;
   rating: number;
   reviews: number;
   specs: Record<string, string>;
