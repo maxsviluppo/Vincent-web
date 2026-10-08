@@ -38,6 +38,13 @@
   header, header * {
     overflow-anchor: none !important;
   }
+
+  /* Disabilita zoom automatico su Apple iOS quando si inserisce un valore in un campo di input */
+  @media screen and (max-width: 768px) {
+    input, select, textarea {
+      font-size: 16px !important;
+    }
+  }
 }
 
 /* Regola Universale: tutti i pulsanti scuri (frontend, modali e backend) hanno testo BIANCO */

@@ -36,7 +36,7 @@ export default function RootLayout({
       <head>
         <title>Vincent Store — Collezione Moda Uomo & Sartoria</title>
         <meta name="description" content="Vincent Store — Scopri la nuova collezione abbigliamento, giacche sartoriali, maglieria cashmere, calzature e accessori per l'uomo contemporaneo." />
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
         <meta name="theme-color" content="#111111" />
         <link rel="canonical" href="https://www.vincentstore.it" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />

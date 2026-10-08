@@ -24,6 +24,7 @@ import {
 } from '@/lib/supabase';
 import { fetchStoreConfig, pushStoreConfig } from '@/lib/store-client';
 import { authLogout, authMe } from '@/lib/auth-client';
+import { getProductMaxStock } from '@/lib/productVariants';
 
 // ─── Helper: read/write localStorage safely ───────────────────────────────────
 function getLS<T>(key: string, fallback: T): T {
@@ -213,6 +214,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setLS('vincent_current_user', null);
   }, []);
 
+  // — toasts —
+  const [toasts, setToasts] = useState<{ id: string; message: string; type: 'success' | 'error' | 'info' }[]>([]);
+
+  const addToast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'info') => {
+    const id = Math.random().toString(36).substring(2, 9);
+    setToasts((prev) => [...prev, { id, message, type }]);
+    setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 4500);
+  }, []);
+
+  const dismissToast = useCallback((id: string) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  }, []);
+
   // — cart —
   const [cart, setCart] = useState<CartItem[]>([]);
   const [cartTrigger, setCartTrigger] = useState(0);
@@ -224,10 +238,29 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const passedColor = (p as any).selectedColor || (p.colors && p.colors[0]) || 'Nero';
     const cartItemId = (p as any).cartItemId || `${p.id}__${passedSize}__${passedColor}`;
 
+    const currentProduct = products.find((prod) => prod.id === p.id) || p;
+    const maxStock = getProductMaxStock(currentProduct, passedSize, passedColor);
+
+    let limitReached = false;
+
     setCart((prev) => {
       const existing = prev.find((i) => (i.cartItemId || `${i.id}__${i.selectedSize}__${i.selectedColor}`) === cartItemId);
       if (existing) {
-        return prev.map((i) => (i.cartItemId || `${i.id}__${i.selectedSize}__${i.selectedColor}`) === cartItemId ? { ...i, quantity: i.quantity + 1 } : i);
+        if (maxStock > 0 && existing.quantity >= maxStock) {
+          limitReached = true;
+          return prev;
+        }
+        return prev.map((i) => {
+          if ((i.cartItemId || `${i.id}__${i.selectedSize}__${i.selectedColor}`) === cartItemId) {
+            const nextQty = maxStock > 0 ? Math.min(maxStock, i.quantity + 1) : i.quantity + 1;
+            return { ...i, quantity: nextQty };
+          }
+          return i;
+        });
+      }
+      if (maxStock > 0 && 1 > maxStock) {
+        limitReached = true;
+        return prev;
       }
       return [
         ...prev,
@@ -240,8 +273,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
         },
       ];
     });
-    setCartTrigger((t) => t + 1);
-  }, []);
+
+    if (limitReached) {
+      addToast(`Disponibilità massima per "${p.name}" raggiunta: massimo ${maxStock} pezzi disponibili!`, 'error');
+    } else {
+      setCartTrigger((t) => t + 1);
+    }
+  }, [products, addToast]);
 
   const removeFromCart = useCallback((id: string) => {
     setCart((prev) => prev.filter((i) => {
@@ -257,12 +295,31 @@ export function AppProvider({ children }: { children: ReactNode }) {
         return currentKey !== id && (i.cartItemId ? true : i.id !== id);
       }));
     } else {
+      let limitHit = false;
+      let limitAmount = 0;
+      let limitProductName = '';
+
       setCart((prev) => prev.map((i) => {
         const currentKey = i.cartItemId || `${i.id}__${i.selectedSize}__${i.selectedColor}`;
-        return currentKey === id || (!i.cartItemId && i.id === id) ? { ...i, quantity: qty } : i;
+        if (currentKey === id || (!i.cartItemId && i.id === id)) {
+          const currentProduct = products.find((prod) => prod.id === i.id) || i;
+          const maxStock = getProductMaxStock(currentProduct, i.selectedSize, i.selectedColor);
+          if (maxStock > 0 && qty > maxStock) {
+            limitHit = true;
+            limitAmount = maxStock;
+            limitProductName = i.name;
+            return { ...i, quantity: maxStock };
+          }
+          return { ...i, quantity: qty };
+        }
+        return i;
       }));
+
+      if (limitHit) {
+        addToast(`Disponibilità massima per "${limitProductName}" raggiunta: massimo ${limitAmount} pezzi disponibili!`, 'error');
+      }
     }
-  }, []);
+  }, [products, addToast]);
 
   const cartCount = useMemo(() => cart.reduce((s, i) => s + i.quantity, 0), [cart]);
   const cartTotal = useMemo(() => cart.reduce((s, i) => s + i.price * i.quantity, 0), [cart]);
@@ -566,18 +623,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
     };
   }, [orders]);
 
-  // — toasts —
-  const [toasts, setToasts] = useState<{ id: string; message: string; type: 'success' | 'error' | 'info' }[]>([]);
-
-  const addToast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'info') => {
-    const id = Math.random().toString(36).substring(2, 9);
-    setToasts((prev) => [...prev, { id, message, type }]);
-    setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 4500);
-  }, []);
-
-  const dismissToast = useCallback((id: string) => {
-    setToasts((prev) => prev.filter((t) => t.id !== id));
-  }, []);
 
   const handleProductSelect = useCallback((p: Product | null) => {
     setSelectedProduct(p);

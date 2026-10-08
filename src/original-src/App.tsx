@@ -101,7 +101,7 @@ import { AdminReturns } from "./AdminReturns";
 import { AdminUsers } from "./AdminUsers";
 import { AdminReviews } from "./AdminReviews";
 import { ADMIN_BTN_PRIMARY, ADMIN_BTN_SECONDARY, ADMIN_INPUT } from "../components/admin/adminTouchTargets";
-import { getProductVariantInfo, getColorHex as getVariantColorHex } from "@/lib/productVariants";
+import { getProductVariantInfo, getColorHex as getVariantColorHex, getProductMaxStock } from "@/lib/productVariants";
 import { useApp } from "@/context/AppProvider";
 import {
   authDeleteAccount,
@@ -2168,6 +2168,7 @@ const CartDrawer = ({
   onUpdateVariant?: (id: string, size: string, color: string) => void;
   key?: string;
 }) => {
+  const { products, addToast } = useApp();
   const [expandedItemKeys, setExpandedItemKeys] = useState<Record<string, boolean>>({});
   const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
@@ -2264,6 +2265,11 @@ const CartDrawer = ({
               const availableSizes = getAvailableSizes(item);
               const availableColors = getAvailableColors(item);
 
+              const matchedProduct = products?.find(p => p.id === item.id) || item;
+              const maxStock = getProductMaxStock(matchedProduct, currentSize, currentColor);
+              const isMaxReached = maxStock > 0 && item.quantity >= maxStock;
+              const isOverStock = maxStock > 0 && item.quantity > maxStock;
+
               const handleVariantChange = (newSize: string, newColor: string) => {
                 const newKey = `${item.id}__${newSize}__${newColor}`;
                 setExpandedItemKeys(prev => {
@@ -2312,33 +2318,65 @@ const CartDrawer = ({
                       </div>
 
                       <div className="flex items-center justify-between pt-2">
-                        <div className="flex items-center bg-neutral-100 rounded-lg p-0.5 border border-neutral-200/60">
-                          <button 
-                            type="button"
-                            onClick={() => onUpdateQuantity(itemKey, -1)} 
-                            className="p-1.5 hover:bg-white rounded-md transition-colors text-neutral-700 hover:text-neutral-950"
-                            aria-label="Diminuisci quantità"
-                          >
-                            <Minus className="w-3 h-3" />
-                          </button>
-                          <span className="w-7 text-center text-xs font-medium text-neutral-900">{item.quantity}</span>
-                          <button 
-                            type="button"
-                            onClick={() => onUpdateQuantity(itemKey, 1)} 
-                            className="p-1.5 hover:bg-white rounded-md transition-colors text-neutral-700 hover:text-neutral-950"
-                            aria-label="Aumenta quantità"
-                          >
-                            <Plus className="w-3 h-3" />
-                          </button>
+                        <div className="flex items-center gap-2">
+                          <div className="flex items-center bg-neutral-100 rounded-lg p-0.5 border border-neutral-200/60">
+                            <button 
+                              type="button"
+                              onClick={() => onUpdateQuantity(itemKey, -1)} 
+                              className="p-1.5 hover:bg-white rounded-md transition-colors text-neutral-700 hover:text-neutral-950 cursor-pointer"
+                              aria-label="Diminuisci quantità"
+                            >
+                              <Minus className="w-3 h-3" />
+                            </button>
+                            <span className="w-7 text-center text-xs font-medium text-neutral-900">{item.quantity}</span>
+                            <button 
+                              type="button"
+                              disabled={isMaxReached}
+                              onClick={() => {
+                                if (isMaxReached) {
+                                  addToast(`Disponibilità massima per "${item.name}" raggiunta: massimo ${maxStock} pezzi!`, 'info');
+                                  return;
+                                }
+                                onUpdateQuantity(itemKey, 1);
+                              }} 
+                              className={`p-1.5 rounded-md transition-colors ${
+                                isMaxReached 
+                                  ? 'opacity-30 cursor-not-allowed text-neutral-400' 
+                                  : 'hover:bg-white text-neutral-700 hover:text-neutral-950 cursor-pointer'
+                              }`}
+                              aria-label="Aumenta quantità"
+                              title={isMaxReached ? `Disponibilità massima raggiunta (${maxStock} pz)` : 'Aumenta quantità'}
+                            >
+                              <Plus className="w-3 h-3" />
+                            </button>
+                          </div>
+                          {maxStock > 0 && (
+                            <span className={`text-[10px] font-medium ${isMaxReached ? 'text-amber-700 font-semibold' : 'text-neutral-400'}`}>
+                              {isMaxReached ? `Max ${maxStock} pz` : `Disp. ${maxStock} pz`}
+                            </span>
+                          )}
                         </div>
                         <button 
                           type="button"
                           onClick={() => onRemove(itemKey)} 
-                          className="text-[11px] text-neutral-400 hover:text-rose-500 font-light tracking-wide transition-colors"
+                          className="text-[11px] text-neutral-400 hover:text-rose-500 font-light tracking-wide transition-colors cursor-pointer"
                         >
                           Rimuovi
                         </button>
                       </div>
+
+                      {isOverStock && (
+                        <div className="mt-2 text-[10px] text-red-600 bg-red-50 border border-red-200 rounded-lg p-2 flex items-center justify-between">
+                          <span>Giacenza massima superata (disp. {maxStock} pz)</span>
+                          <button 
+                            type="button" 
+                            onClick={() => onUpdateQuantity(itemKey, -(item.quantity - maxStock))}
+                            className="underline font-bold text-red-700 hover:text-red-900 ml-2 cursor-pointer"
+                          >
+                            Adatta a {maxStock}
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -3453,6 +3491,11 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
     );
     const cartItemId = `${product.id}__${defaultSize}__${defaultColor}`;
 
+    const currentProduct = products.find(p => p.id === product.id) || product;
+    const maxStock = getProductMaxStock(currentProduct, defaultSize, defaultColor);
+
+    let limitReached = false;
+
     setCart(prev => {
       // Due articoli si accorpano SOLO se ID, taglia E colore sono esattamente identici!
       const existingIndex = prev.findIndex(item => 
@@ -3462,11 +3505,19 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
       );
 
       if (existingIndex !== -1) {
+        if (maxStock > 0 && prev[existingIndex].quantity >= maxStock) {
+          limitReached = true;
+          return prev;
+        }
         return prev.map((item, idx) => 
           idx === existingIndex 
-            ? { ...item, quantity: item.quantity + 1 } 
+            ? { ...item, quantity: maxStock > 0 ? Math.min(maxStock, item.quantity + 1) : item.quantity + 1 } 
             : item
         );
+      }
+      if (maxStock > 0 && 1 > maxStock) {
+        limitReached = true;
+        return prev;
       }
       return [
         ...prev, 
@@ -3479,7 +3530,12 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
         }
       ];
     });
-    setCartTrigger(prev => prev + 1);
+
+    if (limitReached) {
+      addToast(`Disponibilità massima per "${product.name}" raggiunta: massimo ${maxStock} pezzi!`, 'error');
+    } else {
+      setCartTrigger(prev => prev + 1);
+    }
   };
 
   const getProductCount = (category: string, subcategory?: string | null) => {
@@ -3491,14 +3547,32 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
   };
 
   const updateQuantity = (cartItemIdOrId: string, delta: number) => {
+    let limitHit = false;
+    let limitAmount = 0;
+    let limitName = '';
+
     setCart(prev => prev.map(item => {
       const currentKey = item.cartItemId || `${item.id}__${item.selectedSize || 'M'}__${item.selectedColor || 'Nero'}`;
       if (currentKey === cartItemIdOrId) {
-        const newQty = Math.max(1, item.quantity + delta);
+        const prod = products.find(p => p.id === item.id) || item;
+        const maxStock = getProductMaxStock(prod, item.selectedSize, item.selectedColor);
+        const nextQty = item.quantity + delta;
+
+        if (delta > 0 && maxStock > 0 && nextQty > maxStock) {
+          limitHit = true;
+          limitAmount = maxStock;
+          limitName = item.name;
+          return { ...item, quantity: maxStock };
+        }
+        const newQty = Math.max(1, nextQty);
         return { ...item, quantity: newQty };
       }
       return item;
     }));
+
+    if (limitHit) {
+      addToast(`Disponibilità massima per "${limitName}" raggiunta: massimo ${limitAmount} pezzi!`, 'error');
+    }
   };
 
   const removeFromCart = (cartItemIdOrId: string) => {
@@ -3526,11 +3600,18 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
       
       if (existingSameIndex !== -1) {
         // ACCORPA GLI ARTICOLI SOLO SE TAGLIA E COLORE SONO ENTRAMBI IDENTICI!
-        const mergedQty = prev[existingSameIndex].quantity + currentItem.quantity;
+        const prod = products.find(p => p.id === productId) || currentItem;
+        const targetMaxStock = getProductMaxStock(prod, newSize, newColor);
+        const rawMergedQty = prev[existingSameIndex].quantity + currentItem.quantity;
+        const mergedQty = targetMaxStock > 0 ? Math.min(targetMaxStock, rawMergedQty) : rawMergedQty;
         const targetKey = currentItem.cartItemId || `${currentItem.id}__${currentItem.selectedSize || 'M'}__${currentItem.selectedColor || 'Nero'}`;
         const existingKey = prev[existingSameIndex].cartItemId || `${prev[existingSameIndex].id}__${prev[existingSameIndex].selectedSize || 'M'}__${prev[existingSameIndex].selectedColor || 'Nero'}`;
         
-        addToast(`Articoli con stessa variante (${newSize} - ${newColor}) accorpati (Totale: ${mergedQty} pz)`, 'info');
+        if (targetMaxStock > 0 && rawMergedQty > targetMaxStock) {
+          addToast(`Disponibilità massima variante (${newSize} - ${newColor}): limitato a ${targetMaxStock} pz`, 'error');
+        } else {
+          addToast(`Articoli con stessa variante (${newSize} - ${newColor}) accorpati (Totale: ${mergedQty} pz)`, 'info');
+        }
         
         return prev
           .filter(it => (it.cartItemId || `${it.id}__${it.selectedSize || 'M'}__${it.selectedColor || 'Nero'}`) !== targetKey)
@@ -3543,11 +3624,20 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
       }
       
       // Nessun duplicato: aggiorna la variante dell'articolo
+      const prod = products.find(p => p.id === productId) || currentItem;
+      const targetMaxStock = getProductMaxStock(prod, newSize, newColor);
+      let adjustedQty = currentItem.quantity;
+      if (targetMaxStock > 0 && adjustedQty > targetMaxStock) {
+        adjustedQty = targetMaxStock;
+        addToast(`Disponibilità variante (${newSize} - ${newColor}) limitata a ${targetMaxStock} pz`, 'info');
+      }
+
       const updatedCartItemId = `${productId}__${newSize}__${newColor}`;
       return prev.map((it, idx) => {
         if (idx === targetIndex) {
           return {
             ...it,
+            quantity: adjustedQty,
             cartItemId: updatedCartItemId,
             selectedSize: newSize,
             selectedColor: newColor
@@ -8206,7 +8296,7 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
           </motion.div>
         )}
       </AnimatePresence>
-      <ToastContainer toasts={toasts} onClose={(id) => setToasts(prev => prev.filter(t => t.id !== id))} />
+      <ToastContainer toasts={toasts} onClose={dismissToast} />
       <AnimatePresence>
         {adminConfirmAction && adminConfirmAction.active && (
           <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4">

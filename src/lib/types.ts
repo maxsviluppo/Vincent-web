@@ -65,6 +65,9 @@ export interface Product {
 
 export interface CartItem extends Product {
   quantity: number;
+  cartItemId?: string;
+  selectedSize?: string;
+  selectedColor?: string;
 }
 
 export interface CompanySettings {

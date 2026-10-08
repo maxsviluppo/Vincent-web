@@ -30,6 +30,103 @@ export function getColorHex(name: string): string {
   return '#262626';
 }
 
+export const ALPHA_SIZE_ORDER: Record<string, number> = {
+  'XXXS': 1, '3XS': 1,
+  'XXS': 2, '2XS': 2,
+  'XS': 3,
+  'S': 4,
+  'M': 5,
+  'L': 6,
+  'XL': 7,
+  'XXL': 8, '2XL': 8,
+  'XXXL': 9, '3XL': 9,
+  'XXXXL': 10, '4XL': 10,
+  '5XL': 11,
+  '6XL': 12,
+  'TU': 98, 'TAGLIA UNICA': 98, 'ONE SIZE': 98, 'UNICA': 98, 'OVERSIZE': 99
+};
+
+export function isLikelySize(str?: string): boolean {
+  if (!str) return false;
+  const s = str.trim().toUpperCase();
+  if (/^\d+(\.\d+)?$/.test(s)) return true; // es. 40, 42, 48, 50, 39.5
+  if (/^(XXXS|3XS|XXS|2XS|XS|S|M|L|XL|XXL|2XL|XXXL|3XL|4XL|5XL|6XL|TU|TAGLIA UNICA|ONE SIZE|UNICA|OVERSIZE)$/i.test(s)) return true;
+  if (/^W\d+\s*L\d+$/i.test(s)) return true; // Jeans standard W32 L34
+  if (/^(TG\.?\s*\d+|TAGLIA\s*\d+|SIZE\s*\d+)$/i.test(s)) return true;
+  return false;
+}
+
+/**
+ * Pulisce una stringa di taglia rimuovendo prefissi inutili e qualsiasi colore accoppiato
+ * es. "48 - Blu Navy" -> "48", "S - Bianco Ottico" -> "S", "Taglia: L" -> "L"
+ */
+export function cleanSizeName(raw?: string): string {
+  if (!raw) return '';
+  let s = String(raw).trim();
+  s = s.replace(/^(taglia|tg\.?|size)\s*[:\-]?\s*/i, '').trim();
+
+  if (s.includes(' - ') || s.includes(' / ')) {
+    const delimiter = s.includes(' - ') ? ' - ' : ' / ';
+    const parts = s.split(delimiter).map(p => p.trim());
+    if (isLikelySize(parts[0])) return cleanSizeName(parts[0]);
+    if (isLikelySize(parts[1])) return cleanSizeName(parts[1]);
+    return cleanSizeName(parts[0]);
+  }
+
+  return s;
+}
+
+/**
+ * Pulisce una stringa di colore rimuovendo la taglia se concatenata
+ * es. "48 - Blu Navy" -> "Blu Navy", "Colore: Nero" -> "Nero"
+ */
+export function cleanColorName(raw?: string): string {
+  if (!raw) return '';
+  let s = String(raw).trim();
+  s = s.replace(/^(colore|color)\s*[:\-]?\s*/i, '').trim();
+
+  if (s.includes(' - ') || s.includes(' / ')) {
+    const delimiter = s.includes(' - ') ? ' - ' : ' / ';
+    const parts = s.split(delimiter).map(p => p.trim());
+    if (isLikelySize(parts[0])) return parts[1]?.trim() || parts[0];
+    if (isLikelySize(parts[1])) return parts[0]?.trim() || parts[1];
+    return parts[1]?.trim() || parts[0];
+  }
+
+  return s;
+}
+
+/**
+ * Ordina le taglie secondo standard sartoriali e di moda:
+ * Prima numeriche crescenti (38, 40, 42, 44, 46, 48, 50, 52...),
+ * poi taglie alfabetiche (XXS, XS, S, M, L, XL, XXL, 3XL...),
+ * infine Taglia Unica / TU.
+ */
+export function sortSizes(sizes: string[]): string[] {
+  const unique = Array.from(new Set(sizes.map(cleanSizeName).filter(Boolean)));
+
+  return unique.sort((a, b) => {
+    const na = parseFloat(a);
+    const nb = parseFloat(b);
+    const aIsNum = !isNaN(na) && /^\d+(\.\d+)?$/.test(a.trim());
+    const bIsNum = !isNaN(nb) && /^\d+(\.\d+)?$/.test(b.trim());
+
+    if (aIsNum && bIsNum) return na - nb;
+    if (aIsNum && !bIsNum) return -1;
+    if (!aIsNum && bIsNum) return 1;
+
+    const ua = a.trim().toUpperCase();
+    const ub = b.trim().toUpperCase();
+    const oa = ALPHA_SIZE_ORDER[ua];
+    const ob = ALPHA_SIZE_ORDER[ub];
+    if (oa && ob) return oa - ob;
+    if (oa) return -1;
+    if (ob) return 1;
+
+    return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
+  });
+}
+
 export function getDefaultProductSizes(category?: string): string[] {
   const cat = (category || '').toLowerCase();
   if (cat.includes('scarp')) {
@@ -77,39 +174,192 @@ export function getProductVariantInfo(product?: Product | null) {
 
   const variants = Array.isArray(product.variants) ? product.variants : [];
   
-  // Raggruppa varianti per tipo
-  const groups: Record<string, any[]> = {};
+  // Se non ci sono varianti specifiche, usiamo i valori di default ordinati
+  if (variants.length === 0) {
+    return {
+      sizes: sortSizes(getDefaultProductSizes(product.category)),
+      colors: getDefaultProductColors(product),
+      customGroups: {} as Record<string, any[]>
+    };
+  }
+
+  const extractedSizes: string[] = [];
+  const extractedColors: string[] = [];
+  const customGroups: Record<string, any[]> = {};
+
   variants.forEach((v: any) => {
-    const t = v.type || 'Variante';
-    if (!groups[t]) groups[t] = [];
-    if (!groups[t].some((it: any) => it.value === v.value)) {
-      groups[t].push(v);
+    const rawType = (v.type || '').toLowerCase();
+    const hasExplicitSize = Boolean(v.size);
+    const hasExplicitColor = Boolean(v.color);
+    const isCombinedType = rawType.includes('tagli') && rawType.includes('color');
+    const isSizeType = rawType.includes('tagli') || rawType.includes('size');
+    const isColorType = rawType.includes('color');
+
+    // Estrazione taglia pulita (senza nome colore)
+    if (hasExplicitSize) {
+      extractedSizes.push(cleanSizeName(v.size));
+    } else if (isCombinedType || isSizeType) {
+      const parsed = cleanSizeName(v.value);
+      if (parsed) extractedSizes.push(parsed);
+    }
+
+    // Estrazione colore pulito (senza taglia)
+    if (hasExplicitColor) {
+      extractedColors.push(cleanColorName(v.color));
+    } else if (isCombinedType || isColorType) {
+      const parsed = cleanColorName(v.value);
+      if (parsed && !isLikelySize(parsed)) extractedColors.push(parsed);
+    } else if (!isSizeType) {
+      // Altra variante custom (es. "Modello", "Finitura")
+      const t = v.type || 'Variante';
+      if (!customGroups[t]) customGroups[t] = [];
+      if (!customGroups[t].some((it: any) => it.value === v.value)) {
+        customGroups[t].push(v);
+      }
     }
   });
 
-  // Cerca se ci sono varianti tipo taglia o size
-  const sizeTypeKey = Object.keys(groups).find(k => 
-    k.toLowerCase().includes('tagli') || k.toLowerCase().includes('size')
-  );
-  const colorTypeKey = Object.keys(groups).find(k => 
-    k.toLowerCase().includes('color')
-  );
+  const sizes = extractedSizes.length > 0
+    ? sortSizes(extractedSizes)
+    : sortSizes(getDefaultProductSizes(product.category));
 
-  const sizes = sizeTypeKey && groups[sizeTypeKey].length > 0
-    ? groups[sizeTypeKey].map((v: any) => v.value)
-    : getDefaultProductSizes(product.category);
-
-  const colors = colorTypeKey && groups[colorTypeKey].length > 0
-    ? groups[colorTypeKey].map((v: any) => v.value)
+  const colors = extractedColors.length > 0
+    ? Array.from(new Set(extractedColors.filter(Boolean)))
     : getDefaultProductColors(product);
 
-  // Altre varianti custom che non siano taglia o colore
-  const customGroups: Record<string, any[]> = {};
-  Object.entries(groups).forEach(([type, opts]) => {
-    if (type !== sizeTypeKey && type !== colorTypeKey) {
-      customGroups[type] = opts;
-    }
-  });
-
   return { sizes, colors, customGroups };
+}
+
+/**
+ * Trova l'oggetto variante corrispondente a taglia e/o colore selezionati
+ */
+export function findMatchingVariant(
+  variants: any[] | undefined,
+  selectedSize?: string,
+  selectedColor?: string
+): any | null {
+  if (!variants || variants.length === 0) return null;
+
+  const targetSize = selectedSize ? cleanSizeName(selectedSize).toLowerCase() : '';
+  const targetColor = selectedColor ? cleanColorName(selectedColor).toLowerCase() : '';
+
+  // 1. Corrispondenza esatta su entrambi se entrambi presenti
+  if (targetSize && targetColor) {
+    const exact = variants.find((v) => {
+      const vSize = cleanSizeName(v.size || v.value).toLowerCase();
+      const vColor = cleanColorName(v.color || v.value).toLowerCase();
+      return vSize === targetSize && vColor === targetColor;
+    });
+    if (exact) return exact;
+
+    // Controllo su stringa value/title composta
+    const composite = variants.find((v) => {
+      const val = (v.value || v.title || '').toLowerCase();
+      return val.includes(targetSize) && val.includes(targetColor);
+    });
+    if (composite) return composite;
+  }
+
+  // 2. Corrispondenza solo per taglia se non c'è colore o non c'è match combinato
+  if (targetSize) {
+    const sizeOnly = variants.find((v) => {
+      const vSize = cleanSizeName(v.size || v.value).toLowerCase();
+      return vSize === targetSize;
+    });
+    if (sizeOnly && (!targetColor || !variants.some(v => Boolean(v.color) || (v.type || '').toLowerCase().includes('color')))) {
+      return sizeOnly;
+    }
+  }
+
+  // 3. Corrispondenza solo per colore se le varianti sono solo colori
+  if (targetColor) {
+    const colorOnly = variants.find((v) => {
+      const vColor = cleanColorName(v.color || v.value).toLowerCase();
+      return vColor === targetColor;
+    });
+    if (colorOnly && (!targetSize || !variants.some(v => Boolean(v.size) || (v.type || '').toLowerCase().includes('tagli')))) {
+      return colorOnly;
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Verifica se una taglia specifica è disponibile nel colore selezionato
+ */
+export function isSizeAvailableInColor(
+  product: Product | null | undefined,
+  size: string,
+  color: string
+): boolean {
+  if (!product) return false;
+  const variants = Array.isArray(product.variants) ? product.variants : [];
+
+  if (variants.length === 0) {
+    return Number(product.stock ?? 1) > 0;
+  }
+
+  const variant = findMatchingVariant(variants, size, color);
+  if (!variant) {
+    // Se le varianti nel prodotto non differenziano i colori, verifica solo la taglia
+    const hasColorVariants = variants.some(v => Boolean(v.color) || (v.type || '').toLowerCase().includes('color'));
+    if (!hasColorVariants) {
+      const sizeVariant = findMatchingVariant(variants, size, undefined);
+      if (sizeVariant) {
+        return Number(sizeVariant.webStock ?? sizeVariant.stock ?? 0) > 0;
+      }
+    }
+    return false;
+  }
+
+  const stock = Number(variant.webStock ?? variant.stock ?? 0);
+  return stock > 0;
+}
+
+/**
+ * Calcola la giacenza massima effettiva per un prodotto o specifica variante (taglia e colore).
+ * Se il prodotto o la variante ha uno stock impostato (es. 5 pz), restituisce quel valore numerico.
+ */
+export function getProductMaxStock(
+  product: Product | null | undefined,
+  size?: string,
+  color?: string
+): number {
+  if (!product) return 0;
+  const variants = Array.isArray(product.variants) ? product.variants : [];
+
+  if (variants.length > 0) {
+    const variant = findMatchingVariant(variants, size, color);
+    if (variant) {
+      const stock = Number(variant.webStock ?? (variant as any).stock);
+      if (!isNaN(stock) && stock >= 0) return stock;
+    }
+    // Fallback: se le varianti non differenziano i colori, cerca solo la taglia
+    const hasColorVariants = variants.some(v => Boolean(v.color) || (v.type || '').toLowerCase().includes('color'));
+    if (!hasColorVariants && size) {
+      const sizeVariant = findMatchingVariant(variants, size, undefined);
+      if (sizeVariant) {
+        const stock = Number(sizeVariant.webStock ?? (sizeVariant as any).stock);
+        if (!isNaN(stock) && stock >= 0) return stock;
+      }
+    }
+    // Se ha varianti ma questa combinazione non è tra di esse
+    if (variant === null) {
+      // Se product.stock globale è esplicitamente indicato
+      if (product.stock !== undefined && product.stock !== null) {
+        const pStock = Number(product.stock);
+        if (!isNaN(pStock) && pStock >= 0) return pStock;
+      }
+      return 0;
+    }
+  }
+
+  // Prodotto semplice senza varianti
+  if (product.stock !== undefined && product.stock !== null) {
+    const pStock = Number(product.stock);
+    if (!isNaN(pStock) && pStock >= 0) return pStock;
+  }
+
+  return 15; // default fallback
 }

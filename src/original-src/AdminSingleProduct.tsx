@@ -5,6 +5,7 @@ import { CATEGORIES, SUBCATEGORIES } from "./data";
 import { GoogleGenAI, Type as GenAIType } from "@google/genai";
 import { toProperCase } from "./utils";
 import { Sparkles, Loader2 as LoaderIcon } from "lucide-react";
+import { getColorHex } from "../lib/productVariants";
 
 /**
  * MASTER RICH EDITOR v3
@@ -500,6 +501,7 @@ export const AdminSingleProduct = ({ onBack, onSave, onDelete, initialData, exis
   const [selectedPresetColors, setSelectedPresetColors] = useState<string[]>(['Nero']);
   const [customSizeText, setCustomSizeText] = useState<string>('');
   const [batchQty, setBatchQty] = useState<number>(5);
+  const [sequentialSkuPrefix, setSequentialSkuPrefix] = useState<string>('');
 
   const handleAddCustomSize = () => {
     const trimmed = customSizeText.trim().toUpperCase();
@@ -575,28 +577,32 @@ export const AdminSingleProduct = ({ onBack, onSave, onDelete, initialData, exis
     }
     const colorsToUse = selectedPresetColors.length > 0 ? selectedPresetColors : [""];
     const newItems: any[] = [];
+    let seqCounter = variants.length + 1;
 
     selectedPresetSizes.forEach(sz => {
       colorsToUse.forEach(col => {
-        const valStr = col ? `${sz} - ${col}` : sz;
         const alreadyExists = variants.some(v => 
-          (v.size === sz && v.color === col) || v.value === valStr
+          (v.size === sz && v.color === col) || (v.size === sz && !v.color && !col)
         );
         if (!alreadyExists) {
+          const generatedSku = sequentialSkuPrefix.trim()
+            ? `${sequentialSkuPrefix.trim()}-${String(seqCounter++).padStart(3, '0')}`
+            : '';
+
           newItems.push({
             id: `var-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
             type: 'Taglia / Colore',
             size: sz,
             color: col,
-            value: valStr,
-            ean: '', // CODICE A BARRE
+            value: sz, // Solo la taglia (nessun nome variante con colore)
+            ean: '', // Codice a barre vuoto
             webStock: Number(batchQty) || 1,
             amazonStock: 0,
             ebayStock: 0,
             costType: 'fixed',
             costValue: baseCost,
-            sku: '',
-            title: valStr,
+            sku: generatedSku, // eventuale codice sequenziale o vuoto
+            title: '', // nessun titolo variante composito
             note: '',
             image: ''
           });
@@ -612,7 +618,9 @@ export const AdminSingleProduct = ({ onBack, onSave, onDelete, initialData, exis
   const handleAddSingleRow = () => {
     const defaultSize = selectedPresetSizes[0] || 'M';
     const defaultColor = selectedPresetColors[0] || 'Nero';
-    const valStr = defaultColor ? `${defaultSize} - ${defaultColor}` : defaultSize;
+    const generatedSku = sequentialSkuPrefix.trim()
+      ? `${sequentialSkuPrefix.trim()}-${String(variants.length + 1).padStart(3, '0')}`
+      : '';
     setVariants(prev => [
       ...prev,
       {
@@ -620,15 +628,15 @@ export const AdminSingleProduct = ({ onBack, onSave, onDelete, initialData, exis
         type: 'Taglia / Colore',
         size: defaultSize,
         color: defaultColor,
-        value: valStr,
-        ean: '', // CODICE A BARRE
+        value: defaultSize, // Solo taglia
+        ean: '',
         webStock: Number(batchQty) || 1,
         amazonStock: 0,
         ebayStock: 0,
         costType: 'fixed',
         costValue: baseCost,
-        sku: '',
-        title: valStr,
+        sku: generatedSku,
+        title: '',
         note: '',
         image: ''
       }
@@ -1723,20 +1731,35 @@ Rispondi SOLO con JSON valido, nessun testo extra: { "title": "...", "descriptio
                 </div>
               </div>
 
-              {/* QUANTITÀ DEFAULT E GENERAZIONE COMBINAZIONI */}
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-neutral-200/80">
-                <div className="flex items-center gap-3">
-                  <label className="text-xs font-bold text-neutral-900 uppercase tracking-wider">
-                    Giacenza Iniziale:
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={batchQty}
-                    onChange={e => setBatchQty(Number(e.target.value))}
-                    className="w-20 bg-neutral-50 border border-neutral-300 rounded-lg px-3 py-1.5 text-center text-sm font-bold text-neutral-900 focus:bg-white focus:ring-2 focus:ring-neutral-900 outline-none"
-                  />
-                  <span className="text-xs text-neutral-500 font-medium">pz / variante</span>
+              {/* QUANTITÀ DEFAULT, CODICE SEQUENZIALE E GENERAZIONE COMBINAZIONI */}
+              <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-neutral-200/80">
+                <div className="flex flex-wrap items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs font-bold text-neutral-900 uppercase tracking-wider">
+                      Giacenza:
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={batchQty}
+                      onChange={e => setBatchQty(Number(e.target.value))}
+                      className="w-20 bg-neutral-50 border border-neutral-300 rounded-lg px-3 py-1.5 text-center text-sm font-bold text-neutral-900 focus:bg-white focus:ring-2 focus:ring-neutral-900 outline-none"
+                    />
+                    <span className="text-xs text-neutral-500 font-medium">pz</span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs font-bold text-neutral-900 uppercase tracking-wider">
+                      Cod. Sequenziale (opzionale):
+                    </label>
+                    <input
+                      type="text"
+                      value={sequentialSkuPrefix}
+                      onChange={e => setSequentialSkuPrefix(e.target.value)}
+                      placeholder="es. VNC-01 (o vuoto)"
+                      className="w-36 bg-neutral-50 border border-neutral-300 rounded-lg px-3 py-1.5 text-xs font-mono font-bold text-neutral-900 focus:bg-white focus:ring-2 focus:ring-neutral-900 outline-none"
+                    />
+                  </div>
                 </div>
 
                 <div className="flex items-center gap-2">
@@ -1804,7 +1827,7 @@ Rispondi SOLO con JSON valido, nessun testo extra: { "title": "...", "descriptio
                                     </span>
 
                                     {/* Taglia */}
-                                    <div className="w-44 flex-shrink-0">
+                                    <div className="w-36 flex-shrink-0">
                                       <input
                                         type="text"
                                         value={curSize}
@@ -1812,8 +1835,8 @@ Rispondi SOLO con JSON valido, nessun testo extra: { "title": "...", "descriptio
                                           const newSize = e.target.value;
                                           const newV = [...variants];
                                           newV[i].size = newSize;
-                                          newV[i].value = newV[i].color ? `${newSize} - ${newV[i].color}` : newSize;
-                                          newV[i].title = newV[i].value;
+                                          newV[i].value = newSize;
+                                          newV[i].title = '';
                                           setVariants(newV);
                                         }}
                                         placeholder="Taglia (es. M, 42...)"
@@ -1821,8 +1844,13 @@ Rispondi SOLO con JSON valido, nessun testo extra: { "title": "...", "descriptio
                                       />
                                     </div>
 
-                                    {/* Colore */}
-                                    <div className="flex-1 min-w-0">
+                                    {/* Colore a pallina */}
+                                    <div className="flex-1 min-w-0 flex items-center gap-2.5 bg-gray-50 border border-gray-200 rounded-xl px-3 py-1.5 focus-within:bg-white focus-within:ring-2 focus-within:ring-neutral-900">
+                                      <span
+                                        className="w-5 h-5 rounded-full border border-black/15 shrink-0 shadow-2xs"
+                                        style={{ backgroundColor: getColorHex(curColor) }}
+                                        title={curColor || 'Colore'}
+                                      />
                                       <input
                                         type="text"
                                         value={curColor}
@@ -1830,12 +1858,12 @@ Rispondi SOLO con JSON valido, nessun testo extra: { "title": "...", "descriptio
                                           const newColor = e.target.value;
                                           const newV = [...variants];
                                           newV[i].color = newColor;
-                                          newV[i].value = newColor ? `${newV[i].size || ''} - ${newColor}` : (newV[i].size || '');
-                                          newV[i].title = newV[i].value;
+                                          newV[i].value = newV[i].size || '';
+                                          newV[i].title = '';
                                           setVariants(newV);
                                         }}
-                                        placeholder="Colore (es. Nero, Bianco, Blu Navy...)"
-                                        className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold text-neutral-900 focus:bg-white focus:ring-2 focus:ring-neutral-900 outline-none"
+                                        placeholder="Nome colore (es. Nero, Blu, Bianco...)"
+                                        className="w-full bg-transparent text-xs font-bold text-neutral-900 outline-none p-0"
                                       />
                                     </div>
 
@@ -1939,8 +1967,8 @@ Rispondi SOLO con JSON valido, nessun testo extra: { "title": "...", "descriptio
                                   const newSize = e.target.value;
                                   const newV = [...variants];
                                   newV[i].size = newSize;
-                                  newV[i].value = newV[i].color ? `${newSize} - ${newV[i].color}` : newSize;
-                                  newV[i].title = newV[i].value;
+                                  newV[i].value = newSize;
+                                  newV[i].title = '';
                                   setVariants(newV);
                                 }}
                                 placeholder="Taglia"
@@ -1948,8 +1976,12 @@ Rispondi SOLO con JSON valido, nessun testo extra: { "title": "...", "descriptio
                               />
                             </div>
 
-                            {/* Colore */}
-                            <div className="flex-1 min-w-0">
+                            {/* Colore a pallina */}
+                            <div className="flex-1 min-w-0 flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-2.5 py-1.5 focus-within:bg-white focus-within:ring-2 focus-within:ring-neutral-900">
+                              <span
+                                className="w-4 h-4 rounded-full border border-black/15 shrink-0 shadow-2xs"
+                                style={{ backgroundColor: getColorHex(curColor) }}
+                              />
                               <input
                                 type="text"
                                 value={curColor}
@@ -1957,12 +1989,12 @@ Rispondi SOLO con JSON valido, nessun testo extra: { "title": "...", "descriptio
                                   const newColor = e.target.value;
                                   const newV = [...variants];
                                   newV[i].color = newColor;
-                                  newV[i].value = newColor ? `${newV[i].size || ''} - ${newColor}` : (newV[i].size || '');
-                                  newV[i].title = newV[i].value;
+                                  newV[i].value = newV[i].size || '';
+                                  newV[i].title = '';
                                   setVariants(newV);
                                 }}
                                 placeholder="Colore..."
-                                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-2.5 py-2 text-xs font-bold text-neutral-900 focus:bg-white focus:ring-2 focus:ring-neutral-900 outline-none"
+                                className="w-full bg-transparent text-xs font-bold text-neutral-900 outline-none p-0"
                               />
                             </div>
 

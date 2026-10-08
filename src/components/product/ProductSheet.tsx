@@ -23,7 +23,8 @@ import {
 } from 'lucide-react';
 import { Product } from '@/lib/types';
 import { PRODUCTS } from '@/lib/data';
-import { getColorHex, getProductVariantInfo } from '@/lib/productVariants';
+import { getColorHex, getProductVariantInfo, findMatchingVariant, isSizeAvailableInColor, getProductMaxStock } from '@/lib/productVariants';
+import { useApp } from '@/context/AppProvider';
 
 interface ProductSheetProps {
   product: Product;
@@ -119,19 +120,32 @@ export function ProductSheet({
   onSelectProduct,
   allProducts = [],
 }: ProductSheetProps) {
+  const { cart, addToast } = useApp();
   const [quantity, setQuantity] = useState(1);
   const variantInfo = useMemo(() => getProductVariantInfo(product), [product]);
   const [selectedColor, setSelectedColor] = useState<string>(() => variantInfo.colors[0] || 'Nero');
   const [selectedSize, setSelectedSize] = useState<string>(() => variantInfo.sizes[0] || 'M');
+
+  const maxStock = useMemo(() => {
+    return getProductMaxStock(product, selectedSize, selectedColor);
+  }, [product, selectedSize, selectedColor]);
+
+  // Se cambia variante e la quantità selezionata supera la giacenza massima, adattala
+  useEffect(() => {
+    if (maxStock > 0 && quantity > maxStock) {
+      setQuantity(Math.max(1, maxStock));
+    }
+  }, [maxStock]);
 
   useEffect(() => {
     if (variantInfo.colors.length > 0 && !variantInfo.colors.includes(selectedColor)) {
       setSelectedColor(variantInfo.colors[0]);
     }
     if (variantInfo.sizes.length > 0 && !variantInfo.sizes.includes(selectedSize)) {
-      setSelectedSize(variantInfo.sizes[0]);
+      const firstAvailable = variantInfo.sizes.find(sz => isSizeAvailableInColor(product, sz, selectedColor));
+      setSelectedSize(firstAvailable || variantInfo.sizes[0]);
     }
-  }, [variantInfo]);
+  }, [variantInfo, selectedColor, product]);
 
   const [selectedVariants, setSelectedVariants] = useState<Record<string, string>>(() => {
     const initial: Record<string, string> = {};
@@ -187,10 +201,17 @@ export function ProductSheet({
 
   const selectedVariantObject = useMemo(() => {
     if (!product.variants || product.variants.length === 0) return null;
-    const firstType = Object.keys(variantsByType)[0];
-    if (!firstType || !selectedVariants[firstType]) return null;
-    return product.variants.find((v) => v.type === firstType && v.value === selectedVariants[firstType]) || null;
-  }, [product.variants, selectedVariants, variantsByType]);
+    return findMatchingVariant(product.variants, selectedSize, selectedColor);
+  }, [product.variants, selectedSize, selectedColor]);
+
+  // Disponibilità effettiva della combinazione taglia + colore
+  const isAvailable = useMemo(() => {
+    if (product.variants && product.variants.length > 0) {
+      if (!selectedVariantObject) return false;
+      return Number(selectedVariantObject.webStock ?? selectedVariantObject.stock ?? 0) > 0;
+    }
+    return Number(product.stock ?? 1) > 0;
+  }, [product.variants, product.stock, selectedVariantObject]);
 
   useEffect(() => {
     if (selectedVariantObject?.image) {
@@ -363,9 +384,9 @@ export function ProductSheet({
                     </>
                   )}
                 </div>
-                {Boolean(selectedVariantObject?.title || product.name) && (
+                {Boolean(product.name) && (
                   <h2 className="text-xl lg:text-2xl font-bold text-neutral-950 leading-snug">
-                    {selectedVariantObject?.title || product.name}
+                    {product.name}
                   </h2>
                 )}
                 {selectedVariantObject?.note && (
@@ -545,28 +566,52 @@ export function ProductSheet({
                   </div>
                 </div>
 
-                {/* Selettore Taglie */}
+                {/* Selettore Taglie Minimal */}
                 <div className="space-y-2 pt-2">
-                  <h4 className="font-medium text-[11px] uppercase tracking-wider text-neutral-900 flex items-center gap-2">
-                    <span>Taglia</span>
-                    <span className="text-neutral-500 font-normal">— {selectedSize}</span>
-                  </h4>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-medium text-[11px] uppercase tracking-wider text-neutral-900 flex items-center gap-2">
+                      <span>Taglia</span>
+                      <span className="text-neutral-500 font-normal">— {selectedSize}</span>
+                    </h4>
+                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border transition-colors ${
+                      isAvailable
+                        ? 'text-emerald-700 bg-emerald-50/90 border-emerald-200'
+                        : 'text-red-600 bg-red-50/90 border-red-200'
+                    }`}>
+                      {isAvailable ? 'Disponibile' : 'Non disponibile'}
+                    </span>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2 pt-0.5">
                     {variantInfo.sizes.map((sz) => {
                       const isSelected = selectedSize === sz;
+                      const isSzAvailable = isSizeAvailableInColor(product, sz, selectedColor);
 
                       return (
                         <button
                           key={sz}
                           type="button"
                           onClick={() => setSelectedSize(sz)}
-                          className={`min-w-[42px] px-3.5 py-2 rounded-xl text-xs uppercase tracking-tight transition-all border cursor-pointer ${
+                          className={`relative min-w-[44px] h-10 px-3.5 rounded-xl text-xs uppercase tracking-wider font-medium transition-all border cursor-pointer select-none flex items-center justify-center ${
                             isSelected
-                              ? 'border-neutral-950 bg-neutral-950 text-white font-medium shadow-xs'
-                              : 'border-neutral-200 hover:border-neutral-400 text-neutral-700 bg-white font-normal hover:bg-neutral-50'
+                              ? isSzAvailable
+                                ? 'border-neutral-950 bg-neutral-950 text-white shadow-xs'
+                                : 'border-neutral-900 bg-neutral-900 text-neutral-200 shadow-xs ring-1 ring-red-400/50'
+                              : isSzAvailable
+                                ? 'border-neutral-200 hover:border-neutral-900 text-neutral-800 bg-white hover:bg-neutral-50'
+                                : 'border-dashed border-neutral-300 bg-neutral-100/70 text-neutral-400 hover:border-neutral-400 hover:text-neutral-600'
                           }`}
+                          title={isSzAvailable ? `Taglia ${sz} — Disponibile` : `Taglia ${sz} — Non disponibile in ${selectedColor}`}
                         >
-                          {sz}
+                          <span className={!isSzAvailable && !isSelected ? 'line-through decoration-neutral-400 decoration-[1.5px]' : ''}>
+                            {sz}
+                          </span>
+                          {!isSzAvailable && (
+                            <span
+                              className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-red-500 ring-2 ring-white"
+                              aria-hidden="true"
+                            />
+                          )}
                         </button>
                       );
                     })}
@@ -600,23 +645,28 @@ export function ProductSheet({
                   </div>
                 ))}
 
-                {(() => {
-                  const isAvailable = selectedVariantObject
-                    ? selectedVariantObject.webStock > 0
-                    : (product.stock ?? 1) > 0;
-
-                  return isAvailable ? (
-                    <div className="flex items-center gap-2 text-xs text-emerald-700 font-semibold bg-emerald-50/80 p-2.5 rounded-xl border border-emerald-200">
-                      <Shield className="w-3.5 h-3.5 text-emerald-600" />
+                {isAvailable ? (
+                  <div className="flex items-center justify-between gap-2 text-xs text-emerald-700 font-semibold bg-emerald-50/80 p-3 rounded-xl border border-emerald-200">
+                    <div className="flex items-center gap-2">
+                      <Shield className="w-4 h-4 text-emerald-600 shrink-0" />
                       <span>Disponibile in pronta consegna</span>
                     </div>
-                  ) : (
-                    <div className="flex items-center gap-2 text-xs text-red-600 font-semibold bg-red-50 p-2.5 rounded-xl border border-red-200">
-                      <X className="w-3.5 h-3.5 text-red-500" />
-                      <span>Esaurito momentaneamente</span>
-                    </div>
-                  );
-                })()}
+                    {maxStock > 0 && (
+                      <span className={`text-[10px] sm:text-[11px] font-bold px-2 py-0.5 rounded-md border ${
+                        maxStock <= 5 
+                          ? 'bg-amber-100 text-amber-900 border-amber-300' 
+                          : 'bg-emerald-100 text-emerald-900 border-emerald-300'
+                      }`}>
+                        {maxStock <= 5 ? `Solo ${maxStock} pz rimasti` : `${maxStock} pz disp.`}
+                      </span>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 text-xs text-red-600 font-semibold bg-red-50/90 p-3 rounded-xl border border-red-200">
+                    <X className="w-4 h-4 text-red-500 shrink-0" />
+                    <span>Non disponibile in questa combinazione</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -682,8 +732,20 @@ export function ProductSheet({
             </button>
             <span className="w-8 sm:w-10 text-center font-bold text-sm sm:text-base">{quantity}</span>
             <button
-              onClick={() => setQuantity(quantity + 1)}
-              className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-lg bg-white shadow-xs hover:bg-neutral-50 active:scale-90 transition-all cursor-pointer"
+              disabled={quantity >= maxStock || maxStock <= 0}
+              onClick={() => {
+                if (quantity >= maxStock) {
+                  addToast(`Disponibilità massima raggiunta: solo ${maxStock} pezzi disponibili per questa variante.`, 'info');
+                  return;
+                }
+                setQuantity(quantity + 1);
+              }}
+              className={`w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-lg bg-white shadow-xs transition-all ${
+                quantity >= maxStock || maxStock <= 0
+                  ? 'opacity-35 cursor-not-allowed text-neutral-400'
+                  : 'hover:bg-neutral-50 active:scale-90 text-neutral-900 cursor-pointer'
+              }`}
+              title={quantity >= maxStock ? `Disponibilità massima raggiunta (${maxStock} pz)` : 'Aumenta quantità'}
             >
               <Plus className="w-3.5 h-3.5" />
             </button>
@@ -696,23 +758,45 @@ export function ProductSheet({
             </div>
 
             <button
+              disabled={!isAvailable || maxStock <= 0}
               onClick={() => {
+                if (!isAvailable || maxStock <= 0) return;
+                const cartItemId = `${product.id}__${selectedSize}__${selectedColor}`;
+                const inCart = cart?.find((i) => (i.cartItemId || `${i.id}__${i.selectedSize}__${i.selectedColor}`) === cartItemId);
+                const currentInCartQty = inCart ? inCart.quantity : 0;
+
+                if (currentInCartQty >= maxStock) {
+                  addToast(`Hai già aggiunto il massimo disponibile (${maxStock} pz) di questo articolo nel carrello!`, 'error');
+                  return;
+                }
+
+                const allowedToAdd = Math.min(quantity, maxStock - currentInCartQty);
+                if (allowedToAdd < quantity) {
+                  addToast(`Aggiunti ${allowedToAdd} pezzi: limite massimo di ${maxStock} pezzi raggiunto nel carrello.`, 'info');
+                }
+
                 const itemToAddToCart = {
                   ...product,
                   price: displayPrice,
                   sku: selectedVariantObject?.sku || product.sku,
-                  name: selectedVariantObject ? `${product.name} - ${selectedVariantObject.value}` : product.name,
+                  name: product.name,
                   selectedSize,
                   selectedColor,
-                  cartItemId: `${product.id}__${selectedSize}__${selectedColor}`,
+                  cartItemId,
                 };
-                for (let i = 0; i < quantity; i++) onAddToCart(itemToAddToCart as any);
+                for (let i = 0; i < allowedToAdd; i++) onAddToCart(itemToAddToCart as any);
                 onClose();
               }}
-              className="flex-1 sm:flex-[2] bg-neutral-950 hover:bg-black text-white h-12 sm:h-14 rounded-xl font-bold flex items-center justify-center gap-2 sm:gap-3 active:scale-95 transition-all uppercase text-xs tracking-widest shadow-lg cursor-pointer"
+              className={`flex-1 sm:flex-[2] h-12 sm:h-14 rounded-xl font-bold flex items-center justify-center gap-2 sm:gap-3 transition-all uppercase text-xs tracking-widest px-3 ${
+                isAvailable && maxStock > 0
+                  ? 'bg-neutral-950 hover:bg-black text-white active:scale-95 shadow-lg cursor-pointer'
+                  : 'bg-neutral-200 text-neutral-400 cursor-not-allowed shadow-none'
+              }`}
             >
-              <ShoppingCart className="w-4 h-4" />
-              <span>Aggiungi al carrello</span>
+              <ShoppingCart className="w-4 h-4 hidden sm:block" />
+              <span className="text-[11px] sm:text-xs font-semibold sm:font-bold tracking-wider sm:tracking-widest whitespace-nowrap">
+                {isAvailable && maxStock > 0 ? 'Aggiungi al carrello' : 'Non disponibile'}
+              </span>
             </button>
 
             {/* Piccolo pulsante icona con la X dello stesso stile che chiude la scheda del dettaglio */}
