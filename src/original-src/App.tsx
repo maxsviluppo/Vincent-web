@@ -2510,10 +2510,10 @@ const SideMenu = ({ isOpen, onClose, onSelectCategory, companySettings, pageSett
             animate={{ x: 0 }}
             exit={{ x: "-100%" }}
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className="side-menu-drawer fixed top-0 left-0 bottom-0 w-[min(100vw-0.75rem,17.5rem)] md:w-80 bg-white text-neutral-900 z-[70] shadow-2xl flex flex-col p-4 md:p-6 font-['Montserrat',sans-serif] border-r border-neutral-200"
+            className="side-menu-drawer fixed top-0 left-0 bottom-0 w-[min(100vw-1rem,20rem)] sm:w-80 max-w-[85vw] bg-white text-neutral-900 z-[70] shadow-2xl flex flex-col p-4 md:p-6 font-['Montserrat',sans-serif] border-r border-neutral-200 overflow-x-hidden overflow-y-hidden touch-pan-y overscroll-contain select-none"
           >
             {/* Header del Menu laterale */}
-            <div className="flex items-center justify-between mb-4 md:mb-6 pb-3 md:pb-4 border-b border-neutral-100">
+            <div className="flex items-center justify-between mb-4 md:mb-6 pb-3 md:pb-4 border-b border-neutral-100 w-full min-w-0 shrink-0">
               <div className="flex items-baseline gap-2">
                 <span className="text-xl font-light tracking-[0.28em] text-neutral-950 uppercase">
                   VINCENT
@@ -2531,7 +2531,7 @@ const SideMenu = ({ isOpen, onClose, onSelectCategory, companySettings, pageSett
               </button>
             </div>
 
-            <div className="space-y-4 md:space-y-6 overflow-y-auto no-scrollbar flex-1 pr-0.5">
+            <div className="space-y-4 md:space-y-6 overflow-y-auto overflow-x-hidden no-scrollbar flex-1 pr-0.5 touch-pan-y overscroll-contain w-full min-w-0 max-w-full">
               {/* Sezione Account — desktop: card; mobile: compatto */}
               <div className="space-y-0 md:space-y-2 border-b md:border-b-0 border-neutral-100 pb-3 md:pb-0">
                 <h3 className="text-[9px] md:text-[10px] font-normal text-neutral-400 uppercase tracking-[0.22em] mb-2 px-0.5">Account</h3>
@@ -2657,67 +2657,52 @@ const SideMenu = ({ isOpen, onClose, onSelectCategory, companySettings, pageSett
               </div>
 
               {/* Supporto & Sede */}
-              <div className="space-y-2 pt-2 border-t border-neutral-100">
-                <h3 className="text-[10px] font-normal text-neutral-400 uppercase tracking-[0.25em] mb-2">INFO E CONTATTI</h3>
+              <div className="space-y-1 pt-2 border-t border-neutral-100 w-full min-w-0 overflow-hidden">
+                <h3 className="text-[10px] font-medium text-neutral-400 uppercase tracking-[0.25em] mb-2 px-0.5">INFO E CONTATTI</h3>
                 <a 
                   href={`tel:${(companySettings?.landlinePhone || "081 3507556").replace(/\s+/g, '')}`} 
-                  className="flex items-center justify-between w-full p-2.5 hover:bg-neutral-50 rounded-xl transition-colors text-left group"
+                  className="flex items-center gap-3 w-full p-2.5 hover:bg-neutral-50 rounded-xl transition-colors text-left group min-w-0 overflow-hidden"
                   title="Chiamata telefono fisso sede"
                 >
-                  <div className="flex items-center gap-3">
-                    <Phone className="w-4 h-4 text-neutral-900 stroke-[1.4]" />
-                    <span className="text-xs font-light text-neutral-800">{companySettings?.landlinePhone || "081 3507556"}</span>
-                  </div>
-                  <span className="text-[9px] uppercase tracking-wider text-neutral-700 font-medium bg-neutral-100 px-2 py-0.5 rounded-full">Fisso Sede</span>
+                  <Phone className="w-4 h-4 text-neutral-900 stroke-[1.4] shrink-0" />
+                  <span className="text-xs font-light text-neutral-800 truncate flex-1 min-w-0">{companySettings?.landlinePhone || "081 3507556"}</span>
                 </a>
                 <a 
                   href={`tel:${(companySettings?.phone || "+39 331 342 4069").replace(/\s+/g, '')}`} 
-                  className="flex items-center justify-between w-full p-2.5 hover:bg-neutral-50 rounded-xl transition-colors text-left group"
+                  className="flex items-center gap-3 w-full p-2.5 hover:bg-neutral-50 rounded-xl transition-colors text-left group min-w-0 overflow-hidden"
                   title="Chiamata cellulare / assistenza"
                 >
-                  <div className="flex items-center gap-3">
-                    <Phone className="w-4 h-4 text-neutral-900 stroke-[1.4]" />
-                    <span className="text-xs font-light text-neutral-800">{companySettings?.phone || "+39 331 342 4069"}</span>
-                  </div>
-                  <span className="text-[9px] uppercase tracking-wider text-emerald-700 font-medium bg-emerald-50 px-2 py-0.5 rounded-full">Cellulare</span>
+                  <Phone className="w-4 h-4 text-neutral-900 stroke-[1.4] shrink-0" />
+                  <span className="text-xs font-light text-neutral-800 truncate flex-1 min-w-0">{companySettings?.phone || "+39 331 342 4069"}</span>
                 </a>
                 <a 
                   href={`mailto:${companySettings?.email || "info@vincentabbigliamento.it"}`} 
-                  className="flex items-center justify-between w-full p-2.5 hover:bg-neutral-50 rounded-xl transition-colors text-left group"
+                  className="flex items-center gap-3 w-full p-2.5 hover:bg-neutral-50 rounded-xl transition-colors text-left group min-w-0 overflow-hidden"
                   title="Invia email"
                 >
-                  <div className="flex items-center gap-3">
-                    <Mail className="w-4 h-4 text-neutral-900 stroke-[1.4]" />
-                    <span className="text-xs font-light text-neutral-800">{companySettings?.email || "info@vincentabbigliamento.it"}</span>
-                  </div>
-                  <span className="text-[9px] uppercase tracking-wider text-neutral-600 font-medium bg-neutral-100 px-2 py-0.5 rounded-full">Scrivi</span>
+                  <Mail className="w-4 h-4 text-neutral-900 stroke-[1.4] shrink-0" />
+                  <span className="text-xs font-light text-neutral-800 truncate flex-1 min-w-0">{companySettings?.email || "info@vincentabbigliamento.it"}</span>
                 </a>
                 <a 
                   href="https://wa.me/393313424069?text=Ciao%20Vincent%20Store,%20desidero%20maggiori%20informazioni" 
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center justify-between w-full p-2.5 hover:bg-neutral-50 rounded-xl transition-colors text-left group"
+                  className="flex items-center gap-3 w-full p-2.5 hover:bg-neutral-50 rounded-xl transition-colors text-left group min-w-0 overflow-hidden"
                   title="Apri chat WhatsApp diretta"
                 >
-                  <div className="flex items-center gap-3">
-                    <WhatsAppIcon className="w-4 h-4 text-neutral-900 fill-current" />
-                    <span className="text-xs font-light text-neutral-800">WhatsApp</span>
-                  </div>
-                  <span className="text-[9px] uppercase tracking-wider text-emerald-700 font-medium bg-emerald-50 px-2 py-0.5 rounded-full">Chat</span>
+                  <WhatsAppIcon className="w-4 h-4 text-neutral-900 fill-current shrink-0" />
+                  <span className="text-xs font-light text-neutral-800 truncate flex-1 min-w-0">WhatsApp (+39 331 342 4069)</span>
                 </a>
                 {companySettings?.socials?.instagram && (
                   <a 
                     href={companySettings.socials.instagram} 
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center justify-between w-full p-2.5 hover:bg-neutral-50 rounded-xl transition-colors text-left group"
+                    className="flex items-center gap-3 w-full p-2.5 hover:bg-neutral-50 rounded-xl transition-colors text-left group min-w-0 overflow-hidden"
                     title="Seguici su Instagram (@vincent.store.7)"
                   >
-                    <div className="flex items-center gap-3">
-                      <Instagram className="w-4 h-4 text-neutral-900 stroke-[1.4]" />
-                      <span className="text-xs font-light text-neutral-800">Instagram</span>
-                    </div>
-                    <span className="text-[9px] uppercase tracking-wider text-pink-700 font-medium bg-pink-50 px-2 py-0.5 rounded-full">Social</span>
+                    <Instagram className="w-4 h-4 text-neutral-900 stroke-[1.4] shrink-0" />
+                    <span className="text-xs font-light text-neutral-800 truncate flex-1 min-w-0">Instagram @vincent.store.7</span>
                   </a>
                 )}
                 {companySettings?.socials?.tiktok && (
@@ -2725,14 +2710,11 @@ const SideMenu = ({ isOpen, onClose, onSelectCategory, companySettings, pageSett
                     href={companySettings.socials.tiktok} 
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center justify-between w-full p-2.5 hover:bg-neutral-50 rounded-xl transition-colors text-left group"
+                    className="flex items-center gap-3 w-full p-2.5 hover:bg-neutral-50 rounded-xl transition-colors text-left group min-w-0 overflow-hidden"
                     title="Seguici su TikTok (@vincent_store7)"
                   >
-                    <div className="flex items-center gap-3">
-                      <TikTokIcon className="w-4 h-4 text-neutral-900 fill-current ml-0.5" />
-                      <span className="text-xs font-light text-neutral-800">TikTok</span>
-                    </div>
-                    <span className="text-[9px] uppercase tracking-wider text-neutral-900 font-medium bg-neutral-100 px-2 py-0.5 rounded-full">Social</span>
+                    <TikTokIcon className="w-4 h-4 text-neutral-900 fill-current shrink-0 ml-0.5" />
+                    <span className="text-xs font-light text-neutral-800 truncate flex-1 min-w-0">TikTok @vincent_store7</span>
                   </a>
                 )}
                 {Boolean(companySettings?.socials?.facebook && companySettings.socials.facebook.trim() !== '' && !companySettings.socials.facebook.includes('vincentstore')) && (
@@ -2740,14 +2722,11 @@ const SideMenu = ({ isOpen, onClose, onSelectCategory, companySettings, pageSett
                     href={companySettings.socials.facebook} 
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center justify-between w-full p-2.5 hover:bg-neutral-50 rounded-xl transition-colors text-left group"
+                    className="flex items-center gap-3 w-full p-2.5 hover:bg-neutral-50 rounded-xl transition-colors text-left group min-w-0 overflow-hidden"
                     title="Seguici su Facebook"
                   >
-                    <div className="flex items-center gap-3">
-                      <Facebook className="w-4 h-4 text-neutral-900 stroke-[1.4]" />
-                      <span className="text-xs font-light text-neutral-800">Facebook</span>
-                    </div>
-                    <span className="text-[9px] uppercase tracking-wider text-blue-700 font-medium bg-blue-50 px-2 py-0.5 rounded-full">Social</span>
+                    <Facebook className="w-4 h-4 text-neutral-900 stroke-[1.4] shrink-0" />
+                    <span className="text-xs font-light text-neutral-800 truncate flex-1 min-w-0">Facebook</span>
                   </a>
                 )}
                 {Boolean(companySettings?.socials?.youtube && companySettings.socials.youtube.trim() !== '' && !companySettings.socials.youtube.includes('vincentstore')) && (
@@ -2755,32 +2734,13 @@ const SideMenu = ({ isOpen, onClose, onSelectCategory, companySettings, pageSett
                     href={companySettings.socials.youtube} 
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center justify-between w-full p-2.5 hover:bg-neutral-50 rounded-xl transition-colors text-left group"
+                    className="flex items-center gap-3 w-full p-2.5 hover:bg-neutral-50 rounded-xl transition-colors text-left group min-w-0 overflow-hidden"
                     title="Canale YouTube ufficiale"
                   >
-                    <div className="flex items-center gap-3">
-                      <Youtube className="w-4 h-4 text-neutral-900 stroke-[1.4]" />
-                      <span className="text-xs font-light text-neutral-800">YouTube</span>
-                    </div>
-                    <span className="text-[9px] uppercase tracking-wider text-red-700 font-medium bg-red-50 px-2 py-0.5 rounded-full">Social</span>
+                    <Youtube className="w-4 h-4 text-neutral-900 stroke-[1.4] shrink-0" />
+                    <span className="text-xs font-light text-neutral-800 truncate flex-1 min-w-0">YouTube</span>
                   </a>
                 )}
-                <a 
-                  href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(companySettings?.legalAddress || "Corso San Giovanni a Teduccio, 293, 80146 Napoli NA")}`} 
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-between w-full p-2.5 hover:bg-neutral-50 rounded-xl transition-colors text-left group"
-                  title="Avvia navigatore GPS per la sede aziendale"
-                >
-                  <div className="flex items-center gap-3">
-                    <MapPin className="w-4 h-4 text-neutral-900 stroke-[1.4]" />
-                    <span className="text-xs font-light text-neutral-800 truncate max-w-[190px]">{companySettings?.legalAddress || "Corso San Giovanni a Teduccio, 293, 80146 Napoli"}</span>
-                  </div>
-                  <span className="text-[9px] uppercase tracking-wider text-neutral-700 font-medium bg-neutral-100 px-2 py-0.5 rounded-full flex items-center gap-1">
-                    <Navigation className="w-2.5 h-2.5" />
-                    Mappa
-                  </span>
-                </a>
               </div>
             </div>
 

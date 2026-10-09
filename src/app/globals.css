@@ -805,3 +805,16 @@ div[class*="admin"] select option {
 .auth-modal-home button.auth-btn-primary * {
   color: #ffffff !important;
 }
+
+/* ─── Menu Laterale Utente: Blocco orizzontale assoluto e scroll esclusivamente verticale ─── */
+.side-menu-drawer {
+  overflow-x: hidden !important;
+  overscroll-behavior-x: none !important;
+  touch-action: pan-y !important;
+  -webkit-overflow-scrolling: touch;
+}
+
+.side-menu-drawer * {
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
