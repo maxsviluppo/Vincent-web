@@ -38,6 +38,9 @@ export default function RootLayout({
         <meta name="description" content="Vincent Store — Scopri la nuova collezione abbigliamento, giacche sartoriali, maglieria cashmere, calzature e accessori per l'uomo contemporaneo." />
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
         <meta name="theme-color" content="#111111" />
+        <link rel="icon" href="/favicon.png" type="image/png" sizes="32x32" />
+        <link rel="icon" href="/favicon.ico" sizes="any" />
+        <link rel="apple-touch-icon" href="/icon-192.png" />
         <link rel="canonical" href="https://www.vincentstore.it" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
@@ -52,8 +55,9 @@ export default function RootLayout({
             url: "https://www.vincentstore.it",
             contactPoint: {
               "@type": "ContactPoint",
-              telephone: "+39-02-8901234",
+              telephone: "+39-331-3424069",
               contactType: "customer service",
+              email: "info@vincentabbigliamento.it",
               areaServed: "IT",
               availableLanguage: "Italian",
             },

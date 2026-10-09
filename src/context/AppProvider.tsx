@@ -481,9 +481,42 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => setLS('vincent_returns', returnRequests), [returnRequests]);
 
   // — settings —
-  const [companySettings, setCompanySettings] = useState(() =>
-    getLS('vincent_companySettings_v3', DEFAULT_COMPANY_SETTINGS)
-  );
+  const [companySettings, setCompanySettings] = useState(() => {
+    const saved = getLS<any>('vincent_companySettings_v3', DEFAULT_COMPANY_SETTINGS);
+    const merged = { ...DEFAULT_COMPANY_SETTINGS, ...saved };
+    if (!saved?.email || saved.email.toLowerCase().includes('concierge')) {
+      merged.email = DEFAULT_COMPANY_SETTINGS.email;
+    }
+    if (!saved?.orderStatusSenderEmail || saved.orderStatusSenderEmail.toLowerCase().includes('concierge')) {
+      merged.orderStatusSenderEmail = DEFAULT_COMPANY_SETTINGS.orderStatusSenderEmail;
+    }
+    if (!saved?.phone || saved.phone === '+39 02 8901234' || saved.phone.includes('8901234')) {
+      merged.phone = DEFAULT_COMPANY_SETTINGS.phone;
+    }
+    if (!saved?.legalAddress || saved.legalAddress.includes('Monte Napoleone') || saved.legalAddress.includes('Milano')) {
+      merged.legalAddress = DEFAULT_COMPANY_SETTINGS.legalAddress;
+    }
+    if (!saved?.landlinePhone) {
+      merged.landlinePhone = DEFAULT_COMPANY_SETTINGS.landlinePhone;
+    }
+    if (!saved?.vatNumber || saved.vatNumber === '09876543210') {
+      merged.vatNumber = DEFAULT_COMPANY_SETTINGS.vatNumber;
+    }
+    if (!saved?.mission || saved.mission.includes('maschile contemporanea')) {
+      merged.mission = DEFAULT_COMPANY_SETTINGS.mission;
+    }
+    merged.socials = { ...DEFAULT_COMPANY_SETTINGS.socials, ...(saved?.socials || {}) };
+    if (!merged.socials.whatsapp) {
+      merged.socials.whatsapp = DEFAULT_COMPANY_SETTINGS.socials.whatsapp;
+    }
+    if (!merged.socials.tiktok || merged.socials.tiktok === 'https://tiktok.com/@vincentstore') {
+      merged.socials.tiktok = DEFAULT_COMPANY_SETTINGS.socials.tiktok;
+    }
+    if (!merged.socials.instagram || merged.socials.instagram.includes('vincentstore_milano')) {
+      merged.socials.instagram = DEFAULT_COMPANY_SETTINGS.socials.instagram;
+    }
+    return merged;
+  });
   useEffect(() => setLS('vincent_companySettings_v3', companySettings), [companySettings]);
 
   const [pageSettings, setPageSettings] = useState(() => {
@@ -553,7 +586,38 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }
         if (storeConfig) {
           if (storeConfig.company_settings && Object.keys(storeConfig.company_settings).length > 0) {
-            setCompanySettings((prev) => ({ ...prev, ...storeConfig.company_settings }));
+            const cs = { ...storeConfig.company_settings };
+            if (!cs.email || cs.email.toLowerCase().includes('concierge')) {
+              cs.email = DEFAULT_COMPANY_SETTINGS.email;
+            }
+            if (!cs.orderStatusSenderEmail || cs.orderStatusSenderEmail.toLowerCase().includes('concierge')) {
+              cs.orderStatusSenderEmail = DEFAULT_COMPANY_SETTINGS.orderStatusSenderEmail;
+            }
+            if (!cs.phone || cs.phone.includes('8901234')) {
+              cs.phone = DEFAULT_COMPANY_SETTINGS.phone;
+            }
+            if (!cs.legalAddress || cs.legalAddress.includes('Monte Napoleone')) {
+              cs.legalAddress = DEFAULT_COMPANY_SETTINGS.legalAddress;
+            }
+            if (!cs.landlinePhone) {
+              cs.landlinePhone = DEFAULT_COMPANY_SETTINGS.landlinePhone;
+            }
+            if (!cs.vatNumber || cs.vatNumber === '09876543210') {
+              cs.vatNumber = DEFAULT_COMPANY_SETTINGS.vatNumber;
+            }
+            if (!cs.mission || cs.mission.includes('maschile contemporanea')) {
+              cs.mission = DEFAULT_COMPANY_SETTINGS.mission;
+            }
+            if (!cs.socials?.whatsapp) {
+              cs.socials = { ...(cs.socials || {}), whatsapp: DEFAULT_COMPANY_SETTINGS.socials.whatsapp };
+            }
+            if (!cs.socials?.tiktok || cs.socials.tiktok === 'https://tiktok.com/@vincentstore') {
+              cs.socials = { ...(cs.socials || {}), tiktok: DEFAULT_COMPANY_SETTINGS.socials.tiktok };
+            }
+            if (!cs.socials?.instagram || cs.socials.instagram.includes('vincentstore_milano')) {
+              cs.socials = { ...(cs.socials || {}), instagram: DEFAULT_COMPANY_SETTINGS.socials.instagram };
+            }
+            setCompanySettings((prev) => ({ ...prev, ...cs }));
           }
           if (storeConfig.page_settings && Object.keys(storeConfig.page_settings).length > 0) {
             setPageSettings((prev) => ({

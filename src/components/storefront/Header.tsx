@@ -10,6 +10,7 @@ import {
   Heart,
   X
 } from 'lucide-react';
+import { useRouter, usePathname } from 'next/navigation';
 import { useApp } from '@/context/AppProvider';
 import { TopBarStrip } from '@/components/storefront/TopBarStrip';
 import { preloadLegacyAppBundle } from '@/lib/preloadLegacyApp';
@@ -19,6 +20,8 @@ interface HeaderProps {
 }
 
 export function Header({ onCategorySelect }: HeaderProps) {
+  const router = useRouter();
+  const pathname = usePathname();
   const {
     pageSettings,
     selectedCategory,
@@ -89,6 +92,13 @@ export function Header({ onCategorySelect }: HeaderProps) {
   const isTopBarHiddenMobile = isMobile && hideTopBar;
   const isLogoHiddenMobile = isMobile && hideLogo;
 
+  const handleNavigateCategory = (cat: string, sub: string = 'Tutti') => {
+    if (pathname && pathname !== '/') {
+      router.push('/');
+    }
+    onCategorySelect(cat, sub);
+  };
+
   return (
     <header 
       style={{ overflowAnchor: 'none' }}
@@ -144,7 +154,7 @@ export function Header({ onCategorySelect }: HeaderProps) {
             </button>
 
             <button 
-              onClick={() => onCategorySelect("Tutti")}
+              onClick={() => handleNavigateCategory("Tutti")}
               className="flex flex-col text-left group"
             >
               <span className="text-xl sm:text-2xl font-light uppercase tracking-[0.28em] text-neutral-950 group-hover:opacity-80 transition-opacity">
@@ -264,7 +274,7 @@ export function Header({ onCategorySelect }: HeaderProps) {
               return (
                 <button
                   key={`cat-${cat}`}
-                  onClick={() => onCategorySelect(cat, 'Tutti')}
+                  onClick={() => handleNavigateCategory(cat, 'Tutti')}
                   className="relative px-3 py-1 flex-shrink-0 transition-all duration-200 group cursor-pointer"
                 >
                   <span className={`text-xs uppercase tracking-[0.18em] transition-all ${

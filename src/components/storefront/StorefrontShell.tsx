@@ -18,6 +18,8 @@ import { VincentApp } from '@/components/storefront/VincentApp';
 import { ProductSheet } from '@/components/product/ProductSheet';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 import { preloadLegacyAppBundle } from '@/lib/preloadLegacyApp';
+import { CookieBanner } from '@/components/storefront/CookieBanner';
+import { WhatsAppIcon } from '@/components/storefront/WhatsAppIcon';
 
 export function StorefrontShell({ children }: { children?: React.ReactNode }) {
   const router = useRouter();
@@ -82,6 +84,11 @@ export function StorefrontShell({ children }: { children?: React.ReactNode }) {
 
   // Sync solo con le route Next reali (overlay home usa pushState senza cambiare pathname)
   useEffect(() => {
+    if (pathname === '/privacy-policy') {
+      setSelectedProduct(null);
+      return;
+    }
+
     if (pathname.startsWith('/prodotto/')) {
       const productId = pathname.split('/')[2];
       const product = products.find((p) => p.id === productId);
@@ -134,6 +141,12 @@ export function StorefrontShell({ children }: { children?: React.ReactNode }) {
 
   useBodyScrollLock(Boolean(showProductSheet || isCartOpen || isSideMenuOpen || isAuthOpen || isCheckoutOpen || isAdminOpen));
 
+  useEffect(() => {
+    if (pathname === '/privacy-policy') {
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    }
+  }, [pathname]);
+
   const wasAdminOpen = useRef(isAdminOpen);
   useEffect(() => {
     if (wasAdminOpen.current && !isAdminOpen) {
@@ -148,11 +161,39 @@ export function StorefrontShell({ children }: { children?: React.ReactNode }) {
       <Header onCategorySelect={handleCategorySelect} />
       
       <main className="flex-grow">
-        <ModularStorefront />
-        {children}
+        {pathname === '/privacy-policy' ? (
+          children
+        ) : (
+          <>
+            <ModularStorefront />
+            {children}
+          </>
+        )}
       </main>
       
       <Footer />
+      <CookieBanner />
+
+      {/* Floating WhatsApp Button (Desktop & Tablet) */}
+      <motion.a
+        href="https://wa.me/393313424069?text=Ciao%20Vincent%20Store,%20desidero%20maggiori%20informazioni"
+        target="_blank"
+        rel="noopener noreferrer"
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        className="fixed bottom-6 right-6 z-30 hidden md:flex items-center gap-2.5 px-4 py-2.5 rounded-full bg-neutral-950/90 text-white backdrop-blur-md shadow-xl border border-white/15 hover:bg-neutral-900 transition-all group font-['Montserrat',sans-serif]"
+        title="Chat WhatsApp Diretta (+39 331 342 4069)"
+        aria-label="WhatsApp"
+      >
+        <div className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center text-white group-hover:bg-emerald-500/20 group-hover:text-emerald-400 transition-colors">
+          <WhatsAppIcon className="w-3.5 h-3.5 fill-current" />
+        </div>
+        <span className="text-[10px] font-medium tracking-[0.16em] uppercase text-neutral-200 group-hover:text-white">
+          WhatsApp
+        </span>
+      </motion.a>
 
       {/* Icona Carrello Mobile a Isola:
           - Posizionata PIÙ BASSO DI 600px (top: 630px)

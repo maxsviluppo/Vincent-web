@@ -51,7 +51,7 @@ export function TopBarStrip({ pageSettings }: { pageSettings: any }) {
       </div>
       <div className="flex items-center gap-4 flex-shrink-0">
         <span className="hover:text-white transition-colors cursor-pointer font-light">
-          {pageSettings.topBarRightText || 'Boutique & Concierge'}
+          {(pageSettings.topBarRightText && !pageSettings.topBarRightText.includes('Concierge')) ? pageSettings.topBarRightText : 'Boutique & Servizio Clienti'}
         </span>
       </div>
     </div>

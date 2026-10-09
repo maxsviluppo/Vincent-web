@@ -13,8 +13,10 @@ import {
   Share2,
   FileText,
   Sparkles,
+  ExternalLink,
 } from 'lucide-react';
 import type { CompanySettings } from '@/lib/types';
+import { pushStoreConfig } from '@/lib/store-client';
 import {
   ADMIN_BTN_PRIMARY,
   ADMIN_BTN_SECONDARY,
@@ -67,9 +69,14 @@ export function AdminCompanySection({
     }
   };
 
-  const handleManualSave = () => {
+  const handleManualSave = async () => {
     setIsSavedRecently(true);
-    addToast?.('Impostazioni azienda salvate correttamente.', 'success');
+    try {
+      await pushStoreConfig({ company_settings: companySettings });
+      addToast?.('Dati aziendali salvati e sincronizzati in tutto lo store!', 'success');
+    } catch {
+      addToast?.('Dati aziendali salvati localmente.', 'info');
+    }
     setTimeout(() => setIsSavedRecently(false), 2500);
   };
 
@@ -271,7 +278,7 @@ export function AdminCompanySection({
                 onChange={(e) =>
                   setCompanySettings((prev) => ({ ...prev, legalName: e.target.value }))
                 }
-                placeholder="es. BesPoint S.r.l."
+                placeholder="es. Vincent Store S.r.l."
                 className={ADMIN_INPUT}
               />
             </div>
@@ -287,7 +294,7 @@ export function AdminCompanySection({
                   onChange={(e) =>
                     setCompanySettings((prev) => ({ ...prev, vatNumber: e.target.value }))
                   }
-                  placeholder="es. IT12345678901"
+                  placeholder="es. 10426021217"
                   className={ADMIN_INPUT}
                 />
               </div>
@@ -324,24 +331,52 @@ export function AdminCompanySection({
 
           <div className="space-y-4">
             <div>
-              <label className="text-[10px] font-medium uppercase tracking-widest text-neutral-500 mb-1.5 block">
-                Sede Legale / Operativa
-              </label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-[10px] font-medium uppercase tracking-widest text-neutral-500 block">
+                  Sede Legale / Operativa & Atelier
+                </label>
+                {companySettings.legalAddress && (
+                  <a
+                    href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(companySettings.legalAddress)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[10px] text-neutral-700 hover:text-black font-medium underline flex items-center gap-1"
+                    title="Verifica generazione percorso navigatore smartphone"
+                  >
+                    <span>Test Navigatore GPS</span>
+                    <ExternalLink className="w-2.5 h-2.5" />
+                  </a>
+                )}
+              </div>
               <input
                 type="text"
                 value={companySettings.legalAddress}
                 onChange={(e) =>
                   setCompanySettings((prev) => ({ ...prev, legalAddress: e.target.value }))
                 }
-                placeholder="es. Via Roma 123, 80100 Napoli (NA)"
+                placeholder="es. Corso San Giovanni a Teduccio, 293, 80146 Napoli NA"
                 className={ADMIN_INPUT}
               />
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
                 <label className="text-[10px] font-medium uppercase tracking-widest text-neutral-500 mb-1.5 block">
-                  Telefono Ufficio / Assistenza
+                  Telefono Fisso Sede
+                </label>
+                <input
+                  type="text"
+                  value={companySettings.landlinePhone || ''}
+                  onChange={(e) =>
+                    setCompanySettings((prev) => ({ ...prev, landlinePhone: e.target.value }))
+                  }
+                  placeholder="es. 081 3507556"
+                  className={ADMIN_INPUT}
+                />
+              </div>
+              <div>
+                <label className="text-[10px] font-medium uppercase tracking-widest text-neutral-500 mb-1.5 block">
+                  Cellulare / Assistenza
                 </label>
                 <input
                   type="text"
@@ -349,7 +384,7 @@ export function AdminCompanySection({
                   onChange={(e) =>
                     setCompanySettings((prev) => ({ ...prev, phone: e.target.value }))
                   }
-                  placeholder="es. +39 081 1234567"
+                  placeholder="es. +39 331 342 4069"
                   className={ADMIN_INPUT}
                 />
               </div>
@@ -363,7 +398,7 @@ export function AdminCompanySection({
                   onChange={(e) =>
                     setCompanySettings((prev) => ({ ...prev, email: e.target.value }))
                   }
-                  placeholder="es. info@bespoint.it"
+                  placeholder="es. info@vincentabbigliamento.it"
                   className={ADMIN_INPUT}
                 />
               </div>
@@ -382,7 +417,7 @@ export function AdminCompanySection({
                     orderStatusSenderEmail: e.target.value,
                   }))
                 }
-                placeholder="es. ordini@bespoint.it"
+                placeholder="es. info@vincentabbigliamento.it"
                 className={ADMIN_INPUT}
               />
               <p className="text-[10px] text-neutral-400 font-light mt-1">
@@ -459,7 +494,7 @@ export function AdminCompanySection({
                     socials: { ...prev.socials, instagram: e.target.value },
                   }))
                 }
-                placeholder="https://instagram.com/tuoaccount"
+                placeholder="https://www.instagram.com/vincent.store.7?obrf=MXV3aWN3dTVlbnhybQ%3D%3D&utm_source=qr"
                 className={ADMIN_INPUT}
               />
             </div>
@@ -495,7 +530,7 @@ export function AdminCompanySection({
                     socials: { ...prev.socials, tiktok: e.target.value },
                   }))
                 }
-                placeholder="https://tiktok.com/@tuoaccount"
+                placeholder="https://www.tiktok.com/@vincent_store7?_r=1&_t=ZN-9APNxQ7kCes"
                 className={ADMIN_INPUT}
               />
             </div>
@@ -518,7 +553,7 @@ export function AdminCompanySection({
               />
             </div>
 
-            <div className="sm:col-span-2">
+            <div>
               <label className="text-[10px] font-medium uppercase tracking-widest text-neutral-500 mb-1.5 block">
                 X / Twitter URL
               </label>
@@ -532,6 +567,24 @@ export function AdminCompanySection({
                   }))
                 }
                 placeholder="https://x.com/tuoaccount"
+                className={ADMIN_INPUT}
+              />
+            </div>
+
+            <div>
+              <label className="text-[10px] font-medium uppercase tracking-widest text-neutral-500 mb-1.5 block">
+                WhatsApp Link / Chat Diretta
+              </label>
+              <input
+                type="text"
+                value={companySettings.socials?.whatsapp || ''}
+                onChange={(e) =>
+                  setCompanySettings((prev) => ({
+                    ...prev,
+                    socials: { ...prev.socials, whatsapp: e.target.value },
+                  }))
+                }
+                placeholder="https://wa.me/393313424069"
                 className={ADMIN_INPUT}
               />
             </div>

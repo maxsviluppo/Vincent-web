@@ -12,7 +12,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const effectiveSender = senderEmail || 'noreply@vincentstore.it';
+    const effectiveSender = senderEmail || 'info@vincentabbigliamento.it';
 
     // Traduzione dello stato in italiano
     let statusLabel = status;
@@ -30,7 +30,7 @@ export async function POST(request: Request) {
         break;
       case 'delivered':
         statusLabel = 'CONSEGNATO';
-        description = 'Il tuo ordine è stato consegnato con successo. Grazie per aver acquistato su BesPoint!';
+        description = 'Il tuo ordine è stato consegnato con successo. Grazie per aver acquistato su Vincent Store!';
         break;
       case 'refunded':
         statusLabel = 'RIMBORSATO';
@@ -43,16 +43,17 @@ export async function POST(request: Request) {
     }
 
     const emailHtml = `
-      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
-        <div style="background-color: #ffd600; padding: 15px; text-align: center; border-radius: 8px 8px 0 0;">
-          <h1 style="margin: 0; color: #0a0a0a; font-style: italic;">壓ESPOINT</h1>
+      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #171717; border-radius: 10px; background-color: #ffffff;">
+        <div style="background-color: #0a0a0a; padding: 18px; text-align: center; border-radius: 8px 8px 0 0;">
+          <h1 style="margin: 0; color: #ffffff; letter-spacing: 0.25em; text-transform: uppercase; font-size: 20px;">VINCENT STORE</h1>
+          <p style="margin: 4px 0 0 0; color: #a3a3a3; font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase;">Atelier & Boutique Napoli</p>
         </div>
-        <div style="padding: 20px;">
-          <h2 style="color: #0a0a0a;">Ciao ${customerName || 'Cliente'},</h2>
-          <p>Ti informiamo che lo stato del tuo ordine <strong>#${orderId}</strong> è cambiato in: <span style="background-color: #0a0a0a; color: #ffd600; padding: 3px 8px; border-radius: 5px; font-weight: bold;">${statusLabel}</span></p>
-          <p style="line-height: 1.6; color: #555;">${description}</p>
-          <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
-          <p style="font-size: 12px; color: #999;">Questa notifica ti è stata inviata da ${effectiveSender}. Per favore non rispondere a questa email.</p>
+        <div style="padding: 24px; color: #171717;">
+          <h2 style="color: #0a0a0a; font-size: 18px;">Gentile ${customerName || 'Cliente'},</h2>
+          <p>Ti informiamo che lo stato del tuo ordine <strong>#${orderId}</strong> è cambiato in: <span style="background-color: #0a0a0a; color: #ffffff; padding: 4px 10px; border-radius: 6px; font-weight: bold; font-size: 12px; letter-spacing: 0.05em;">${statusLabel}</span></p>
+          <p style="line-height: 1.6; color: #525252; margin: 16px 0;">${description}</p>
+          <hr style="border: 0; border-top: 1px solid #e5e5e5; margin: 24px 0;" />
+          <p style="font-size: 11px; color: #737373; line-height: 1.5;">Vincent Store · Corso San Giovanni a Teduccio 293, 80146 Napoli NA<br/>Email assistenza: info@vincentabbigliamento.it · Tel/WhatsApp: +39 331 342 4069</p>
         </div>
       </div>
     `;

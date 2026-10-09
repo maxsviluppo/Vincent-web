@@ -29,6 +29,7 @@ import {
   MapPin,
   MessageCircle,
   Compass,
+  Navigation,
   Box,
   Share2,
   Play,
@@ -103,6 +104,8 @@ import { AdminReviews } from "./AdminReviews";
 import { ADMIN_BTN_PRIMARY, ADMIN_BTN_SECONDARY, ADMIN_INPUT } from "../components/admin/adminTouchTargets";
 import { getProductVariantInfo, getColorHex as getVariantColorHex, getProductMaxStock } from "@/lib/productVariants";
 import { useApp } from "@/context/AppProvider";
+import { WhatsAppIcon } from "@/components/storefront/WhatsAppIcon";
+import { TikTokIcon } from "@/components/storefront/TikTokIcon";
 import {
   authDeleteAccount,
   authLogin,
@@ -2653,17 +2656,131 @@ const SideMenu = ({ isOpen, onClose, onSelectCategory, companySettings, pageSett
                 </ul>
               </div>
 
-              {/* Supporto */}
+              {/* Supporto & Sede */}
               <div className="space-y-2 pt-2 border-t border-neutral-100">
-                <h3 className="text-[10px] font-normal text-neutral-400 uppercase tracking-[0.25em] mb-2">Concierge & Boutique</h3>
-                <button className="flex items-center gap-3 w-full p-2.5 hover:bg-neutral-50 rounded-xl transition-colors text-left">
-                  <Phone className="w-4 h-4 text-neutral-900 stroke-[1.4]" />
-                  <span className="text-xs font-light text-neutral-800">+39 02 8901234</span>
-                </button>
-                <button className="flex items-center gap-3 w-full p-2.5 hover:bg-neutral-50 rounded-xl transition-colors text-left">
-                  <Mail className="w-4 h-4 text-neutral-900 stroke-[1.4]" />
-                  <span className="text-xs font-light text-neutral-800">concierge@vincentstore.it</span>
-                </button>
+                <h3 className="text-[10px] font-normal text-neutral-400 uppercase tracking-[0.25em] mb-2">INFO E CONTATTI</h3>
+                <a 
+                  href={`tel:${(companySettings?.landlinePhone || "081 3507556").replace(/\s+/g, '')}`} 
+                  className="flex items-center justify-between w-full p-2.5 hover:bg-neutral-50 rounded-xl transition-colors text-left group"
+                  title="Chiamata telefono fisso sede"
+                >
+                  <div className="flex items-center gap-3">
+                    <Phone className="w-4 h-4 text-neutral-900 stroke-[1.4]" />
+                    <span className="text-xs font-light text-neutral-800">{companySettings?.landlinePhone || "081 3507556"}</span>
+                  </div>
+                  <span className="text-[9px] uppercase tracking-wider text-neutral-700 font-medium bg-neutral-100 px-2 py-0.5 rounded-full">Fisso Sede</span>
+                </a>
+                <a 
+                  href={`tel:${(companySettings?.phone || "+39 331 342 4069").replace(/\s+/g, '')}`} 
+                  className="flex items-center justify-between w-full p-2.5 hover:bg-neutral-50 rounded-xl transition-colors text-left group"
+                  title="Chiamata cellulare / assistenza"
+                >
+                  <div className="flex items-center gap-3">
+                    <Phone className="w-4 h-4 text-neutral-900 stroke-[1.4]" />
+                    <span className="text-xs font-light text-neutral-800">{companySettings?.phone || "+39 331 342 4069"}</span>
+                  </div>
+                  <span className="text-[9px] uppercase tracking-wider text-emerald-700 font-medium bg-emerald-50 px-2 py-0.5 rounded-full">Cellulare</span>
+                </a>
+                <a 
+                  href={`mailto:${companySettings?.email || "info@vincentabbigliamento.it"}`} 
+                  className="flex items-center justify-between w-full p-2.5 hover:bg-neutral-50 rounded-xl transition-colors text-left group"
+                  title="Invia email"
+                >
+                  <div className="flex items-center gap-3">
+                    <Mail className="w-4 h-4 text-neutral-900 stroke-[1.4]" />
+                    <span className="text-xs font-light text-neutral-800">{companySettings?.email || "info@vincentabbigliamento.it"}</span>
+                  </div>
+                  <span className="text-[9px] uppercase tracking-wider text-neutral-600 font-medium bg-neutral-100 px-2 py-0.5 rounded-full">Scrivi</span>
+                </a>
+                <a 
+                  href="https://wa.me/393313424069?text=Ciao%20Vincent%20Store,%20desidero%20maggiori%20informazioni" 
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-between w-full p-2.5 hover:bg-neutral-50 rounded-xl transition-colors text-left group"
+                  title="Apri chat WhatsApp diretta"
+                >
+                  <div className="flex items-center gap-3">
+                    <WhatsAppIcon className="w-4 h-4 text-neutral-900 fill-current" />
+                    <span className="text-xs font-light text-neutral-800">WhatsApp</span>
+                  </div>
+                  <span className="text-[9px] uppercase tracking-wider text-emerald-700 font-medium bg-emerald-50 px-2 py-0.5 rounded-full">Chat</span>
+                </a>
+                {companySettings?.socials?.instagram && (
+                  <a 
+                    href={companySettings.socials.instagram} 
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-between w-full p-2.5 hover:bg-neutral-50 rounded-xl transition-colors text-left group"
+                    title="Seguici su Instagram (@vincent.store.7)"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Instagram className="w-4 h-4 text-neutral-900 stroke-[1.4]" />
+                      <span className="text-xs font-light text-neutral-800">Instagram</span>
+                    </div>
+                    <span className="text-[9px] uppercase tracking-wider text-pink-700 font-medium bg-pink-50 px-2 py-0.5 rounded-full">Social</span>
+                  </a>
+                )}
+                {companySettings?.socials?.tiktok && (
+                  <a 
+                    href={companySettings.socials.tiktok} 
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-between w-full p-2.5 hover:bg-neutral-50 rounded-xl transition-colors text-left group"
+                    title="Seguici su TikTok (@vincent_store7)"
+                  >
+                    <div className="flex items-center gap-3">
+                      <TikTokIcon className="w-4 h-4 text-neutral-900 fill-current ml-0.5" />
+                      <span className="text-xs font-light text-neutral-800">TikTok</span>
+                    </div>
+                    <span className="text-[9px] uppercase tracking-wider text-neutral-900 font-medium bg-neutral-100 px-2 py-0.5 rounded-full">Social</span>
+                  </a>
+                )}
+                {Boolean(companySettings?.socials?.facebook && companySettings.socials.facebook.trim() !== '' && !companySettings.socials.facebook.includes('vincentstore')) && (
+                  <a 
+                    href={companySettings.socials.facebook} 
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-between w-full p-2.5 hover:bg-neutral-50 rounded-xl transition-colors text-left group"
+                    title="Seguici su Facebook"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Facebook className="w-4 h-4 text-neutral-900 stroke-[1.4]" />
+                      <span className="text-xs font-light text-neutral-800">Facebook</span>
+                    </div>
+                    <span className="text-[9px] uppercase tracking-wider text-blue-700 font-medium bg-blue-50 px-2 py-0.5 rounded-full">Social</span>
+                  </a>
+                )}
+                {Boolean(companySettings?.socials?.youtube && companySettings.socials.youtube.trim() !== '' && !companySettings.socials.youtube.includes('vincentstore')) && (
+                  <a 
+                    href={companySettings.socials.youtube} 
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-between w-full p-2.5 hover:bg-neutral-50 rounded-xl transition-colors text-left group"
+                    title="Canale YouTube ufficiale"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Youtube className="w-4 h-4 text-neutral-900 stroke-[1.4]" />
+                      <span className="text-xs font-light text-neutral-800">YouTube</span>
+                    </div>
+                    <span className="text-[9px] uppercase tracking-wider text-red-700 font-medium bg-red-50 px-2 py-0.5 rounded-full">Social</span>
+                  </a>
+                )}
+                <a 
+                  href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(companySettings?.legalAddress || "Corso San Giovanni a Teduccio, 293, 80146 Napoli NA")}`} 
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-between w-full p-2.5 hover:bg-neutral-50 rounded-xl transition-colors text-left group"
+                  title="Avvia navigatore GPS per la sede aziendale"
+                >
+                  <div className="flex items-center gap-3">
+                    <MapPin className="w-4 h-4 text-neutral-900 stroke-[1.4]" />
+                    <span className="text-xs font-light text-neutral-800 truncate max-w-[190px]">{companySettings?.legalAddress || "Corso San Giovanni a Teduccio, 293, 80146 Napoli"}</span>
+                  </div>
+                  <span className="text-[9px] uppercase tracking-wider text-neutral-700 font-medium bg-neutral-100 px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <Navigation className="w-2.5 h-2.5" />
+                    Mappa
+                  </span>
+                </a>
               </div>
             </div>
 
@@ -4424,22 +4541,34 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                   <ul className="space-y-4 text-gray-400 text-sm">
                     <li className="flex items-center gap-3">
                       <MapPin className="w-5 h-5 text-brand-blue" />
-                      <span>{companySettings.legalAddress}</span>
+                      <a 
+                        href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(companySettings.legalAddress || "Corso San Giovanni a Teduccio, 293, 80146 Napoli NA")}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="hover:text-white transition-colors"
+                        title="Apri nel navigatore"
+                      >
+                        {companySettings.legalAddress || "Corso San Giovanni a Teduccio, 293, 80146 Napoli NA"}
+                      </a>
                     </li>
                     <li className="flex items-center gap-3">
                       <Phone className="w-5 h-5 text-brand-blue" />
-                      <span>{companySettings.phone}</span>
+                      <a href={`tel:${(companySettings.phone || "+39 331 342 4069").replace(/\s+/g, '')}`} className="hover:text-white transition-colors">
+                        {companySettings.phone || "+39 331 342 4069"} (Chiama)
+                      </a>
                     </li>
                     <li className="flex items-center gap-3">
                       <Mail className="w-5 h-5 text-brand-blue" />
-                      <span>{companySettings.email}</span>
+                      <a href={`mailto:${companySettings.email || "info@vincentabbigliamento.it"}`} className="hover:text-white transition-colors">
+                        {companySettings.email || "info@vincentabbigliamento.it"}
+                      </a>
                     </li>
                   </ul>
                 </div>
               </div>
 
               <div className="mt-16 pt-8 border-t border-white/10 text-center text-gray-500 text-xs flex flex-col items-center gap-4">
-                <p>© 2026 {companySettings.name}. Tutti i diritti riservati - {companySettings.legalName}</p>
+                <p>© 2026 Tutti i diritti riservati a {companySettings.name} — Creato da <a href="https://codecafe.it" target="_blank" rel="noopener noreferrer" className="text-white hover:underline">codecafe.it</a></p>
                 <button 
                   onClick={() => setIsAdminOpen(true)}
                   className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-black hover:text-white transition-all opacity-20 hover:opacity-100"
@@ -8047,28 +8176,99 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                         </div>
                       )}
 
-                      {authStep === 'support' && (
+                      {authStep === 'support' && (() => {
+                        const supportEmail = (companySettings?.email && !companySettings.email.toLowerCase().includes('concierge')) 
+                          ? companySettings.email 
+                          : 'info@vincentabbigliamento.it';
+                        const supportPhone = (companySettings?.phone && !companySettings.phone.includes('8901234')) 
+                          ? companySettings.phone 
+                          : '+39 331 342 4069';
+                        const supportLandline = companySettings?.landlinePhone || '081 3507556';
+                        return (
                         <div className="space-y-4">
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <a href="mailto:assistenza@vincentstore.it" className="bg-white border border-gray-100 rounded-3xl p-6 text-center hover:border-brand-blue hover:shadow-lg transition-all group flex flex-col items-center gap-3">
-                              <div className="w-12 h-12 bg-blue-50 text-brand-blue rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
-                                <Mail className="w-5 h-5" />
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                            <a 
+                              href={`mailto:${supportEmail}`} 
+                              className="bg-white border border-neutral-200 rounded-2xl p-4 text-center hover:border-neutral-900 hover:shadow-md transition-all group flex flex-col items-center gap-2"
+                              title="Invia email di assistenza"
+                            >
+                              <div className="w-10 h-10 bg-neutral-100 text-neutral-950 rounded-full flex items-center justify-center group-hover:scale-105 transition-transform">
+                                <Mail className="w-4 h-4 stroke-[1.6]" />
                               </div>
                               <div>
-                                <h4 className="font-black text-brand-dark uppercase tracking-tighter text-sm">Invia Email</h4>
-                                <p className="text-xs text-gray-400 font-bold mt-1">Scrivici dalla tua casella</p>
+                                <h4 className="font-bold text-neutral-950 uppercase tracking-tight text-xs">Email</h4>
+                                <p className="text-[10px] text-neutral-700 font-semibold mt-0.5 break-all line-clamp-1">{supportEmail}</p>
                               </div>
                             </a>
-                            <a href="tel:+390000000000" className="bg-white border border-gray-100 rounded-3xl p-6 text-center hover:border-green-500 hover:shadow-lg transition-all group flex flex-col items-center gap-3">
-                              <div className="w-12 h-12 bg-green-50 text-green-500 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
-                                <MessageCircle className="w-5 h-5" />
+                            <a 
+                              href={`tel:${supportLandline.replace(/\s+/g, '')}`} 
+                              className="bg-white border border-neutral-200 rounded-2xl p-4 text-center hover:border-neutral-900 hover:shadow-md transition-all group flex flex-col items-center gap-2"
+                              title="Chiamata telefono fisso sede"
+                            >
+                              <div className="w-10 h-10 bg-neutral-100 text-neutral-950 rounded-full flex items-center justify-center group-hover:scale-105 transition-transform">
+                                <Phone className="w-4 h-4 stroke-[1.6]" />
                               </div>
                               <div>
-                                <h4 className="font-black text-brand-dark uppercase tracking-tighter text-sm">Contatto Telefonico</h4>
-                                <p className="text-xs text-gray-400 font-bold mt-1">Parla con il supporto</p>
+                                <h4 className="font-bold text-neutral-950 uppercase tracking-tight text-xs">Fisso Sede</h4>
+                                <p className="text-[10px] text-neutral-700 font-semibold mt-0.5">{supportLandline}</p>
+                              </div>
+                            </a>
+                            <a 
+                              href={`tel:${supportPhone.replace(/\s+/g, '')}`} 
+                              className="bg-white border border-neutral-200 rounded-2xl p-4 text-center hover:border-neutral-900 hover:shadow-md transition-all group flex flex-col items-center gap-2"
+                              title="Chiamata cellulare diretta"
+                            >
+                              <div className="w-10 h-10 bg-neutral-100 text-neutral-950 rounded-full flex items-center justify-center group-hover:scale-105 transition-transform">
+                                <Phone className="w-4 h-4 stroke-[1.6]" />
+                              </div>
+                              <div>
+                                <h4 className="font-bold text-neutral-950 uppercase tracking-tight text-xs">Cellulare</h4>
+                                <p className="text-[10px] text-neutral-700 font-semibold mt-0.5">{supportPhone}</p>
+                              </div>
+                            </a>
+                            <a 
+                              href="https://wa.me/393313424069?text=Ciao%20Vincent%20Store,%20desidero%20maggiori%20informazioni" 
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="bg-white border border-neutral-200 rounded-2xl p-4 text-center hover:border-neutral-900 hover:shadow-md transition-all group flex flex-col items-center gap-2"
+                              title="Chat WhatsApp diretta"
+                            >
+                              <div className="w-10 h-10 bg-neutral-950 text-white rounded-full flex items-center justify-center group-hover:scale-105 transition-transform shadow-xs">
+                                <WhatsAppIcon className="w-3.5 h-3.5 fill-current" />
+                              </div>
+                              <div>
+                                <h4 className="font-bold text-neutral-950 uppercase tracking-tight text-xs">WhatsApp</h4>
+                                <p className="text-[10px] text-neutral-700 font-semibold mt-0.5">+39 331 342 4069</p>
                               </div>
                             </a>
                           </div>
+
+                          {/* Sede & Atelier con generazione automatica navigatore */}
+                          <div className="bg-neutral-950 text-white rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-md">
+                            <div className="flex items-start gap-3.5">
+                              <div className="w-10 h-10 bg-white/10 text-white rounded-full flex items-center justify-center shrink-0">
+                                <MapPin className="w-5 h-5 stroke-[1.6]" />
+                              </div>
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <h4 className="font-bold text-white uppercase tracking-tight text-xs sm:text-sm">Sede & Atelier</h4>
+                                  <span className="text-[9px] bg-white/20 text-neutral-200 px-2 py-0.5 rounded-full font-semibold uppercase tracking-wider">Napoli</span>
+                                </div>
+                                <p className="text-xs text-neutral-300 font-light mt-0.5">Corso San Giovanni a Teduccio, 293, 80146 Napoli NA</p>
+                              </div>
+                            </div>
+                            <a
+                              href="https://www.google.com/maps/dir/?api=1&destination=Corso+San+Giovanni+a+Teduccio+293%2C+80146+Napoli+NA"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white hover:bg-neutral-100 text-neutral-950 text-xs font-bold uppercase tracking-wider transition-all shadow-sm active:scale-95 shrink-0"
+                              title="Avvia percorso navigatore GPS su smartphone"
+                            >
+                              <Navigation className="w-3.5 h-3.5" />
+                              <span>Avvia Navigatore</span>
+                            </a>
+                          </div>
+
                           <div className="bg-gray-50 rounded-3xl p-6 border border-gray-100 mt-2">
                             <h4 className="font-black text-brand-dark flex items-center gap-2 uppercase tracking-tighter text-sm mb-4">
                               <MessageCircle className="w-4 h-4 text-brand-blue" />
@@ -8082,7 +8282,8 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                             </form>
                           </div>
                         </div>
-                      )}
+                        );
+                      })()}
                     </div>
                     
                     {/* Sidebar Links (Right Side Desktop / Bottom Mobile) */}

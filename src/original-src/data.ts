@@ -40,26 +40,28 @@ export const DEFAULT_COMPANY_SETTINGS = {
   favicon: "",
   name: "Vincent Store",
   legalName: "Vincent Store S.r.l.",
-  vatNumber: "09876543210",
+  vatNumber: "10426021217",
   sdiCode: "VNC2026",
-  legalAddress: "Via Monte Napoleone 18, 20121 Milano",
-  phone: "+39 02 8901234",
-  email: "concierge@vincentstore.it",
-  bioLink: "vincentstore.it/concierge",
-  mission: "L'eleganza maschile contemporanea. Capi sartoriali di prestigio, tessuti nobili e design senza tempo per l'uomo raffinato.",
+  legalAddress: "Corso San Giovanni a Teduccio, 293, 80146 Napoli NA",
+  phone: "+39 331 342 4069",
+  landlinePhone: "081 3507556",
+  email: "info@vincentabbigliamento.it",
+  bioLink: "vincentstore.it/contatti",
+  mission: "Ricerchiamo costantemente le migliori soluzioni per proporre un trend accessibile a tutti ma di qualità: selezioniamo con cura tessuti, materiali, fatture e dettagli grazie all'esperienza di esperti del settore, proponendo oltre alle nostre sedi fisiche anche la vendita online attraverso i canali social e web ufficiali.",
   socials: {
-    facebook: "https://facebook.com/vincentstore",
-    instagram: "https://instagram.com/vincentstore_milano",
-    twitter: "https://twitter.com/vincentstore",
-    youtube: "https://youtube.com/@vincentstore",
-    tiktok: "https://tiktok.com/@vincentstore"
+    facebook: "",
+    instagram: "https://www.instagram.com/vincent.store.7?obrf=MXV3aWN3dTVlbnhybQ%3D%3D&utm_source=qr",
+    twitter: "",
+    youtube: "",
+    tiktok: "https://www.tiktok.com/@vincent_store7?_r=1&_t=ZN-9APNxQ7kCes",
+    whatsapp: "https://wa.me/393313424069"
   },
   googleVerificationTag: "",
   googleAnalyticsId: "",
   googleAnalyticsSnippet: "",
   adsTxtContent: "google.com, pub-0000000000000000, DIRECT, f08c47fec0942fa0",
   customGeminiKey: "",
-  orderStatusSenderEmail: "concierge@vincentstore.it"
+  orderStatusSenderEmail: "info@vincentabbigliamento.it"
 };
 
 export const DEFAULT_PAGE_SETTINGS = {
@@ -109,7 +111,7 @@ export const DEFAULT_PAGE_SETTINGS = {
   specialCategoryMax: 4,
   topBarMode: 'static',
   topBarLeftText: "Spedizione Express Gratuita su tutti gli ordini",
-  topBarRightText: "Boutique Milano & Servizio Concierge",
+  topBarRightText: "Atelier Napoli & Servizio Clienti",
   topBarMarqueeText: "VINCENT STORE — NUOVA COLLEZIONE MODA UOMO — SARTORIA ITALIANA — RESI GRATUITI",
   topBarMarqueeSpeed: 30,
 };

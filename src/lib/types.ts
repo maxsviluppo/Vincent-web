@@ -80,6 +80,7 @@ export interface CompanySettings {
   sdiCode: string;
   legalAddress: string;
   phone: string;
+  landlinePhone?: string;
   email: string;
   bioLink: string;
   mission: string;
@@ -89,6 +90,7 @@ export interface CompanySettings {
     twitter: string;
     youtube: string;
     tiktok: string;
+    whatsapp?: string;
   };
   googleVerificationTag: string;
   googleAnalyticsId: string;
