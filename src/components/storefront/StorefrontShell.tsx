@@ -132,7 +132,7 @@ export function StorefrontShell({ children }: { children?: React.ReactNode }) {
     setSelectedSubcategory,
   ]);
 
-  useBodyScrollLock(showProductSheet || isCartOpen || isSideMenuOpen);
+  useBodyScrollLock(Boolean(showProductSheet || isCartOpen || isSideMenuOpen || isAuthOpen || isCheckoutOpen || isAdminOpen));
 
   const wasAdminOpen = useRef(isAdminOpen);
   useEffect(() => {

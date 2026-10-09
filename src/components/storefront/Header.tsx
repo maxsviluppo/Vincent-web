@@ -188,15 +188,15 @@ export function Header({ onCategorySelect }: HeaderProps) {
                 if (currentUser) {
                   setAuthStep('profile');
                 } else {
-                  setAuthStep('email');
+                  setAuthStep('login');
                 }
                 setIsAuthOpen(true);
               }}
-              className="flex items-center gap-2 text-neutral-700 hover:text-black transition-colors group p-1"
+              className={`flex items-center gap-2 transition-colors group p-1 ${currentUser ? 'text-black font-semibold' : 'text-neutral-700 hover:text-black'}`}
               aria-label="Account"
             >
-              <User className="w-5 h-5 stroke-[1.3] group-hover:scale-105 transition-transform text-neutral-800" />
-              <span className="hidden lg:inline text-[11px] font-normal uppercase tracking-[0.16em] text-neutral-600 group-hover:text-black transition-colors">
+              <User className={`w-5 h-5 transition-transform group-hover:scale-105 ${currentUser ? 'text-black fill-black stroke-[2.2]' : 'text-neutral-800 stroke-[1.3]'}`} />
+              <span className={`hidden lg:inline text-[11px] uppercase tracking-[0.16em] transition-colors ${currentUser ? 'font-bold text-black' : 'font-normal text-neutral-600 group-hover:text-black'}`}>
                 {currentUser ? currentUser.name.split(' ')[0] : 'Accedi'}
               </span>
             </button>

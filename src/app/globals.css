@@ -48,15 +48,15 @@
 }
 
 /* Regola Universale: tutti i pulsanti scuri (frontend, modali e backend) hanno testo BIANCO */
-button[class*="bg-brand-yellow"],
-button[class*="bg-brand-dark"],
-button[class*="bg-brand-blue"],
-button[class*="bg-neutral-900"],
-button[class*="bg-neutral-950"],
-button[class*="bg-black"],
-a[class*="bg-brand-yellow"],
-a[class*="bg-brand-dark"],
-a[class*="bg-brand-blue"],
+button[class*="bg-brand-yellow"]:not([class*="bg-white"]):not([class*="bg-gray"]):not([class*="bg-neutral-50"]):not([class*="bg-neutral-100"]):not([class*="bg-neutral-200"]),
+button[class*="bg-brand-dark"]:not([class*="bg-white"]):not([class*="bg-gray"]):not([class*="bg-neutral-50"]):not([class*="bg-neutral-100"]):not([class*="bg-neutral-200"]),
+button[class*="bg-brand-blue"]:not([class*="bg-white"]):not([class*="bg-gray"]):not([class*="bg-neutral-50"]):not([class*="bg-neutral-100"]):not([class*="bg-neutral-200"]),
+button[class*="bg-neutral-900"]:not([class*="bg-white"]):not([class*="bg-gray"]):not([class*="bg-neutral-50"]):not([class*="bg-neutral-100"]):not([class*="bg-neutral-200"]),
+button[class*="bg-neutral-950"]:not([class*="bg-white"]):not([class*="bg-gray"]):not([class*="bg-neutral-50"]):not([class*="bg-neutral-100"]):not([class*="bg-neutral-200"]),
+button[class*="bg-black"]:not([class*="bg-white"]):not([class*="bg-gray"]):not([class*="bg-neutral-50"]):not([class*="bg-neutral-100"]):not([class*="bg-neutral-200"]),
+a[class*="bg-brand-yellow"]:not([class*="bg-white"]):not([class*="bg-gray"]):not([class*="bg-neutral-50"]):not([class*="bg-neutral-100"]):not([class*="bg-neutral-200"]),
+a[class*="bg-brand-dark"]:not([class*="bg-white"]):not([class*="bg-gray"]):not([class*="bg-neutral-50"]):not([class*="bg-neutral-100"]):not([class*="bg-neutral-200"]),
+a[class*="bg-brand-blue"]:not([class*="bg-white"]):not([class*="bg-gray"]):not([class*="bg-neutral-50"]):not([class*="bg-neutral-100"]):not([class*="bg-neutral-200"]),
 .bg-brand-yellow,
 .bg-brand-dark,
 .bg-brand-blue,
@@ -64,15 +64,15 @@ a[class*="bg-brand-blue"],
   color: #ffffff !important;
 }
 
-button[class*="bg-brand-yellow"] *,
-button[class*="bg-brand-dark"] *,
-button[class*="bg-brand-blue"] *,
-button[class*="bg-neutral-900"] *,
-button[class*="bg-neutral-950"] *,
-button[class*="bg-black"] *,
-a[class*="bg-brand-yellow"] *,
-a[class*="bg-brand-dark"] *,
-a[class*="bg-brand-blue"] * {
+button[class*="bg-brand-yellow"]:not([class*="bg-white"]):not([class*="bg-gray"]):not([class*="bg-neutral-50"]):not([class*="bg-neutral-100"]):not([class*="bg-neutral-200"]) *,
+button[class*="bg-brand-dark"]:not([class*="bg-white"]):not([class*="bg-gray"]):not([class*="bg-neutral-50"]):not([class*="bg-neutral-100"]):not([class*="bg-neutral-200"]) *,
+button[class*="bg-brand-blue"]:not([class*="bg-white"]):not([class*="bg-gray"]):not([class*="bg-neutral-50"]):not([class*="bg-neutral-100"]):not([class*="bg-neutral-200"]) *,
+button[class*="bg-neutral-900"]:not([class*="bg-white"]):not([class*="bg-gray"]):not([class*="bg-neutral-50"]):not([class*="bg-neutral-100"]):not([class*="bg-neutral-200"]) *,
+button[class*="bg-neutral-950"]:not([class*="bg-white"]):not([class*="bg-gray"]):not([class*="bg-neutral-50"]):not([class*="bg-neutral-100"]):not([class*="bg-neutral-200"]) *,
+button[class*="bg-black"]:not([class*="bg-white"]):not([class*="bg-gray"]):not([class*="bg-neutral-50"]):not([class*="bg-neutral-100"]):not([class*="bg-neutral-200"]) *,
+a[class*="bg-brand-yellow"]:not([class*="bg-white"]):not([class*="bg-gray"]):not([class*="bg-neutral-50"]):not([class*="bg-neutral-100"]):not([class*="bg-neutral-200"]) *,
+a[class*="bg-brand-dark"]:not([class*="bg-white"]):not([class*="bg-gray"]):not([class*="bg-neutral-50"]):not([class*="bg-neutral-100"]):not([class*="bg-neutral-200"]) *,
+a[class*="bg-brand-blue"]:not([class*="bg-white"]):not([class*="bg-gray"]):not([class*="bg-neutral-50"]):not([class*="bg-neutral-100"]):not([class*="bg-neutral-200"]) * {
   color: #ffffff !important;
 }
 
@@ -791,4 +791,17 @@ div[class*="admin"] select option {
 .auth-modal-home .auth-btn-primary:disabled {
   opacity: 0.55;
   cursor: not-allowed;
+}
+
+/* ─── Modale Profilo / Area Personale: tutti i testi dei pulsanti sono neri e chiaramente visibili ─── */
+.auth-modal-home button:not(.auth-btn-primary),
+.auth-modal-home button:not(.auth-btn-primary) span,
+.auth-modal-home button:not(.auth-btn-primary) p,
+.auth-modal-home button:not(.auth-btn-primary) svg {
+  color: #0a0a0a !important;
+}
+
+.auth-modal-home button.auth-btn-primary,
+.auth-modal-home button.auth-btn-primary * {
+  color: #ffffff !important;
 }

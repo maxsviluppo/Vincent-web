@@ -3289,6 +3289,16 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
   }, [isAdminOpen, hideStorefront]);
 
   useEffect(() => {
+    if (isAuthOpen) {
+      const prev = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = prev || '';
+      };
+    }
+  }, [isAuthOpen]);
+
+  useEffect(() => {
     setSelectedSubcategory("Tutti");
   }, [selectedCategory]);
 
@@ -3338,7 +3348,7 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
     setAuthLastName('');
     setAuthCity('');
     setAuthProvince('');
-    setAuthStep('email');
+    setAuthStep('login');
   };
 
   const handleAuthEmailContinue = async (e: React.FormEvent) => {
@@ -3758,7 +3768,7 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                       setAuthStep('profile');
                       setActiveUserView('profile');
                     } else {
-                      setAuthStep('email');
+                      setAuthStep('login');
                     }
                     setIsAuthOpen(true);
                   }}
@@ -7075,8 +7085,8 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
               </button>
 
               <div className="p-6 md:p-10">
-                <div className="text-center mb-8">
-                  <div className="w-14 h-14 bg-neutral-950 rounded-xl mx-auto flex items-center justify-center mb-4">
+                <div className="text-center mb-6">
+                  <div className="w-14 h-14 bg-neutral-950 rounded-xl mx-auto flex items-center justify-center mb-4 shadow-md">
                     <User className="w-7 h-7 text-white" strokeWidth={1.5} />
                   </div>
                   <h2 className="text-xl font-light text-neutral-950 tracking-wide uppercase">
@@ -7084,24 +7094,76 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                      authStep === 'orders' ? 'I Miei Ordini' : 
                      authStep === 'edit_profile' ? 'Il Mio Profilo' : 
                      authStep === 'support' ? 'Assistenza Clienti' : 
-                     authStep === 'email' ? 'Bentornato' : 
-                     authStep === 'login' ? 'Inserisci Password' : 
-                     'Crea Account'}
+                     authStep === 'register' ? 'Crea Account' : 
+                     'Accedi'}
                   </h2>
                   <p className="text-neutral-500 font-light text-sm mt-2">
                     {authStep === 'profile' ? 'Gestisci la tua Area Personale' : 
                      authStep === 'orders' ? 'Lo storico dei tuoi acquisti' : 
                      authStep === 'edit_profile' ? 'Aggiorna i dettagli demografici e di fatturazione' : 
                      authStep === 'support' ? 'Siamo qui per aiutarti. Scegli come preferisci contattarci.' : 
-                     authStep === 'email' ? 'Accedi o registrati per continuare' : 
-                     authStep === 'login' ? `Bentornato, ${authEmail}` : 
-                     'Inserisci i tuoi dati per registrarti'}
+                     authStep === 'register' ? 'Inserisci i tuoi dati per registrarti su Vincent Store' : 
+                     'Inserisci le tue credenziali per accedere'}
                   </p>
                 </div>
 
+                {!currentUser && !['profile', 'edit_profile', 'orders', 'support'].includes(authStep) && (
+                  <div className="flex border-b border-neutral-200 mb-6">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAuthError('');
+                        setAuthStep('login');
+                      }}
+                      className={`flex-1 pb-3 text-xs uppercase tracking-widest font-semibold transition-all border-b-2 ${
+                        authStep !== 'register'
+                          ? 'border-neutral-950 text-neutral-950 font-bold'
+                          : 'border-transparent text-neutral-400 hover:text-neutral-700'
+                      }`}
+                    >
+                      Accedi
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAuthError('');
+                        if (authLoginId.includes('@') && !authEmail) {
+                          setAuthEmail(authLoginId.trim());
+                        }
+                        setAuthStep('register');
+                      }}
+                      className={`flex-1 pb-3 text-xs uppercase tracking-widest font-semibold transition-all border-b-2 ${
+                        authStep === 'register'
+                          ? 'border-neutral-950 text-neutral-950 font-bold'
+                          : 'border-transparent text-neutral-400 hover:text-neutral-700'
+                      }`}
+                    >
+                      Registrati
+                    </button>
+                  </div>
+                )}
+
                 {authError && (
-                  <div className="mb-6 p-4 bg-red-50 text-red-600 rounded-xl text-xs font-bold text-center border border-red-100">
-                    {authError}
+                  <div className="mb-6 p-4 bg-red-50 text-red-600 rounded-xl text-xs font-medium text-center border border-red-100 space-y-1.5">
+                    <p className="font-bold">{authError}</p>
+                    {authStep !== 'register' && !currentUser && (
+                      <p className="text-[11px] text-neutral-600 font-normal">
+                        Non hai ancora un account?{' '}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setAuthError('');
+                            if (authLoginId.includes('@') && !authEmail) {
+                              setAuthEmail(authLoginId.trim());
+                            }
+                            setAuthStep('register');
+                          }}
+                          className="font-bold text-neutral-950 underline hover:text-red-700 ml-1"
+                        >
+                          Clicca qui per registrarti
+                        </button>
+                      </p>
+                    )}
                   </div>
                 )}
 
@@ -7137,7 +7199,7 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                                   </div>
                                   <button
                                     onClick={() => setAuthStep('edit_profile')}
-                                    className="px-3.5 py-1.5 bg-neutral-900 hover:bg-black text-white text-[10px] font-black uppercase tracking-wider rounded-xl transition-all shadow-xs"
+                                    className="px-3.5 py-1.5 bg-neutral-100 hover:bg-neutral-200 border border-neutral-300 text-neutral-950 text-[10px] font-bold uppercase tracking-wider rounded-xl transition-all shadow-xs cursor-pointer"
                                   >
                                     {currentUser?.addressStreet ? 'Modifica Dati' : '+ Aggiungi Dati'}
                                   </button>
@@ -7172,7 +7234,7 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                                     </div>
                                     <button
                                       onClick={() => setAuthStep('edit_profile')}
-                                      className="px-4 py-2 bg-brand-blue hover:bg-brand-dark text-white rounded-xl text-xs font-black uppercase tracking-wider shrink-0 transition-all shadow-sm"
+                                      className="px-4 py-2 bg-neutral-100 hover:bg-neutral-200 border border-neutral-300 text-neutral-950 rounded-xl text-xs font-bold uppercase tracking-wider shrink-0 transition-all shadow-sm cursor-pointer"
                                     >
                                       Compila ora
                                     </button>
@@ -7180,7 +7242,7 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                                 )}
                               </div>
 
-                              <button onClick={() => { setIsAuthOpen(false); }} className="w-full bg-brand-dark hover:bg-black hover:text-white text-white p-4 rounded-xl font-black uppercase text-xs tracking-widest transition-all shadow-lg active:scale-95">
+                              <button onClick={() => { setIsAuthOpen(false); }} className="w-full bg-neutral-100 hover:bg-neutral-200 border border-neutral-300 text-neutral-950 p-4 rounded-xl font-bold uppercase text-xs tracking-widest transition-all shadow-sm active:scale-95 cursor-pointer">
                                 Torna allo Shopping
                               </button>
                             </div>
@@ -7705,10 +7767,10 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                               <input type="text" value={profileEditForm.taxCode} onChange={e => setProfileEditForm({...profileEditForm, taxCode: e.target.value})} className="w-full bg-gray-50 border-gray-200 border rounded-xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-brand-blue focus:bg-white transition-all shadow-inner outline-none uppercase" placeholder="Es. RSSMRA80A01H501U" />
                             </div>
                             <div className="pt-2 flex flex-col gap-2">
-                              <button type="submit" disabled={authSubmitting} className="w-full bg-brand-blue hover:bg-brand-dark text-white p-4 rounded-xl font-black uppercase text-xs tracking-widest transition-all shadow-lg active:scale-95 disabled:opacity-50">
+                              <button type="submit" disabled={authSubmitting} className="w-full bg-neutral-100 hover:bg-neutral-200 border border-neutral-300 text-neutral-950 p-4 rounded-xl font-bold uppercase text-xs tracking-widest transition-all shadow-sm active:scale-95 disabled:opacity-50 cursor-pointer">
                                 {authSubmitting ? 'Salvataggio in corso...' : 'Salva Dati Profilo e Spedizione'}
                               </button>
-                              <button type="button" onClick={() => setAuthStep('profile')} className="w-full bg-gray-100 hover:bg-gray-200 text-neutral-700 p-3 rounded-xl font-bold uppercase text-[10px] tracking-wider transition-all">
+                              <button type="button" onClick={() => setAuthStep('profile')} className="w-full bg-neutral-100 hover:bg-neutral-200 border border-neutral-300 text-neutral-950 p-3 rounded-xl font-bold uppercase text-[10px] tracking-wider transition-all cursor-pointer">
                                 Torna al Riepilogo Profilo
                               </button>
                             </div>
@@ -8029,47 +8091,47 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                       <div className="grid grid-cols-2 md:grid-cols-2 gap-3">
                         <button 
                           onClick={() => { setAuthStep('profile'); setActiveUserView('profile'); }}
-                          className={`p-4 bg-white border ${authStep === 'profile' && activeUserView === 'profile' ? 'border-brand-yellow ring-2 ring-brand-yellow/20' : 'border-gray-100'} rounded-2xl flex flex-col items-center justify-center gap-2 hover:bg-brand-yellow/10 hover:border-brand-yellow transition-all group shadow-sm active:scale-95`}
+                          className={`p-4 bg-white border ${authStep === 'profile' && activeUserView === 'profile' ? 'border-neutral-950 ring-2 ring-neutral-950/20' : 'border-neutral-200'} rounded-2xl flex flex-col items-center justify-center gap-2 hover:bg-neutral-50 hover:border-neutral-900 transition-all group shadow-sm active:scale-95 cursor-pointer text-neutral-950`}
                         >
-                          <LayoutDashboard className={`w-6 h-6 ${authStep === 'profile' && activeUserView === 'profile' ? 'text-brand-dark' : 'text-brand-blue'} group-hover:text-brand-dark transition-colors`} />
-                          <span className="text-[10px] font-black uppercase tracking-widest text-brand-dark text-center leading-tight">Dashboard<br/>Account</span>
+                          <LayoutDashboard className="w-6 h-6 text-neutral-950 group-hover:scale-105 transition-transform" />
+                          <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-950 text-center leading-tight">Dashboard<br/>Account</span>
                         </button>
-                        <button onClick={() => setAuthStep('orders')} className={`p-4 bg-white border ${authStep === 'orders' ? 'border-brand-yellow ring-2 ring-brand-yellow/20' : 'border-gray-100'} rounded-2xl flex flex-col items-center justify-center gap-2 hover:bg-brand-yellow/10 hover:border-brand-yellow transition-all group shadow-sm active:scale-95`}>
-                          <Box className={`w-6 h-6 ${authStep === 'orders' ? 'text-brand-dark' : 'text-brand-blue'} group-hover:text-brand-dark transition-colors`} />
-                          <span className="text-[10px] font-black uppercase tracking-widest text-brand-dark text-center leading-tight">I miei<br/>ordini</span>
+                        <button onClick={() => setAuthStep('orders')} className={`p-4 bg-white border ${authStep === 'orders' ? 'border-neutral-950 ring-2 ring-neutral-950/20' : 'border-neutral-200'} rounded-2xl flex flex-col items-center justify-center gap-2 hover:bg-neutral-50 hover:border-neutral-900 transition-all group shadow-sm active:scale-95 cursor-pointer text-neutral-950`}>
+                          <Box className="w-6 h-6 text-neutral-950 group-hover:scale-105 transition-transform" />
+                          <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-950 text-center leading-tight">I miei<br/>ordini</span>
                         </button>
-                        <button onClick={() => setAuthStep('edit_profile')} className={`p-4 bg-white border ${authStep === 'edit_profile' ? 'border-brand-yellow ring-2 ring-brand-yellow/20' : 'border-gray-100'} rounded-2xl flex flex-col items-center justify-center gap-2 hover:bg-brand-yellow/10 hover:border-brand-yellow transition-all group shadow-sm active:scale-95`}>
-                          <User className={`w-6 h-6 ${authStep === 'edit_profile' ? 'text-brand-dark' : 'text-brand-blue'} group-hover:text-brand-dark transition-colors`} />
-                          <span className="text-[10px] font-black uppercase tracking-widest text-brand-dark text-center leading-tight">Dati e<br/>Profilo</span>
+                        <button onClick={() => setAuthStep('edit_profile')} className={`p-4 bg-white border ${authStep === 'edit_profile' ? 'border-neutral-950 ring-2 ring-neutral-950/20' : 'border-neutral-200'} rounded-2xl flex flex-col items-center justify-center gap-2 hover:bg-neutral-50 hover:border-neutral-900 transition-all group shadow-sm active:scale-95 cursor-pointer text-neutral-950`}>
+                          <User className="w-6 h-6 text-neutral-950 group-hover:scale-105 transition-transform" />
+                          <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-950 text-center leading-tight">Dati e<br/>Profilo</span>
                         </button>
                         <button 
                           onClick={() => {
-                            if (!currentUser) { setAuthStep('email'); return; }
+                            if (!currentUser) { setAuthStep('login'); return; }
                             setAuthStep('profile');
                             setActiveUserView('returns');
                           }}
-                          className={`p-4 bg-white border ${activeUserView === 'returns' ? 'border-brand-yellow ring-2 ring-brand-yellow/20' : 'border-gray-100'} rounded-2xl flex flex-col items-center justify-center gap-2 hover:bg-brand-yellow/10 hover:border-brand-yellow transition-all group shadow-sm active:scale-95`}
+                          className={`p-4 bg-white border ${activeUserView === 'returns' ? 'border-neutral-950 ring-2 ring-neutral-950/20' : 'border-neutral-200'} rounded-2xl flex flex-col items-center justify-center gap-2 hover:bg-neutral-50 hover:border-neutral-900 transition-all group shadow-sm active:scale-95 cursor-pointer text-neutral-950`}
                         >
-                          <RefreshCw className={`w-6 h-6 ${activeUserView === 'returns' ? 'text-brand-dark' : 'text-brand-blue'} group-hover:text-brand-dark transition-colors`} />
-                          <span className="text-[10px] font-black uppercase tracking-widest text-brand-dark text-center leading-tight">Resi e<br/>Rimborsi</span>
+                          <RefreshCw className="w-6 h-6 text-neutral-950 group-hover:scale-105 transition-transform" />
+                          <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-950 text-center leading-tight">Resi e<br/>Rimborsi</span>
                         </button>
                         <button 
                           onClick={() => { setAuthStep('profile'); setActiveUserView('favorites'); }}
-                          className={`p-4 bg-white border ${activeUserView === 'favorites' ? 'border-brand-yellow ring-2 ring-brand-yellow/20' : 'border-gray-100'} rounded-2xl flex flex-col items-center justify-center gap-2 hover:bg-brand-yellow/10 hover:border-brand-yellow transition-all group shadow-sm active:scale-95`}
+                          className={`p-4 bg-white border ${activeUserView === 'favorites' ? 'border-neutral-950 ring-2 ring-neutral-950/20' : 'border-neutral-200'} rounded-2xl flex flex-col items-center justify-center gap-2 hover:bg-neutral-50 hover:border-neutral-900 transition-all group shadow-sm active:scale-95 cursor-pointer text-neutral-950`}
                         >
-                          <Heart className={`w-6 h-6 ${activeUserView === 'favorites' ? 'text-brand-dark' : 'text-brand-blue'} group-hover:text-brand-dark transition-colors`} />
-                          <span className="text-[10px] font-black uppercase tracking-widest text-brand-dark text-center leading-tight">I Miei<br/>Preferiti</span>
+                          <Heart className="w-6 h-6 text-neutral-950 group-hover:scale-105 transition-transform" />
+                          <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-950 text-center leading-tight">I Miei<br/>Preferiti</span>
                         </button>
-                        <button onClick={() => setAuthStep('support')} className={`p-4 bg-white border ${authStep === 'support' ? 'border-brand-yellow ring-2 ring-brand-yellow/20' : 'border-gray-100'} rounded-2xl flex flex-col items-center justify-center gap-2 hover:bg-brand-yellow/10 hover:border-brand-yellow transition-all group shadow-sm active:scale-95`}>
-                          <MessageCircle className={`w-6 h-6 ${authStep === 'support' ? 'text-brand-dark' : 'text-brand-blue'} group-hover:text-brand-dark transition-colors`} />
-                          <span className="text-[10px] font-black uppercase tracking-widest text-brand-dark text-center leading-tight">Assistenza<br/> Clienti</span>
+                        <button onClick={() => setAuthStep('support')} className={`p-4 bg-white border ${authStep === 'support' ? 'border-neutral-950 ring-2 ring-neutral-950/20' : 'border-neutral-200'} rounded-2xl flex flex-col items-center justify-center gap-2 hover:bg-neutral-50 hover:border-neutral-900 transition-all group shadow-sm active:scale-95 cursor-pointer text-neutral-950`}>
+                          <MessageCircle className="w-6 h-6 text-neutral-950 group-hover:scale-105 transition-transform" />
+                          <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-950 text-center leading-tight">Assistenza<br/> Clienti</span>
                         </button>
                       </div>
 
                       <button 
-                        onClick={() => { logout(); setIsAuthOpen(false); setAuthStep('email'); }}
+                        onClick={() => { logout(); setIsAuthOpen(false); setAuthStep('login'); }}
                         disabled={authSubmitting}
-                        className="w-full mt-4 bg-neutral-100 hover:bg-neutral-950 text-neutral-700 hover:text-white p-3.5 rounded-xl font-normal uppercase text-[10px] tracking-[0.2em] transition-all disabled:opacity-50"
+                        className="w-full mt-4 bg-neutral-100 hover:bg-neutral-200 border border-neutral-300 text-neutral-950 p-3.5 rounded-xl font-bold uppercase text-[11px] tracking-[0.2em] transition-all disabled:opacity-50 cursor-pointer"
                       >
                         Esci
                       </button>
@@ -8077,7 +8139,7 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                         type="button"
                         onClick={handleDeleteAccount}
                         disabled={authSubmitting}
-                        className="w-full mt-2 border border-red-200 text-red-600 hover:bg-red-600 hover:text-white hover:border-red-600 p-3 rounded-xl font-light text-[10px] uppercase tracking-[0.15em] transition-all disabled:opacity-50"
+                        className="w-full mt-2 border border-red-200 bg-red-50 hover:bg-red-100 text-red-700 p-3 rounded-xl font-bold text-[10px] uppercase tracking-[0.15em] transition-all disabled:opacity-50 cursor-pointer"
                       >
                         Elimina account
                       </button>
@@ -8085,99 +8147,33 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                   </div>
                 )}
 
-                {authStep === 'email' && (
-                  <div className="space-y-6">
-                    <form onSubmit={handleAuthEmailContinue} className="space-y-4">
-                      <div className="space-y-1.5 text-left">
-                        <label className="auth-field-label">Email</label>
-                        <input 
-                          type="email" 
-                          required
-                          value={authEmail}
-                          onChange={(e) => setAuthEmail(e.target.value)}
-                          className="auth-field-input"
-                          placeholder="tu@email.com"
-                        />
-                      </div>
-                      <button 
-                        type="submit"
-                        disabled={authSubmitting}
-                        className="auth-btn-primary"
-                      >
-                        {authSubmitting ? 'Attendere…' : 'Continua'}
-                      </button>
-                    </form>
-
-                    <div className="relative py-2">
-                      <div className="absolute inset-0 flex items-center">
-                        <div className="w-full border-t border-neutral-200"></div>
-                      </div>
-                      <div className="relative flex justify-center">
-                        <span className="bg-[#fafafa] px-4 text-[10px] font-light uppercase tracking-[0.2em] text-neutral-400">oppure accedi</span>
-                      </div>
-                    </div>
-
-                    <form onSubmit={handleAuthLogin} className="space-y-4 text-left">
-                      <div className="space-y-1.5">
-                        <label className="auth-field-label">Username o email</label>
-                        <input
-                          type="text"
-                          required
-                          value={authLoginId}
-                          onChange={(e) => setAuthLoginId(e.target.value)}
-                          className="auth-field-input"
-                          placeholder="username o tu@email.com"
-                        />
-                      </div>
-                      <div className="space-y-1.5">
-                        <label className="auth-field-label">Password</label>
-                        <div className="relative">
-                          <input
-                            type={showLoginPassword ? 'text' : 'password'}
-                            required
-                            value={authPassword}
-                            onChange={(e) => setAuthPassword(e.target.value)}
-                            className="auth-field-input pr-12"
-                            placeholder="••••••••"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setShowLoginPassword(!showLoginPassword)}
-                            className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600"
-                          >
-                            {showLoginPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                          </button>
-                        </div>
-                      </div>
-                      <button type="submit" disabled={authSubmitting} className="auth-btn-primary">
-                        {authSubmitting ? 'Accesso…' : 'Accedi'}
-                      </button>
-                    </form>
-                  </div>
-                )}
-
-                {authStep === 'login' && (
+                {!['profile', 'edit_profile', 'orders', 'support', 'register'].includes(authStep) && (
                   <form onSubmit={handleAuthLogin} className="space-y-4 text-left">
                     <div className="space-y-1.5">
                       <label className="auth-field-label">Username o email</label>
                       <input
                         type="text"
                         required
-                        autoFocus
                         value={authLoginId || authEmail}
-                        onChange={(e) => setAuthLoginId(e.target.value)}
+                        onChange={(e) => {
+                          setAuthLoginId(e.target.value);
+                          if (authError) setAuthError('');
+                        }}
                         className="auth-field-input"
+                        placeholder="username o tu@email.com"
                       />
                     </div>
                     <div className="space-y-1.5">
                       <label className="auth-field-label">Password</label>
                       <div className="relative">
-                        <input 
-                          type={showLoginPassword ? "text" : "password"} 
+                        <input
+                          type={showLoginPassword ? 'text' : 'password'}
                           required
-                          autoFocus
                           value={authPassword}
-                          onChange={(e) => setAuthPassword(e.target.value)}
+                          onChange={(e) => {
+                            setAuthPassword(e.target.value);
+                            if (authError) setAuthError('');
+                          }}
                           className="auth-field-input pr-12"
                           placeholder="••••••••"
                         />
@@ -8185,93 +8181,105 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                           type="button"
                           onClick={() => setShowLoginPassword(!showLoginPassword)}
                           className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 focus:outline-none"
+                          aria-label={showLoginPassword ? "Nascondi password" : "Mostra password"}
                         >
                           {showLoginPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                         </button>
                       </div>
                     </div>
-                    <button 
-                      type="submit"
-                      disabled={authSubmitting}
-                      className="auth-btn-primary"
-                    >
-                      {authSubmitting ? 'Accesso…' : 'Accedi'}
+                    <button type="submit" disabled={authSubmitting} className="auth-btn-primary">
+                      {authSubmitting ? 'Accesso in corso…' : 'Accedi'}
                     </button>
-                    <button 
-                      type="button"
-                      onClick={() => setAuthStep('email')}
-                      className="w-full text-center text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-brand-blue pt-4 transition-colors"
-                    >
-                      Torna indietro o cambia email
-                    </button>
+
+                    <div className="pt-2 text-center">
+                      <p className="text-xs text-neutral-500 font-light">
+                        Non hai ancora un account?{' '}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setAuthError('');
+                            const candidate = (authLoginId || authEmail).trim();
+                            if (candidate.includes('@')) {
+                              setAuthEmail(candidate);
+                            }
+                            setAuthStep('register');
+                          }}
+                          className="font-semibold text-neutral-950 underline hover:text-black transition-colors"
+                        >
+                          Registrati ora
+                        </button>
+                      </p>
+                    </div>
                   </form>
                 )}
 
                 {authStep === 'register' && (
                   <form onSubmit={handleAuthRegister} className="space-y-4 text-left">
-                    <div className="bg-neutral-50 p-3.5 rounded-2xl border border-neutral-200/80 flex items-center justify-between">
-                      <div>
-                        <span className="text-[9px] font-black uppercase tracking-widest text-neutral-400 block">Stai creando l'account per:</span>
-                        <span className="text-xs font-bold text-neutral-900">{authEmail}</span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setAuthStep('email')}
-                        className="text-[10px] font-bold text-brand-blue hover:underline"
-                      >
-                        Cambia
-                      </button>
+                    <div className="space-y-1.5">
+                      <label className="auth-field-label">Email *</label>
+                      <input 
+                        type="email" 
+                        required
+                        value={authEmail}
+                        onChange={(e) => {
+                          setAuthEmail(e.target.value);
+                          if (authError) setAuthError('');
+                        }}
+                        className="auth-field-input"
+                        placeholder="tu@email.com"
+                      />
                     </div>
 
-                    {/* Password con Occhietto (Obbligatoria) */}
                     <div className="space-y-1.5">
-                      <label className="text-[10px] font-black uppercase tracking-widest text-neutral-700 ml-1">Scegli una Password *</label>
+                      <label className="auth-field-label">Password * (minimo 6 caratteri)</label>
                       <div className="relative">
                         <input 
                           type={showAuthPassword ? "text" : "password"} 
                           required
-                          autoFocus
                           value={authPassword}
-                          onChange={(e) => setAuthPassword(e.target.value)}
-                          className="w-full bg-gray-50 border-gray-200 border rounded-xl pl-4 pr-12 py-3.5 text-sm font-bold focus:ring-2 focus:ring-brand-blue focus:bg-white transition-all shadow-inner outline-none"
-                          placeholder="Minimo 6 caratteri"
+                          onChange={(e) => {
+                            setAuthPassword(e.target.value);
+                            if (authError) setAuthError('');
+                          }}
+                          className="auth-field-input pr-12"
+                          placeholder="••••••••"
                         />
                         <button
                           type="button"
                           onClick={() => setShowAuthPassword(!showAuthPassword)}
-                          className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
+                          className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 focus:outline-none"
+                          aria-label={showAuthPassword ? "Nascondi password" : "Mostra password"}
                         >
                           {showAuthPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                         </button>
                       </div>
                     </div>
 
-                    {/* Nome e Cognome Opzionali */}
                     <div className="grid grid-cols-2 gap-3 pt-1">
                       <div className="space-y-1">
-                        <label className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 ml-1">Nome (opzionale)</label>
+                        <label className="auth-field-label">Nome (opzionale)</label>
                         <input 
                           type="text" 
                           value={authFirstName}
                           onChange={(e) => setAuthFirstName(e.target.value)}
-                          className="w-full bg-gray-50 border-gray-200 border rounded-xl px-3.5 py-3 text-xs font-bold focus:ring-2 focus:ring-brand-blue focus:bg-white transition-all outline-none"
+                          className="auth-field-input text-xs"
                           placeholder="Es. Mario"
                         />
                       </div>
                       <div className="space-y-1">
-                        <label className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 ml-1">Cognome (opzionale)</label>
+                        <label className="auth-field-label">Cognome (opzionale)</label>
                         <input 
                           type="text" 
                           value={authLastName}
                           onChange={(e) => setAuthLastName(e.target.value)}
-                          className="w-full bg-gray-50 border-gray-200 border rounded-xl px-3.5 py-3 text-xs font-bold focus:ring-2 focus:ring-brand-blue focus:bg-white transition-all outline-none"
+                          className="auth-field-input text-xs"
                           placeholder="Es. Rossi"
                         />
                       </div>
                     </div>
 
-                    <p className="text-[10px] text-neutral-600 leading-relaxed bg-brand-yellow/15 p-3 rounded-xl border border-brand-yellow/30">
-                      💡 <strong>Registrazione rapida:</strong> Ti bastano email e password per creare l'account. Potrai completare o modificare in qualsiasi momento l'indirizzo di spedizione (via, civico, CAP, città, telefono) nella tua <strong>Scheda Profilo</strong>.
+                    <p className="text-[11px] text-neutral-600 leading-relaxed bg-neutral-100 p-3 rounded-xl border border-neutral-200">
+                      💡 <strong>Registrazione rapida:</strong> Ti bastano email e password per creare l'account. Potrai aggiungere l'indirizzo di spedizione durante gli ordini o nel tuo profilo.
                     </p>
                     
                     <button 
@@ -8279,15 +8287,27 @@ export default function App({ hideStorefront = false }: { hideStorefront?: boole
                       disabled={authSubmitting}
                       className="auth-btn-primary mt-2"
                     >
-                      {authSubmitting ? 'Registrazione…' : 'Crea account'}
+                      {authSubmitting ? 'Creazione in corso…' : 'Crea account'}
                     </button>
-                    <button 
-                      type="button"
-                      onClick={() => setAuthStep('email')}
-                      className="w-full text-center text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-brand-blue pt-4 transition-colors"
-                    >
-                      Torna indietro
-                    </button>
+
+                    <div className="pt-2 text-center">
+                      <p className="text-xs text-neutral-500 font-light">
+                        Hai già un account?{' '}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setAuthError('');
+                            if (authEmail && !authLoginId) {
+                              setAuthLoginId(authEmail.trim());
+                            }
+                            setAuthStep('login');
+                          }}
+                          className="font-semibold text-neutral-950 underline hover:text-black transition-colors"
+                        >
+                          Accedi qui
+                        </button>
+                      </p>
+                    </div>
                   </form>
                 )}
 
